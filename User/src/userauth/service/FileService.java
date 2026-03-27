@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FileService {
-    private static final String FILE_PATH = "src/data/users.txt";
+    private static final String FILE_PATH = "User/data/users.txt";
 
     public List<User> loadUsersFromFile() {
         List<User> users = new ArrayList<>();
