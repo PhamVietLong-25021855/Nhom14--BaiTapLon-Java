@@ -1,0 +1,19 @@
+Trong Java, Enum (viết tắt của Enumeration) đóng vai trò như một tập hợp các hằng số cố định. Bạn có thể hiểu nó giống như một danh sách các lựa chọn được định nghĩa trước, và người dùng (hoặc các đoạn code khác) chỉ được phép chọn một trong các giá trị nằm trong danh sách đó.
+
+Trong bối cảnh bài tập lớn hệ thống đấu giá của bạn, chúng ta đã dùng 2 Enum là ItemStatus (Trạng thái) và ItemType (Phân loại). Việc sử dụng Enum mang lại 4 vai trò cực kỳ quan trọng sau:
+
+1. Đảm bảo an toàn dữ liệu (Type Safety)
+Nếu bạn dùng kiểu String để lưu trạng thái sản phẩm, một thành viên khác trong nhóm có thể vô tình gán status = "Đang mở" hoặc gõ sai chính tả thành status = "OPNE". Điều này sẽ làm hỏng toàn bộ logic kiểm tra của hệ thống.
+Khi dùng ItemStatus, biến status chỉ có thể nhận đúng 1 trong 4 giá trị: PENDING, OPEN, CLOSED, hoặc CANCELED. Bất kỳ ai cố gắng gán một giá trị ngoài danh sách này, trình biên dịch (IDE) sẽ báo lỗi đỏ ngay lập tức, không cho phép chạy chương trình.
+
+2. Code dễ đọc và có ý nghĩa hơn (Readability)
+Thay vì quy ước ngầm với nhau là "số 1 là đang đấu giá, số 2 là kết thúc", việc dùng số (Magic numbers) sẽ khiến code rất khó hiểu sau vài tuần đọc lại.
+Việc viết if (item.getStatus() == ItemStatus.OPEN) rõ ràng, mang tính tự giải thích và giống ngôn ngữ tự nhiên hơn rất nhiều.
+
+3. Tương thích hoàn hảo với cấu trúc Switch-Case
+Trong file ItemFactory mà chúng ta vừa thiết kế, Enum ItemType phát huy sức mạnh tối đa khi kết hợp với switch. Trình biên dịch của Java đủ thông minh để biết chính xác có bao nhiêu trường hợp (case) cần xử lý. Nếu sau này bạn thêm SPORTS vào ItemType mà quên thêm case SPORTS: trong Factory, một số IDE sẽ nhắc nhở bạn.
+
+4. Dễ dàng bảo trì và mở rộng
+Khi thầy giáo yêu cầu thêm một trạng thái mới (ví dụ: PAID - Đã thanh toán), bạn chỉ cần vào đúng file ItemStatus.java thêm chữ PAID vào. Bạn không phải đi tìm và sửa từng chuỗi String nằm rải rác khắp hàng chục file code khác nhau.
+
+Tóm lại, Enum giúp bạn "khoanh vùng" dữ liệu, chặn đứng các lỗi ngớ ngẩn do gõ sai, và làm cho cấu trúc mã nguồn chuyên nghiệp, sạch sẽ đúng chuẩn thiết kế hướng đối tượng
