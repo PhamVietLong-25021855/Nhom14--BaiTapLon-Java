@@ -12,7 +12,7 @@ import java.util.Scanner;
 
 public class Main {
 
-    public static void main(String[] args) {
+      static void main(String[] args) {
         UserDAO userDAO = new UserDAOImpl();
         AuthService authService = new AuthService(userDAO);
         AuthController authController = new AuthController(authService);
