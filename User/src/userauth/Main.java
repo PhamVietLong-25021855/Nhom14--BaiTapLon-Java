@@ -18,7 +18,7 @@ public class Main {
         AuthController authController = new AuthController(authService);
 
         Scanner scanner = new Scanner(System.in);
-        int choice = 0;
+        int choice;
 
         do {
             printMenu();
