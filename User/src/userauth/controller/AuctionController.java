@@ -1,0 +1,81 @@
+package userauth.controller;
+
+import userauth.model.AuctionItem;
+import userauth.model.BidTransaction;
+import userauth.service.AuctionService;
+import userauth.exception.AuctionClosedException;
+import userauth.exception.InvalidBidException;
+import userauth.exception.ItemNotFoundException;
+import userauth.exception.UnauthorizedException;
+import userauth.exception.ValidationException;
+
+import java.util.List;
+
+public class AuctionController {
+    private final AuctionService auctionService;
+
+    public AuctionController(AuctionService auctionService) {
+        this.auctionService = auctionService;
+    }
+
+    public String createAuction(String name, String desc, double startPrice, long startTime, long endTime, String category, int sellerId) {
+        try {
+            auctionService.createAuction(name, desc, startPrice, startTime, endTime, category, sellerId);
+            return "SUCCESS";
+        } catch (ValidationException e) {
+            return e.getMessage();
+        }
+    }
+
+    public String updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice, long startTime, long endTime, String category) {
+        try {
+            auctionService.updateAuction(auctionId, sellerId, name, desc, startPrice, startTime, endTime, category);
+            return "SUCCESS";
+        } catch (ItemNotFoundException | UnauthorizedException | ValidationException e) {
+            return e.getMessage();
+        }
+    }
+
+    public String deleteAuction(int auctionId, int sellerId) {
+        try {
+            auctionService.deleteAuction(auctionId, sellerId);
+            return "SUCCESS";
+        } catch (ItemNotFoundException | UnauthorizedException e) {
+            return e.getMessage();
+        }
+    }
+
+    public List<AuctionItem> getAuctionsBySeller(int sellerId) {
+        return auctionService.getAuctionsBySeller(sellerId);
+    }
+
+    public List<AuctionItem> getActiveAuctions() {
+        return auctionService.getActiveAuctions();
+    }
+
+    public List<AuctionItem> getAllAuctions() {
+        return auctionService.getAllAuctions();
+    }
+
+    public List<BidTransaction> getBidsForAuction(int auctionId) {
+        return auctionService.getBidsForAuction(auctionId);
+    }
+
+    public String placeBid(int auctionId, int bidderId, double amount) {
+        try {
+            auctionService.placeBid(auctionId, bidderId, amount);
+            return "SUCCESS";
+        } catch (ItemNotFoundException | AuctionClosedException | InvalidBidException e) {
+            return e.getMessage();
+        }
+    }
+
+    public String closeAuction(int auctionId, int sellerId) {
+        try {
+            auctionService.closeAuctionManually(auctionId, sellerId);
+            return "SUCCESS";
+        } catch (ItemNotFoundException | UnauthorizedException | AuctionClosedException e) {
+            return e.getMessage();
+        }
+    }
+}
