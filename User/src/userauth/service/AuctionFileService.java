@@ -22,10 +22,12 @@ public class AuctionFileService {
             try (BufferedReader br = new BufferedReader(new FileReader(file))) {
                 String line;
                 while ((line = br.readLine()) != null) {
-                    if (line.trim().isEmpty()) continue;
+                    if (line.trim().isEmpty())
+                        continue;
                     String[] parts = line.split(",", -1);
-                    if (parts.length < 13) continue; // Must match toString: 13 parts
-                    
+                    if (parts.length < 13)
+                        continue; // Must match toString: 13 parts
+
                     try {
                         int id = Integer.parseInt(parts[0].trim());
                         String name = parts[1].trim();
@@ -40,8 +42,9 @@ public class AuctionFileService {
                         int sellerId = Integer.parseInt(parts[10].trim());
                         int winnerId = Integer.parseInt(parts[11].trim());
                         AuctionStatus status = AuctionStatus.valueOf(parts[12].trim().toUpperCase());
-                        
-                        auctions.add(new AuctionItem(id, name, desc, startPrice, currentHighest, startTime, endTime, category, createdAt, updatedAt, sellerId, winnerId, status));
+
+                        auctions.add(new AuctionItem(id, name, desc, startPrice, currentHighest, startTime, endTime,
+                                category, createdAt, updatedAt, sellerId, winnerId, status));
                     } catch (NumberFormatException e) {
                         System.out.println("Lỗi parse dòng auction: " + line);
                     }
@@ -73,10 +76,12 @@ public class AuctionFileService {
             try (BufferedReader br = new BufferedReader(new FileReader(file))) {
                 String line;
                 while ((line = br.readLine()) != null) {
-                    if (line.trim().isEmpty()) continue;
+                    if (line.trim().isEmpty())
+                        continue;
                     String[] parts = line.split(",", -1);
-                    if (parts.length < 6) continue;
-                    
+                    if (parts.length < 6)
+                        continue;
+
                     try {
                         int id = Integer.parseInt(parts[0].trim());
                         int auctionId = Integer.parseInt(parts[1].trim());
@@ -84,7 +89,7 @@ public class AuctionFileService {
                         double amount = Double.parseDouble(parts[3].trim());
                         long timestamp = Long.parseLong(parts[4].trim());
                         String status = parts[5].trim();
-                        
+
                         bids.add(new BidTransaction(id, auctionId, bidderId, amount, timestamp, status));
                     } catch (NumberFormatException e) {
                         System.out.println("Lỗi parse dòng bid: " + line);

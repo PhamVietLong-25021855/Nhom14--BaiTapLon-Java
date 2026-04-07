@@ -5,7 +5,6 @@ import userauth.model.User;
 import userauth.exception.UnauthorizedException;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
 
 public class LoginPanel extends JPanel {
@@ -19,91 +18,82 @@ public class LoginPanel extends JPanel {
         this.frame = frame;
         this.controller = controller;
         setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
+        setBackground(UITheme.APP_BG);
 
-        // Header
-        JLabel lblTitle = new JLabel("ĐĂNG NHẬP", SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
-        lblTitle.setForeground(new Color(41, 128, 185));
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(40, 0, 40, 0));
-        add(lblTitle, BorderLayout.NORTH);
+        JLabel lblTitle = new JLabel("HỆ THỐNG ĐẤU GIÁ", SwingConstants.CENTER);
+        lblTitle.setFont(UITheme.titleFont());
+        lblTitle.setForeground(UITheme.TEXT_PRIMARY);
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(30, 0, 6, 0));
+        JLabel lblSub = new JLabel("Đăng nhập để tiếp tục", SwingConstants.CENTER);
+        lblSub.setFont(UITheme.bodyFont());
+        lblSub.setForeground(Color.BLACK);
+        lblSub.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(UITheme.APP_BG);
+        header.add(lblTitle, BorderLayout.NORTH);
+        header.add(lblSub, BorderLayout.CENTER);
+        add(header, BorderLayout.NORTH);
 
-        // Form
+        JPanel loginSection = UITheme.createRoundedSection("Thông tin đăng nhập", new BorderLayout());
         JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(Color.WHITE);
+        formPanel.setOpaque(false);
+        formPanel.setPreferredSize(new Dimension(360, 220));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        Border fieldBorder = BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(153, 204, 255), 2, true),
-                BorderFactory.createEmptyBorder(5, 8, 5, 8));
+        gbc.weightx = 1;
 
         gbc.gridx = 0;
         gbc.gridy = 0;
         JLabel lblUser = new JLabel("Username:");
-        lblUser.setFont(new Font("Arial", Font.BOLD, 14));
-        lblUser.setForeground(Color.DARK_GRAY);
+        lblUser.setFont(UITheme.labelFont());
+        lblUser.setForeground(UITheme.TEXT_SECONDARY);
         formPanel.add(lblUser, gbc);
 
         gbc.gridy = 1;
         txtUsername = new JTextField(20);
-        txtUsername.setFont(new Font("Arial", Font.PLAIN, 14));
-        txtUsername.setPreferredSize(new Dimension(200, 35));
-        txtUsername.setBackground(new Color(245, 250, 255)); // Màu xanh nhạt rất sáng
-        txtUsername.setForeground(Color.BLACK);
-        txtUsername.setBorder(fieldBorder);
+        UITheme.styleTextField(txtUsername);
         formPanel.add(txtUsername, gbc);
 
         gbc.gridy = 2;
         JLabel lblPass = new JLabel("Password:");
-        lblPass.setFont(new Font("Arial", Font.BOLD, 14));
-        lblPass.setForeground(Color.DARK_GRAY);
+        lblPass.setFont(UITheme.labelFont());
+        lblPass.setForeground(UITheme.TEXT_SECONDARY);
         formPanel.add(lblPass, gbc);
 
         gbc.gridy = 3;
         txtPassword = new JPasswordField(20);
-        txtPassword.setFont(new Font("Arial", Font.PLAIN, 14));
-        txtPassword.setPreferredSize(new Dimension(200, 35));
-        txtPassword.setBackground(new Color(245, 250, 255)); // Màu xanh nhạt rất sáng
-        txtPassword.setForeground(Color.BLACK);
-        txtPassword.setBorder(fieldBorder);
+        UITheme.styleTextField(txtPassword);
         formPanel.add(txtPassword, gbc);
+        loginSection.add(formPanel, BorderLayout.CENTER);
 
-        add(formPanel, BorderLayout.CENTER);
+        JPanel wrapper = new JPanel(new GridBagLayout());
+        wrapper.setBackground(UITheme.APP_BG);
+        wrapper.add(loginSection);
+        add(wrapper, BorderLayout.CENTER);
 
-        // Buttons
         JPanel btnPanel = new JPanel(new FlowLayout());
-        btnPanel.setBackground(Color.WHITE);
-        btnPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 40, 0));
+        btnPanel.setBackground(UITheme.APP_BG);
+        btnPanel.setBorder(BorderFactory.createEmptyBorder(8, 0, 34, 0));
 
         JButton btnLogin = new JButton("Đăng Nhập");
-        btnLogin.setFont(new Font("Arial", Font.BOLD, 14));
-        btnLogin.setBackground(new Color(35, 110, 253)); // Xanh đậm thuần khiết (Primary Deep Blue)
-        btnLogin.setForeground(Color.BLACK);
+        UITheme.stylePrimaryButton(btnLogin);
         btnLogin.setPreferredSize(new Dimension(140, 40));
-        btnLogin.setFocusPainted(false);
-        btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         JButton btnRegister = new JButton("Tạo tài khoản");
-        btnRegister.setFont(new Font("Arial", Font.PLAIN, 14));
-        btnRegister.setContentAreaFilled(false);
-        btnRegister.setBorderPainted(false);
-        btnRegister.setForeground(Color.BLUE);
-        btnRegister.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        UITheme.styleGhostButton(btnRegister);
 
         btnLogin.addActionListener(e -> {
             String username = txtUsername.getText().trim();
             String password = new String(txtPassword.getPassword());
             try {
                 User user = controller.login(username, password);
-                JOptionPane.showMessageDialog(frame, "Đăng nhập thành công!\nXin chào " + user.getRole(), "Thành công",
-                        JOptionPane.INFORMATION_MESSAGE);
+                NotificationUtil.success(frame, "Thành công", "Đăng nhập thành công!\nXin chào " + user.getRole());
                 txtUsername.setText("");
                 txtPassword.setText("");
                 frame.showRoleDashboard(user);
             } catch (UnauthorizedException ex) {
-                JOptionPane.showMessageDialog(frame, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.error(frame, "Lỗi", ex.getMessage());
             }
         });
 

@@ -5,7 +5,6 @@ import userauth.model.Role;
 import userauth.validation.UserValidator;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
 
 public class RegisterPanel extends JPanel {
@@ -23,97 +22,107 @@ public class RegisterPanel extends JPanel {
         this.frame = frame;
         this.controller = controller;
         setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
+        setBackground(UITheme.APP_BG);
 
-        // Header
         JLabel lblTitle = new JLabel("ĐĂNG KÝ TÀI KHOẢN", SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 22));
-        lblTitle.setForeground(new Color(39, 174, 96));
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-        add(lblTitle, BorderLayout.NORTH);
+        lblTitle.setFont(UITheme.sectionTitleFont());
+        lblTitle.setForeground(UITheme.TEXT_PRIMARY);
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(20, 0, 6, 0));
+        JLabel lblSub = new JLabel("Tạo tài khoản nhanh chóng và bảo mật", SwingConstants.CENTER);
+        lblSub.setFont(UITheme.bodyFont());
+        lblSub.setForeground(Color.BLACK);
+        lblSub.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(UITheme.APP_BG);
+        header.add(lblTitle, BorderLayout.NORTH);
+        header.add(lblSub, BorderLayout.CENTER);
+        add(header, BorderLayout.NORTH);
 
-        // Form
+        JPanel registerSection = UITheme.createRoundedSection("Thông tin tài khoản", new BorderLayout());
         JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(Color.WHITE);
+        formPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 20, 5, 20);
+        gbc.insets = new Insets(4, 12, 4, 12);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        Border fieldBorder = BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(153, 204, 255), 2, true),
-                BorderFactory.createEmptyBorder(5, 8, 5, 8));
+        gbc.weightx = 1;
 
         gbc.gridx = 0;
         gbc.gridy = 0;
-        formPanel.add(new JLabel("Username:"), gbc);
+        JLabel lblUsername = new JLabel("Username:");
+        lblUsername.setFont(UITheme.labelFont());
+        lblUsername.setForeground(UITheme.TEXT_SECONDARY);
+        formPanel.add(lblUsername, gbc);
         txtUsername = new JTextField(20);
-        txtUsername.setBackground(new Color(245, 250, 255));
-        txtUsername.setForeground(Color.BLACK);
-        txtUsername.setBorder(fieldBorder);
+        UITheme.styleTextField(txtUsername);
         gbc.gridy = 1;
         formPanel.add(txtUsername, gbc);
 
         gbc.gridy = 2;
-        formPanel.add(new JLabel("Họ tên:"), gbc);
+        JLabel lblFullName = new JLabel("Họ tên:");
+        lblFullName.setFont(UITheme.labelFont());
+        lblFullName.setForeground(UITheme.TEXT_SECONDARY);
+        formPanel.add(lblFullName, gbc);
         txtFullName = new JTextField(20);
-        txtFullName.setBackground(new Color(245, 250, 255));
-        txtFullName.setForeground(Color.BLACK);
-        txtFullName.setBorder(fieldBorder);
+        UITheme.styleTextField(txtFullName);
         gbc.gridy = 3;
         formPanel.add(txtFullName, gbc);
 
         gbc.gridy = 4;
-        formPanel.add(new JLabel("Email:"), gbc);
+        JLabel lblEmail = new JLabel("Email:");
+        lblEmail.setFont(UITheme.labelFont());
+        lblEmail.setForeground(UITheme.TEXT_SECONDARY);
+        formPanel.add(lblEmail, gbc);
         txtEmail = new JTextField(20);
-        txtEmail.setBackground(new Color(245, 250, 255));
-        txtEmail.setForeground(Color.BLACK);
-        txtEmail.setBorder(fieldBorder);
+        UITheme.styleTextField(txtEmail);
         gbc.gridy = 5;
         formPanel.add(txtEmail, gbc);
 
         gbc.gridy = 6;
-        formPanel.add(new JLabel("Password:"), gbc);
+        JLabel lblPassword = new JLabel("Password:");
+        lblPassword.setFont(UITheme.labelFont());
+        lblPassword.setForeground(UITheme.TEXT_SECONDARY);
+        formPanel.add(lblPassword, gbc);
         txtPassword = new JPasswordField(20);
-        txtPassword.setBackground(new Color(245, 250, 255));
-        txtPassword.setForeground(Color.BLACK);
-        txtPassword.setBorder(fieldBorder);
+        UITheme.styleTextField(txtPassword);
         gbc.gridy = 7;
         formPanel.add(txtPassword, gbc);
 
         gbc.gridy = 8;
-        formPanel.add(new JLabel("Nhập lại Password:"), gbc);
+        JLabel lblConfirmPassword = new JLabel("Nhập lại Password:");
+        lblConfirmPassword.setFont(UITheme.labelFont());
+        lblConfirmPassword.setForeground(UITheme.TEXT_SECONDARY);
+        formPanel.add(lblConfirmPassword, gbc);
         txtConfirmPassword = new JPasswordField(20);
-        txtConfirmPassword.setBackground(new Color(245, 250, 255));
-        txtConfirmPassword.setForeground(Color.BLACK);
-        txtConfirmPassword.setBorder(fieldBorder);
+        UITheme.styleTextField(txtConfirmPassword);
         gbc.gridy = 9;
         formPanel.add(txtConfirmPassword, gbc);
 
         gbc.gridy = 10;
-        formPanel.add(new JLabel("Vai trò (Role):"), gbc);
+        JLabel lblRole = new JLabel("Vai trò (Role):");
+        lblRole.setFont(UITheme.labelFont());
+        lblRole.setForeground(UITheme.TEXT_SECONDARY);
+        formPanel.add(lblRole, gbc);
         cbRole = new JComboBox<>(new Role[] { Role.BIDDER, Role.SELLER, Role.ADMIN });
-        cbRole.setBackground(new Color(245, 250, 255));
-        cbRole.setForeground(Color.BLACK);
+        UITheme.styleComboBox(cbRole);
         gbc.gridy = 11;
         formPanel.add(cbRole, gbc);
+        registerSection.add(formPanel, BorderLayout.CENTER);
 
-        add(formPanel, BorderLayout.CENTER);
-        // Buttons
+        JPanel wrapper = new JPanel(new GridBagLayout());
+        wrapper.setBackground(UITheme.APP_BG);
+        wrapper.add(registerSection);
+        add(wrapper, BorderLayout.CENTER);
+
         JPanel btnPanel = new JPanel(new FlowLayout());
-        btnPanel.setBackground(Color.WHITE);
-        btnPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
+        btnPanel.setBackground(UITheme.APP_BG);
+        btnPanel.setBorder(BorderFactory.createEmptyBorder(8, 0, 24, 0));
 
         JButton btnRegister = new JButton("Đăng Ký");
-        btnRegister.setBackground(new Color(46, 204, 113)); // Sáng hơn một chút
-        btnRegister.setForeground(Color.BLACK);
+        UITheme.styleSuccessButton(btnRegister);
         btnRegister.setPreferredSize(new Dimension(120, 35));
-        btnRegister.setFocusPainted(false);
 
         JButton btnBack = new JButton("Quay lại Đăng Nhập");
-        btnBack.setContentAreaFilled(false);
-        btnBack.setBorderPainted(false);
-        btnBack.setForeground(Color.BLUE);
-        btnBack.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        UITheme.styleGhostButton(btnBack);
 
         btnRegister.addActionListener(e -> {
             String username = txtUsername.getText().trim();
@@ -124,32 +133,28 @@ public class RegisterPanel extends JPanel {
             Role role = (Role) cbRole.getSelectedItem();
 
             if (username.isEmpty() || email.isEmpty() || password.isEmpty() || fullName.isEmpty()) {
-                JOptionPane.showMessageDialog(frame, "Vui lòng nhập đầy đủ thông tin!", "Lỗi",
-                        JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.error(frame, "Lỗi", "Vui lòng nhập đầy đủ thông tin!");
                 return;
             }
 
             if (!UserValidator.isValidEmail(email)) {
-                JOptionPane.showMessageDialog(frame, "Email không hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.error(frame, "Lỗi", "Email không hợp lệ!");
                 return;
             }
 
             if (!password.equals(confirmPassword)) {
-                JOptionPane.showMessageDialog(frame, "Mật khẩu nhập lại không khớp!", "Lỗi",
-                        JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.error(frame, "Lỗi", "Mật khẩu nhập lại không khớp!");
                 return;
             }
 
             if (!UserValidator.isValidPassword(password)) {
-                JOptionPane.showMessageDialog(frame, "Password cần ít nhất 6 ký tự, gồm chữ và số!", "Lỗi",
-                        JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.error(frame, "Lỗi", "Password cần ít nhất 6 ký tự, gồm chữ và số!");
                 return;
             }
 
             String result = controller.registerGUI(username, password, fullName, email, role);
             if (result.toLowerCase().contains("thành công") || result.toLowerCase().contains("success")) {
-                JOptionPane.showMessageDialog(frame, "Đăng ký thành công!\nVui lòng đăng nhập lại.", "Thành công",
-                        JOptionPane.INFORMATION_MESSAGE);
+                NotificationUtil.success(frame, "Thành công", "Đăng ký thành công!\nVui lòng đăng nhập lại.");
                 txtUsername.setText("");
                 txtFullName.setText("");
                 txtEmail.setText("");
@@ -157,7 +162,7 @@ public class RegisterPanel extends JPanel {
                 txtConfirmPassword.setText("");
                 frame.showLogin();
             } else {
-                JOptionPane.showMessageDialog(frame, result, "Thông báo lỗi", JOptionPane.WARNING_MESSAGE);
+                NotificationUtil.warning(frame, "Thông báo lỗi", result);
             }
         });
 

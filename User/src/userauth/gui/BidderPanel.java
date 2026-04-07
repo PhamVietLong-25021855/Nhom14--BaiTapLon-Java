@@ -23,23 +23,41 @@ public class BidderPanel extends JPanel {
         this.frame = frame;
         this.auctionController = auctionController;
         setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
+        setBackground(UITheme.APP_BG);
 
         JLabel lblTitle = new JLabel("TRUNG TÂM ĐẤU GIÁ (BIDDER)", SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 22));
+        lblTitle.setFont(UITheme.sectionTitleFont());
+        lblTitle.setForeground(UITheme.TEXT_PRIMARY);
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(16, 0, 8, 0));
         add(lblTitle, BorderLayout.NORTH);
 
         tableModel = new DefaultTableModel(new String[] { "ID", "Tên Sp", "Danh Mục", "Giá Cao Nhất", "Trạng Thái", "Còn Lại (giây)" }, 0) {
             public boolean isCellEditable(int row, int column) { return false; }
         };
+        JPanel tableSection = UITheme.createRoundedSection("Danh sách phiên đấu giá", new BorderLayout());
+        tableSection.setBorder(BorderFactory.createCompoundBorder(
+                tableSection.getBorder(),
+                BorderFactory.createEmptyBorder(0, 12, 0, 12)
+        ));
         table = new JTable(tableModel);
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        UITheme.styleTable(table);
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.getViewport().setBackground(UITheme.CARD_BG);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        tableSection.add(scrollPane, BorderLayout.CENTER);
+        add(tableSection, BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel();
+        bottomPanel.setBackground(UITheme.APP_BG);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 12, 8));
         JButton btnBid = new JButton("Đặt Giá Sp Chọn");
         JButton btnHistory = new JButton("Xem Lịch Sử Bid Sp Chọn");
         JButton btnProfile = new JButton("Đổi Mật Khẩu");
         JButton btnLogout = new JButton("Đăng Xuất");
+        UITheme.stylePrimaryButton(btnBid);
+        UITheme.styleSecondaryButton(btnHistory);
+        UITheme.styleSecondaryButton(btnProfile);
+        UITheme.styleGhostButton(btnLogout);
 
         btnBid.addActionListener(e -> {
             int row = table.getSelectedRow();
@@ -47,16 +65,21 @@ public class BidderPanel extends JPanel {
             int auctionId = (int) tableModel.getValueAt(row, 0);
             double currentBid = (double) tableModel.getValueAt(row, 3);
             
-            String bidStr = JOptionPane.showInputDialog(frame, "Giá hiện tại: " + currentBid + "\nNhập mức giá của bạn:", "Tham gia đấu giá", JOptionPane.QUESTION_MESSAGE);
+            String bidStr = NotificationUtil.input(
+                    frame,
+                    "Tham gia đấu giá",
+                    "Giá hiện tại: " + currentBid + "\nNhập mức giá của bạn:",
+                    ""
+            );
             if (bidStr != null && !bidStr.isEmpty()) {
                 try {
                     double amount = Double.parseDouble(bidStr);
                     String result = auctionController.placeBid(auctionId, currentUser.getId(), amount);
-                    if (result.equals("SUCCESS")) JOptionPane.showMessageDialog(frame, "Thành công!");
-                    else JOptionPane.showMessageDialog(frame, result, "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    if (result.equals("SUCCESS")) NotificationUtil.success(frame, "Thông báo", "Thành công!");
+                    else NotificationUtil.error(frame, "Lỗi", result);
                     refreshData();
                 } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(frame, "Số tiền không hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    NotificationUtil.error(frame, "Lỗi", "Số tiền không hợp lệ!");
                 }
             }
         });
@@ -72,7 +95,7 @@ public class BidderPanel extends JPanel {
                   .append(" - Giá: ").append(b.getAmount())
                   .append(" - Thời gian: ").append(new java.util.Date(b.getTimestamp())).append("\n");
             }
-            JOptionPane.showMessageDialog(frame, sb.toString(), "Chi tiết", JOptionPane.INFORMATION_MESSAGE);
+            NotificationUtil.info(frame, "Chi tiết", sb.toString());
         });
 
         btnProfile.addActionListener(e -> {

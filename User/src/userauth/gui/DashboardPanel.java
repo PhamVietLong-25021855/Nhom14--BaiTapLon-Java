@@ -19,42 +19,55 @@ public class DashboardPanel extends JPanel {
         this.frame = frame;
         this.controller = controller;
         setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
+        setBackground(UITheme.APP_BG);
 
         JLabel lblTitle = new JLabel("HỆ THỐNG QUẢN TRỊ ADMIN", SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 22));
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+        lblTitle.setFont(UITheme.sectionTitleFont());
+        lblTitle.setForeground(UITheme.TEXT_PRIMARY);
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(16, 0, 10, 0));
         add(lblTitle, BorderLayout.NORTH);
 
         tableModel = new DefaultTableModel(new String[] { "ID", "Username", "Họ Tên", "Email", "Role", "Trạng Thái" }, 0) {
             public boolean isCellEditable(int row, int column) { return false; }
         };
 
+        JPanel tableSection = UITheme.createRoundedSection("Danh sách tài khoản", new BorderLayout());
+        tableSection.setBorder(BorderFactory.createCompoundBorder(
+                tableSection.getBorder(),
+                BorderFactory.createEmptyBorder(0, 12, 0, 12)
+        ));
         table = new JTable(tableModel);
-        table.setRowHeight(25);
+        UITheme.styleTable(table);
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        add(scrollPane, BorderLayout.CENTER);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(UITheme.CARD_BG);
+        tableSection.add(scrollPane, BorderLayout.CENTER);
+        add(tableSection, BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel();
+        bottomPanel.setBackground(UITheme.APP_BG);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(8, 10, 16, 10));
         
         JButton btnToggleStatus = new JButton("Khóa/Mở Khóa Tài Khoản");
         JButton btnChangePass = new JButton("Đổi Mật Khẩu");
         JButton btnLogout = new JButton("Đăng Xuất");
+        UITheme.stylePrimaryButton(btnToggleStatus);
+        UITheme.styleSecondaryButton(btnChangePass);
+        UITheme.styleGhostButton(btnLogout);
 
         btnToggleStatus.addActionListener(e -> {
             int row = table.getSelectedRow();
             if (row < 0) {
-                JOptionPane.showMessageDialog(frame, "Hãy chọn một tài khoản.");
+                NotificationUtil.warning(frame, "Thông báo", "Hãy chọn một tài khoản.");
                 return;
             }
             int targetId = (int) tableModel.getValueAt(row, 0);
             String result = controller.toggleUserStatus(currentUser.getUsername(), targetId);
             if (result.equals("SUCCESS")) {
-                JOptionPane.showMessageDialog(frame, "Cập nhật trạng thái thành công!");
+                NotificationUtil.success(frame, "Thành công", "Cập nhật trạng thái thành công!");
                 refreshData();
             } else {
-                JOptionPane.showMessageDialog(frame, result, "Lỗi", JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.error(frame, "Lỗi", result);
             }
         });
 

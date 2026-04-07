@@ -32,12 +32,13 @@ public class AuthFrame extends JFrame {
 
         setTitle("Hệ Thống Đấu Giá Sản Phẩm");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(500, 600);
+        setSize(560, 640);
         setLocationRelativeTo(null);
         setResizable(false);
 
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
+        mainPanel.setBackground(UITheme.APP_BG);
 
         loginPanel = new LoginPanel(this, authController);
         registerPanel = new RegisterPanel(this, authController);
@@ -55,13 +56,13 @@ public class AuthFrame extends JFrame {
     }
 
     public void showLogin() {
-        setSize(450, 500);
+        setSize(560, 640);
         setLocationRelativeTo(null);
         cardLayout.show(mainPanel, "LOGIN");
     }
 
     public void showRegister() {
-        setSize(520, 680);
+        setSize(620, 760);
         setLocationRelativeTo(null);
         cardLayout.show(mainPanel, "REGISTER");
     }
@@ -69,21 +70,21 @@ public class AuthFrame extends JFrame {
     public void showRoleDashboard(User user) {
         switch(user.getRole()) {
             case ADMIN:
-                setSize(600, 500);
+                setSize(900, 620);
                 setLocationRelativeTo(null);
                 adminDashboard.setUser(user);
                 adminDashboard.refreshData();
                 cardLayout.show(mainPanel, "ADMIN");
                 break;
             case SELLER:
-                setSize(700, 600);
+                setSize(1040, 700);
                 setLocationRelativeTo(null);
                 sellerPanel.setUser(user);
                 sellerPanel.refreshData();
                 cardLayout.show(mainPanel, "SELLER");
                 break;
             case BIDDER:
-                setSize(700, 500);
+                setSize(980, 640);
                 setLocationRelativeTo(null);
                 bidderPanel.setUser(user);
                 bidderPanel.refreshData();
@@ -104,14 +105,14 @@ public class AuthFrame extends JFrame {
             String oldPass = new String(pfOld.getPassword());
             String newPass = new String(pfNew.getPassword());
             if(oldPass.isEmpty() || newPass.isEmpty()) {
-                 JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ mật khẩu!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+                 NotificationUtil.warning(this, "Lỗi", "Vui lòng nhập đầy đủ mật khẩu!");
                  return;
             }
             String result = authController.changePassword(user.getUsername(), oldPass, newPass);
             if ("SUCCESS".equals(result)) {
-                JOptionPane.showMessageDialog(this, "Đổi mật khẩu thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                NotificationUtil.success(this, "Thông báo", "Đổi mật khẩu thành công!");
             } else {
-                JOptionPane.showMessageDialog(this, result, "Lỗi", JOptionPane.ERROR_MESSAGE);
+                NotificationUtil.error(this, "Lỗi", result);
             }
         }
     }
