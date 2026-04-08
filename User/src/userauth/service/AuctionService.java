@@ -157,4 +157,37 @@ public class AuctionService {
         item.setUpdatedAt(System.currentTimeMillis());
         auctionDAO.updateAuction(item);
     }
+
+    public void refreshAuctionStatuses() {
+        long now = System.currentTimeMillis();
+        for (AuctionItem item : auctionDAO.findAllAuctions()) {
+            AuctionStatus currentStatus = item.getStatus();
+
+            // Bỏ qua nếu đã kết thúc, đã thanh toán hoặc đã hủy
+            if (currentStatus == AuctionStatus.FINISHED ||
+                currentStatus == AuctionStatus.PAID ||
+                currentStatus == AuctionStatus.CANCELED) {
+                continue;
+            }
+
+            // Chuyển sang RUNNING khi đến thời gian bắt đầu
+            if (currentStatus == AuctionStatus.OPEN &&
+                now >= item.getStartTime() &&
+                now < item.getEndTime()) {
+                item.setStatus(AuctionStatus.RUNNING);
+                item.setUpdatedAt(now);
+                auctionDAO.updateAuction(item);
+                continue;
+            }
+
+            // Chuyển sang FINISHED khi đã quá thời gian kết thúc
+            if ((currentStatus == AuctionStatus.OPEN || currentStatus == AuctionStatus.RUNNING) &&
+                now >= item.getEndTime()) {
+                item.setStatus(AuctionStatus.FINISHED);
+                item.setEndTime(now);
+                item.setUpdatedAt(now);
+                auctionDAO.updateAuction(item);
+            }
+        }
+    }
 }

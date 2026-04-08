@@ -23,7 +23,7 @@ public class Main {
         AuctionService auctionService = new AuctionService(auctionDAO);
         AuctionController auctionController = new AuctionController(auctionService);
 
-        userauth.service.AuctionScheduler scheduler = new userauth.service.AuctionScheduler(auctionDAO);
+        userauth.service.AuctionScheduler scheduler = new userauth.service.AuctionScheduler(auctionService);
         scheduler.start();
 
         // Chạy Java Swing trên Event Dispatch Thread (Best Practice)
