@@ -1,176 +1,145 @@
 package userauth.gui;
 
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import userauth.controller.AuthController;
 import userauth.model.Role;
 import userauth.validation.UserValidator;
 
-import javax.swing.*;
-import java.awt.*;
+public class RegisterPanel extends BorderPane {
+    private final AuthFrame frame;
+    private final AuthController controller;
 
-public class RegisterPanel extends JPanel {
-    private AuthFrame frame;
-    private AuthController controller;
-
-    private JTextField txtUsername;
-    private JTextField txtEmail;
-    private JTextField txtFullName;
-    private JPasswordField txtPassword;
-    private JPasswordField txtConfirmPassword;
-    private JComboBox<Role> cbRole;
+    private final TextField txtUsername;
+    private final TextField txtEmail;
+    private final TextField txtFullName;
+    private final PasswordField txtPassword;
+    private final PasswordField txtConfirmPassword;
+    private final ComboBox<Role> cbRole;
 
     public RegisterPanel(AuthFrame frame, AuthController controller) {
         this.frame = frame;
         this.controller = controller;
-        setLayout(new BorderLayout());
-        setBackground(UITheme.APP_BG);
 
-        JLabel lblTitle = new JLabel("ĐĂNG KÝ TÀI KHOẢN", SwingConstants.CENTER);
-        lblTitle.setFont(UITheme.sectionTitleFont());
-        lblTitle.setForeground(UITheme.TEXT_PRIMARY);
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(20, 0, 6, 0));
-        JLabel lblSub = new JLabel("Tạo tài khoản nhanh chóng và bảo mật", SwingConstants.CENTER);
-        lblSub.setFont(UITheme.bodyFont());
-        lblSub.setForeground(Color.BLACK);
-        lblSub.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(UITheme.APP_BG);
-        header.add(lblTitle, BorderLayout.NORTH);
-        header.add(lblSub, BorderLayout.CENTER);
-        add(header, BorderLayout.NORTH);
+        UITheme.stylePage(this);
 
-        JPanel registerSection = UITheme.createRoundedSection("Thông tin tài khoản", new BorderLayout());
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(4, 12, 4, 12);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1;
+        HBox content = new HBox(18);
+        content.getChildren().add(UITheme.createHero(
+                "TAO TAI KHOAN",
+                "Hoan tat thong tin ben duoi de tham gia he thong dau gia ngay hom nay."
+        ));
 
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        JLabel lblUsername = new JLabel("Username:");
-        lblUsername.setFont(UITheme.labelFont());
-        lblUsername.setForeground(UITheme.TEXT_SECONDARY);
-        formPanel.add(lblUsername, gbc);
-        txtUsername = new JTextField(20);
+        BorderPane registerCard = UITheme.createSection("DANG KY TAI KHOAN");
+        registerCard.setMaxWidth(520);
+
+        VBox form = new VBox(10);
+
+        Button btnBackTop = new Button("QUAY VE DANG NHAP");
+        UITheme.styleGhostButton(btnBackTop);
+
+        txtUsername = new TextField();
+        txtFullName = new TextField();
+        txtEmail = new TextField();
+        txtPassword = new PasswordField();
+        txtConfirmPassword = new PasswordField();
+        cbRole = new ComboBox<>();
+        cbRole.getItems().addAll(Role.BIDDER, Role.SELLER, Role.ADMIN);
+        cbRole.getSelectionModel().select(Role.BIDDER);
+
         UITheme.styleTextField(txtUsername);
-        gbc.gridy = 1;
-        formPanel.add(txtUsername, gbc);
-
-        gbc.gridy = 2;
-        JLabel lblFullName = new JLabel("Họ tên:");
-        lblFullName.setFont(UITheme.labelFont());
-        lblFullName.setForeground(UITheme.TEXT_SECONDARY);
-        formPanel.add(lblFullName, gbc);
-        txtFullName = new JTextField(20);
         UITheme.styleTextField(txtFullName);
-        gbc.gridy = 3;
-        formPanel.add(txtFullName, gbc);
-
-        gbc.gridy = 4;
-        JLabel lblEmail = new JLabel("Email:");
-        lblEmail.setFont(UITheme.labelFont());
-        lblEmail.setForeground(UITheme.TEXT_SECONDARY);
-        formPanel.add(lblEmail, gbc);
-        txtEmail = new JTextField(20);
         UITheme.styleTextField(txtEmail);
-        gbc.gridy = 5;
-        formPanel.add(txtEmail, gbc);
-
-        gbc.gridy = 6;
-        JLabel lblPassword = new JLabel("Password:");
-        lblPassword.setFont(UITheme.labelFont());
-        lblPassword.setForeground(UITheme.TEXT_SECONDARY);
-        formPanel.add(lblPassword, gbc);
-        txtPassword = new JPasswordField(20);
         UITheme.styleTextField(txtPassword);
-        gbc.gridy = 7;
-        formPanel.add(txtPassword, gbc);
-
-        gbc.gridy = 8;
-        JLabel lblConfirmPassword = new JLabel("Nhập lại Password:");
-        lblConfirmPassword.setFont(UITheme.labelFont());
-        lblConfirmPassword.setForeground(UITheme.TEXT_SECONDARY);
-        formPanel.add(lblConfirmPassword, gbc);
-        txtConfirmPassword = new JPasswordField(20);
         UITheme.styleTextField(txtConfirmPassword);
-        gbc.gridy = 9;
-        formPanel.add(txtConfirmPassword, gbc);
-
-        gbc.gridy = 10;
-        JLabel lblRole = new JLabel("Vai trò (Role):");
-        lblRole.setFont(UITheme.labelFont());
-        lblRole.setForeground(UITheme.TEXT_SECONDARY);
-        formPanel.add(lblRole, gbc);
-        cbRole = new JComboBox<>(new Role[] { Role.BIDDER, Role.SELLER, Role.ADMIN });
         UITheme.styleComboBox(cbRole);
-        gbc.gridy = 11;
-        formPanel.add(cbRole, gbc);
-        registerSection.add(formPanel, BorderLayout.CENTER);
 
-        JPanel wrapper = new JPanel(new GridBagLayout());
-        wrapper.setBackground(UITheme.APP_BG);
-        wrapper.add(registerSection);
-        add(wrapper, BorderLayout.CENTER);
-
-        JPanel btnPanel = new JPanel(new FlowLayout());
-        btnPanel.setBackground(UITheme.APP_BG);
-        btnPanel.setBorder(BorderFactory.createEmptyBorder(8, 0, 24, 0));
-
-        JButton btnRegister = new JButton("Đăng Ký");
+        Button btnRegister = new Button("DANG KY");
+        btnRegister.setPrefWidth(130);
         UITheme.styleSuccessButton(btnRegister);
-        btnRegister.setPreferredSize(new Dimension(120, 35));
 
-        JButton btnBack = new JButton("Quay lại Đăng Nhập");
-        UITheme.styleGhostButton(btnBack);
+        form.getChildren().addAll(
+                btnBackTop,
+                UITheme.createFieldLabel("Ten dang nhap"),
+                txtUsername,
+                UITheme.createFieldLabel("Ho va ten"),
+                txtFullName,
+                UITheme.createFieldLabel("Email"),
+                txtEmail,
+                UITheme.createFieldLabel("Mat khau"),
+                txtPassword,
+                UITheme.createFieldLabel("Nhap lai mat khau"),
+                txtConfirmPassword,
+                UITheme.createFieldLabel("Vai tro"),
+                cbRole,
+                btnRegister
+        );
+        registerCard.setCenter(form);
 
-        btnRegister.addActionListener(e -> {
-            String username = txtUsername.getText().trim();
-            String fullName = txtFullName.getText().trim();
-            String email = txtEmail.getText().trim();
-            String password = new String(txtPassword.getPassword());
-            String confirmPassword = new String(txtConfirmPassword.getPassword());
-            Role role = (Role) cbRole.getSelectedItem();
+        VBox rightBox = new VBox(registerCard);
+        rightBox.setAlignment(Pos.CENTER);
+        rightBox.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(content.getChildren().get(0), Priority.ALWAYS);
+        HBox.setHgrow(rightBox, Priority.ALWAYS);
+        content.getChildren().add(rightBox);
+        setCenter(content);
 
-            if (username.isEmpty() || email.isEmpty() || password.isEmpty() || fullName.isEmpty()) {
-                NotificationUtil.error(frame, "Lỗi", "Vui lòng nhập đầy đủ thông tin!");
-                return;
-            }
+        btnRegister.setOnAction(event -> doRegister());
+        btnBackTop.setOnAction(event -> frame.showLogin());
+    }
 
-            if (!UserValidator.isValidEmail(email)) {
-                NotificationUtil.error(frame, "Lỗi", "Email không hợp lệ!");
-                return;
-            }
+    private void doRegister() {
+        String username = txtUsername.getText().trim();
+        String fullName = txtFullName.getText().trim();
+        String email = txtEmail.getText().trim();
+        String password = txtPassword.getText();
+        String confirmPassword = txtConfirmPassword.getText();
+        Role role = cbRole.getValue();
 
-            if (!password.equals(confirmPassword)) {
-                NotificationUtil.error(frame, "Lỗi", "Mật khẩu nhập lại không khớp!");
-                return;
-            }
+        if (username.isEmpty() || email.isEmpty() || password.isEmpty() || fullName.isEmpty()) {
+            NotificationUtil.error(frame.getWindow(), "LOI", "Vui long nhap day du thong tin.");
+            return;
+        }
 
-            if (!UserValidator.isValidPassword(password)) {
-                NotificationUtil.error(frame, "Lỗi", "Password cần ít nhất 6 ký tự, gồm chữ và số!");
-                return;
-            }
+        if (!UserValidator.isValidEmail(email)) {
+            NotificationUtil.error(frame.getWindow(), "LOI", "Email khong hop le.");
+            return;
+        }
 
-            String result = controller.registerGUI(username, password, fullName, email, role);
-            if (result.toLowerCase().contains("thành công") || result.toLowerCase().contains("success")) {
-                NotificationUtil.success(frame, "Thành công", "Đăng ký thành công!\nVui lòng đăng nhập lại.");
-                txtUsername.setText("");
-                txtFullName.setText("");
-                txtEmail.setText("");
-                txtPassword.setText("");
-                txtConfirmPassword.setText("");
-                frame.showLogin();
-            } else {
-                NotificationUtil.warning(frame, "Thông báo lỗi", result);
-            }
-        });
+        if (!password.equals(confirmPassword)) {
+            NotificationUtil.error(frame.getWindow(), "LOI", "Mat khau nhap lai khong khop.");
+            return;
+        }
 
-        btnBack.addActionListener(e -> frame.showLogin());
+        if (!UserValidator.isValidPassword(password)) {
+            NotificationUtil.error(frame.getWindow(), "LOI", "Mat khau can it nhat 6 ky tu, gom chu va so.");
+            return;
+        }
 
-        btnPanel.add(btnRegister);
-        btnPanel.add(btnBack);
+        String result = controller.registerGUI(username, password, fullName, email, role);
+        if ("SUCCESS".equals(result) || result.toLowerCase().contains("thanh cong")) {
+            NotificationUtil.success(frame.getWindow(), "THANH CONG", "Dang ky thanh cong. Vui long dang nhap.");
+            clearInputs();
+            frame.showLogin();
+        } else {
+            NotificationUtil.warning(frame.getWindow(), "THONG BAO", result);
+        }
+    }
 
-        add(btnPanel, BorderLayout.SOUTH);
+    private void clearInputs() {
+        txtUsername.clear();
+        txtFullName.clear();
+        txtEmail.clear();
+        txtPassword.clear();
+        txtConfirmPassword.clear();
+        cbRole.getSelectionModel().select(Role.BIDDER);
     }
 }

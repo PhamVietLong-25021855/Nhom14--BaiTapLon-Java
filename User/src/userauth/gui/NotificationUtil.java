@@ -1,141 +1,160 @@
 package userauth.gui;
 
-import javax.swing.*;
-import javax.swing.border.Border;
-import java.awt.*;
+import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.DialogPane;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.stage.Modality;
+import javafx.stage.Window;
+
+import java.util.Optional;
 
 public final class NotificationUtil {
     private NotificationUtil() {
     }
 
-    public static void success(Component parent, String title, String message) {
-        show(parent, title, message, UITheme.SUCCESS);
+    public static void success(Window owner, String title, String message) {
+        show(Alert.AlertType.INFORMATION, owner, title, message, UITheme.SUCCESS);
     }
 
-    public static void info(Component parent, String title, String message) {
-        show(parent, title, message, UITheme.PRIMARY);
+    public static void info(Window owner, String title, String message) {
+        show(Alert.AlertType.INFORMATION, owner, title, message, UITheme.PRIMARY);
     }
 
-    public static void warning(Component parent, String title, String message) {
-        show(parent, title, message, UITheme.WARNING);
+    public static void warning(Window owner, String title, String message) {
+        show(Alert.AlertType.WARNING, owner, title, message, UITheme.WARNING);
     }
 
-    public static void error(Component parent, String title, String message) {
-        show(parent, title, message, UITheme.DANGER);
+    public static void error(Window owner, String title, String message) {
+        show(Alert.AlertType.ERROR, owner, title, message, UITheme.DANGER);
     }
 
-    public static boolean confirm(Component parent, String title, String message) {
-        JPanel panel = createDepthPanel(title, message, UITheme.WARNING);
-        int choice = JOptionPane.showConfirmDialog(
-                parent,
-                panel,
-                title,
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.PLAIN_MESSAGE
-        );
-        return choice == JOptionPane.YES_OPTION;
+    public static boolean confirm(Window owner, String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        configureDialog(alert.getDialogPane(), title, message, UITheme.WARNING);
+        initOwner(alert, owner);
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
     }
 
-    public static String input(Component parent, String title, String message, String defaultValue) {
-        JPanel panel = createDepthPanel(title, message, UITheme.PRIMARY);
-        JTextField input = new JTextField(defaultValue == null ? "" : defaultValue, 20);
+    public static String input(Window owner, String title, String message, String defaultValue) {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle(title);
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        if (owner != null) {
+            dialog.initOwner(owner);
+        }
+
+        DialogPane pane = dialog.getDialogPane();
+        pane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        TextField input = new TextField(defaultValue == null ? "" : defaultValue);
         UITheme.styleTextField(input);
 
-        JPanel wrap = new JPanel(new BorderLayout(0, 12));
-        wrap.setOpaque(false);
-        wrap.add(panel, BorderLayout.CENTER);
-        wrap.add(input, BorderLayout.SOUTH);
+        Label text = new Label(message);
+        text.setWrapText(true);
+        text.setTextFill(UITheme.TEXT_SECONDARY);
+        text.setFont(UITheme.bodyFont());
 
-        int choice = JOptionPane.showConfirmDialog(
-                parent,
-                wrap,
-                title,
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE
+        VBox content = new VBox(12, text, input);
+        content.setPadding(new Insets(0));
+        configureDialog(pane, title, content, UITheme.PRIMARY);
+
+        Button okButton = (Button) pane.lookupButton(ButtonType.OK);
+        Button cancelButton = (Button) pane.lookupButton(ButtonType.CANCEL);
+        UITheme.stylePrimaryButton(okButton);
+        UITheme.styleGhostButton(cancelButton);
+
+        dialog.setResultConverter(buttonType -> buttonType == ButtonType.OK ? input.getText().trim() : null);
+        return dialog.showAndWait().orElse(null);
+    }
+
+    private static void show(Alert.AlertType type, Window owner, String title, String message, Color accent) {
+        Alert alert = new Alert(type);
+        configureDialog(alert.getDialogPane(), title, message, accent);
+        initOwner(alert, owner);
+        alert.showAndWait();
+    }
+
+    private static void initOwner(Dialog<?> dialog, Window owner) {
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        if (owner != null) {
+            dialog.initOwner(owner);
+        }
+    }
+
+    private static void configureDialog(DialogPane pane, String title, String message, Color accent) {
+        Label label = new Label(message);
+        label.setWrapText(true);
+        label.setTextFill(UITheme.TEXT_SECONDARY);
+        label.setFont(UITheme.bodyFont());
+        configureDialog(pane, title, label, accent);
+    }
+
+    private static void configureDialog(DialogPane pane, String title, VBox content, Color accent) {
+        pane.setHeader(null);
+        pane.setContent(content);
+        pane.setGraphic(null);
+        pane.setPadding(new Insets(18));
+        pane.setBackground(UITheme.createSection("").getBackground());
+        pane.setBorder(UITheme.createSection("").getBorder());
+
+        Label titleLabel = new Label(title);
+        titleLabel.setFont(UITheme.sectionTitleFont());
+        titleLabel.setTextFill(UITheme.TEXT_PRIMARY);
+
+        VBox wrapper = new VBox(14, titleLabel, content);
+        wrapper.setPadding(new Insets(6, 4, 6, 4));
+        pane.setContent(wrapper);
+        pane.setStyle(
+                "-fx-background-color: " + UITheme.toRgb(UITheme.CARD_BG) + ";" +
+                "-fx-border-color: " + UITheme.toRgb(accent) + ";" +
+                "-fx-border-radius: 18;" +
+                "-fx-background-radius: 18;"
         );
-        if (choice == JOptionPane.OK_OPTION) {
-            return input.getText().trim();
-        }
-        return null;
+        pane.lookupButton(ButtonType.OK);
+        pane.lookupButton(ButtonType.CANCEL);
+        styleButtons(pane);
     }
 
-    private static void show(Component parent, String title, String message, Color accent) {
-        JPanel panel = createDepthPanel(title, message, accent);
-        JOptionPane.showMessageDialog(parent, panel, title, JOptionPane.PLAIN_MESSAGE);
-    }
+    private static void configureDialog(DialogPane pane, String title, javafx.scene.Node content, Color accent) {
+        pane.setHeader(null);
+        pane.setGraphic(null);
 
-    private static JPanel createDepthPanel(String title, String message, Color accent) {
-        JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(Color.WHITE);
-        root.setBorder(createDepthBorder(accent));
+        Label titleLabel = new Label(title);
+        titleLabel.setFont(UITheme.sectionTitleFont());
+        titleLabel.setTextFill(UITheme.TEXT_PRIMARY);
 
-        JPanel bar = new GradientBar(accent);
-        bar.setPreferredSize(new Dimension(320, 8));
-        root.add(bar, BorderLayout.NORTH);
-
-        JPanel body = new JPanel(new BorderLayout(0, 8));
-        body.setOpaque(false);
-        body.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
-
-        JLabel lblTitle = new JLabel(title);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblTitle.setForeground(Color.BLACK);
-
-        JTextArea txt = new JTextArea(message);
-        txt.setEditable(false);
-        txt.setLineWrap(true);
-        txt.setWrapStyleWord(true);
-        txt.setOpaque(false);
-        txt.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        txt.setForeground(Color.BLACK);
-
-        body.add(lblTitle, BorderLayout.NORTH);
-        body.add(txt, BorderLayout.CENTER);
-        root.add(body, BorderLayout.CENTER);
-        return root;
-    }
-
-    private static Border createDepthBorder(Color accent) {
-        return BorderFactory.createCompoundBorder(
-                BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, 0, 4, 0, fade(accent, 0.35f)),
-                        BorderFactory.createLineBorder(fade(accent, 0.6f), 1, true)
-                ),
-                BorderFactory.createEmptyBorder(0, 0, 2, 0)
+        VBox wrapper = new VBox(14, titleLabel, content);
+        wrapper.setPadding(new Insets(6, 4, 6, 4));
+        pane.setContent(wrapper);
+        pane.setStyle(
+                "-fx-background-color: " + UITheme.toRgb(UITheme.CARD_BG) + ";" +
+                "-fx-border-color: " + UITheme.toRgb(accent) + ";" +
+                "-fx-border-radius: 18;" +
+                "-fx-background-radius: 18;"
         );
+        styleButtons(pane);
     }
 
-    private static Color fade(Color color, float alpha) {
-        return new Color(color.getRed(), color.getGreen(), color.getBlue(), Math.round(alpha * 255));
-    }
-
-    private static class GradientBar extends JPanel {
-        private final Color accent;
-
-        private GradientBar(Color accent) {
-            this.accent = accent;
-            setOpaque(false);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            GradientPaint gp = new GradientPaint(
-                    0, 0, brighten(accent),
-                    getWidth(), 0, accent
-            );
-            g2.setPaint(gp);
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-            g2.dispose();
-        }
-
-        private Color brighten(Color color) {
-            return new Color(
-                    Math.min(255, color.getRed() + 35),
-                    Math.min(255, color.getGreen() + 35),
-                    Math.min(255, color.getBlue() + 35)
-            );
-        }
+    private static void styleButtons(DialogPane pane) {
+        pane.getButtonTypes().forEach(buttonType -> {
+            Button button = (Button) pane.lookupButton(buttonType);
+            if (button == null) {
+                return;
+            }
+            ButtonBar.ButtonData data = buttonType.getButtonData();
+            if (data == ButtonBar.ButtonData.OK_DONE || data == ButtonBar.ButtonData.YES) {
+                UITheme.stylePrimaryButton(button);
+            } else {
+                UITheme.styleGhostButton(button);
+            }
+        });
     }
 }

@@ -1,258 +1,283 @@
 package userauth.gui;
 
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.collections.FXCollections;
+import javafx.geometry.Insets;
+import javafx.scene.control.Button;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import userauth.controller.AuctionController;
 import userauth.model.AuctionItem;
 import userauth.model.User;
 
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
 import java.util.List;
 
-public class SellerPanel extends JPanel {
-    private AuthFrame frame;
-    private AuctionController auctionController;
+public class SellerPanel extends BorderPane {
+    private final AuthFrame frame;
+    private final AuctionController auctionController;
     private User currentUser;
 
-    private JTable table;
-    private DefaultTableModel tableModel;
+    private final TableView<AuctionItem> table;
+    private final TextField txtName;
+    private final TextArea txtDesc;
+    private final TextField txtPrice;
+    private final TextField txtCategory;
+    private final Spinner<Integer> spinDuration;
+    private final Button btnCreate;
 
-    private JTextField txtName, txtDesc, txtPrice, txtCategory;
-    private JSpinner spinDuration;
-    private JButton btnCreate, btnClear;
-    
     private int editingId = -1;
 
     public SellerPanel(AuthFrame frame, AuctionController auctionController) {
         this.frame = frame;
         this.auctionController = auctionController;
-        setLayout(new BorderLayout());
-        setBackground(UITheme.APP_BG);
 
-        JLabel lblTitle = new JLabel("BẢNG ĐIỀU KHIỂN NGƯỜI BÁN", SwingConstants.CENTER);
-        lblTitle.setFont(UITheme.sectionTitleFont());
-        lblTitle.setForeground(UITheme.TEXT_PRIMARY);
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(14, 0, 4, 0));
+        UITheme.stylePage(this);
+        setTop(UITheme.createHero(
+                "TRUNG TAM NGUOI BAN",
+                "Tao, cap nhat va quan ly cac phien dau gia cua ban theo thoi gian thuc."
+        ));
+        BorderPane.setMargin(getTop(), new Insets(0, 0, 14, 0));
 
-        JLabel lblHint = new JLabel("Tạo, chỉnh sửa và quản lý phiên đấu giá một cách trực quan", SwingConstants.CENTER);
-        lblHint.setFont(UITheme.bodyFont());
-        lblHint.setForeground(Color.BLACK);
-        lblHint.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        BorderPane formSection = UITheme.createSection("TAO PHIEN DAU GIA");
+        GridPane form = new GridPane();
+        form.setHgap(12);
+        form.setVgap(10);
 
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(UITheme.APP_BG);
-        headerPanel.add(lblTitle, BorderLayout.NORTH);
-        headerPanel.add(lblHint, BorderLayout.CENTER);
-        add(headerPanel, BorderLayout.NORTH);
+        txtName = new TextField();
+        txtCategory = new TextField();
+        txtDesc = new TextArea();
+        txtPrice = new TextField();
+        spinDuration = new Spinner<>(1, 99999, 30);
+        btnCreate = new Button("TAO MOI");
+        Button btnClear = new Button("HUY CAP NHAT");
 
-        JPanel centerPanel = new JPanel(new BorderLayout(0, 10));
-        centerPanel.setBackground(UITheme.APP_BG);
-        centerPanel.setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 14));
-
-        JPanel formSection = UITheme.createRoundedSection("Thông tin phiên đấu giá", new BorderLayout());
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(6, 6, 6, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1;
-
-        gbc.gridx = 0; gbc.gridy = 0; formPanel.add(createFormLabel("Tên sản phẩm"), gbc);
-        txtName = new JTextField(15); gbc.gridx = 1; formPanel.add(txtName, gbc);
-
-        gbc.gridx = 2; gbc.gridy = 0; formPanel.add(createFormLabel("Danh mục"), gbc);
-        txtCategory = new JTextField(15); gbc.gridx = 3; formPanel.add(txtCategory, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 1; formPanel.add(createFormLabel("Mô tả"), gbc);
-        txtDesc = new JTextField(15); gbc.gridx = 1; formPanel.add(txtDesc, gbc);
-
-        gbc.gridx = 2; gbc.gridy = 1; formPanel.add(createFormLabel("Giá khởi điểm"), gbc);
-        txtPrice = new JTextField(15); gbc.gridx = 3; formPanel.add(txtPrice, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 2; formPanel.add(createFormLabel("Thời gian đấu giá (phút)"), gbc);
-        spinDuration = new JSpinner(new SpinnerNumberModel(30, 1, 99999, 1));
-        gbc.gridx = 1; formPanel.add(spinDuration, gbc);
         UITheme.styleTextField(txtName);
         UITheme.styleTextField(txtCategory);
-        UITheme.styleTextField(txtDesc);
+        UITheme.styleTextArea(txtDesc);
         UITheme.styleTextField(txtPrice);
-        ((JSpinner.DefaultEditor) spinDuration.getEditor()).getTextField().setHorizontalAlignment(JTextField.LEFT);
-        UITheme.styleTextField(((JSpinner.DefaultEditor) spinDuration.getEditor()).getTextField());
-
-        JPanel formBtnBox = new JPanel();
-        formBtnBox.setOpaque(false);
-        btnCreate = new JButton("Tạo Mới / Lưu");
+        UITheme.styleSpinner(spinDuration);
         UITheme.styleSuccessButton(btnCreate);
-        btnClear = new JButton("Hủy Cập Nhật");
         UITheme.styleSecondaryButton(btnClear);
-        formBtnBox.add(btnCreate);
-        formBtnBox.add(btnClear);
-        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 4;
-        gbc.insets = new Insets(10, 6, 2, 6);
-        formPanel.add(formBtnBox, gbc);
-        formSection.add(formPanel, BorderLayout.CENTER);
-        centerPanel.add(formSection, BorderLayout.NORTH);
 
-        JPanel tableSection = UITheme.createRoundedSection("Phiên đấu giá của tôi", new BorderLayout());
-        tableModel = new DefaultTableModel(new String[]{"ID", "Tên Sp", "Danh mục", "Giá K.Điểm", "Giá Hiện Tại", "Trạng thái", "Thời gian (phút)", "Còn lại"}, 0) {
-            public boolean isCellEditable(int r, int c) { return false; }
-        };
-        table = new JTable(tableModel);
+        txtName.setPromptText("Nhap ten san pham");
+        txtCategory.setPromptText("Vi du: Dien tu");
+        txtDesc.setPromptText("Mo ta ngan cho san pham");
+        txtPrice.setPromptText("Gia khoi diem");
+
+        form.add(UITheme.createFieldLabel("Ten san pham"), 0, 0);
+        form.add(txtName, 1, 0);
+        form.add(UITheme.createFieldLabel("Danh muc"), 2, 0);
+        form.add(txtCategory, 3, 0);
+
+        form.add(UITheme.createFieldLabel("Mo ta"), 0, 1);
+        form.add(txtDesc, 1, 1);
+        form.add(UITheme.createFieldLabel("Gia khoi diem"), 2, 1);
+        form.add(txtPrice, 3, 1);
+
+        form.add(UITheme.createFieldLabel("Thoi gian dau gia (phut)"), 0, 2);
+        form.add(spinDuration, 1, 2);
+
+        HBox formActions = new HBox(10, btnCreate, btnClear);
+        form.add(formActions, 0, 3, 4, 1);
+
+        GridPane.setHgrow(txtName, Priority.ALWAYS);
+        GridPane.setHgrow(txtCategory, Priority.ALWAYS);
+        GridPane.setHgrow(txtDesc, Priority.ALWAYS);
+        GridPane.setHgrow(txtPrice, Priority.ALWAYS);
+        formSection.setCenter(form);
+
+        table = new TableView<>();
         UITheme.styleTable(table);
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.getViewport().setBackground(UITheme.CARD_BG);
-        tableSection.add(scrollPane, BorderLayout.CENTER);
-        centerPanel.add(tableSection, BorderLayout.CENTER);
+        buildColumns();
 
-        add(centerPanel, BorderLayout.CENTER);
+        BorderPane tableSection = UITheme.createSection("PHIEN DAU GIA CUA TOI");
+        tableSection.setCenter(table);
 
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setBackground(UITheme.APP_BG);
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(6, 8, 12, 8));
-        JButton btnEdit = new JButton("Sửa Dòng Chọn");
-        JButton btnDelete = new JButton("Xóa/Hủy Dòng Chọn");
-        JButton btnCloseAuction = new JButton("Kết Thúc Sớm");
-        
-        JButton btnLogout = new JButton("Đăng Xuất");
+        Button btnEdit = new Button("SUA DONG CHON");
+        Button btnDelete = new Button("XOA / HUY PHIEN");
+        Button btnCloseAuction = new Button("KET THUC SOM");
+        Button btnLogout = new Button("DANG XUAT");
         UITheme.stylePrimaryButton(btnEdit);
         UITheme.styleSecondaryButton(btnDelete);
         UITheme.styleSecondaryButton(btnCloseAuction);
         UITheme.styleGhostButton(btnLogout);
 
-        bottomPanel.add(btnEdit);
-        bottomPanel.add(btnDelete);
-        bottomPanel.add(btnCloseAuction);
-        bottomPanel.add(btnLogout);
-        add(bottomPanel, BorderLayout.SOUTH);
+        HBox bottomPanel = new HBox(10, btnEdit, btnDelete, btnCloseAuction, btnLogout);
 
-        btnCreate.addActionListener(e -> {
-            try {
-                String name = txtName.getText().trim();
-                String desc = txtDesc.getText().trim();
-                String cat = txtCategory.getText().trim();
-                double price = Double.parseDouble(txtPrice.getText().trim());
-                int durationMinutes = (int) spinDuration.getValue();
-                long start = System.currentTimeMillis();
-                long end = start + (long) durationMinutes * 60 * 1000;
+        VBox body = new VBox(12, formSection, tableSection, bottomPanel);
+        VBox.setVgrow(tableSection, Priority.ALWAYS);
+        setCenter(body);
 
-                String res;
-                if (editingId == -1) {
-                    res = auctionController.createAuction(name, desc, price, start, end, cat, currentUser.getId());
-                } else {
-                    res = auctionController.updateAuction(editingId, currentUser.getId(), name, desc, price, start, end, cat);
-                }
-
-                if (res.equals("SUCCESS")) {
-                    NotificationUtil.success(frame, "Thông báo", "Thành công!");
-                    resetForm();
-                    refreshData();
-                } else {
-                    NotificationUtil.error(frame, "Lỗi", res);
-                }
-            } catch (NumberFormatException ex) {
-                NotificationUtil.error(frame, "Lỗi", "Đơn giá không hợp lệ!");
-            }
-        });
-
-        btnClear.addActionListener(e -> resetForm());
-
-        btnEdit.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row < 0) return;
-            editingId = (int) tableModel.getValueAt(row, 0);
-            txtName.setText((String) tableModel.getValueAt(row, 1));
-            txtCategory.setText((String) tableModel.getValueAt(row, 2));
-            txtPrice.setText(String.valueOf(tableModel.getValueAt(row, 3)));
-            
-            AuctionItem item = auctionController.getAllAuctions().stream().filter(a -> a.getId() == editingId).findFirst().orElse(null);
-            if (item != null) {
-                txtDesc.setText(item.getDescription());
-                // Tính thời gian đấu giá ban đầu (phút)
-                long durationMs = item.getEndTime() - item.getStartTime();
-                int durationMin = (int)(durationMs / 60000);
-                if (durationMin < 1) durationMin = 1;
-                spinDuration.setValue(durationMin);
-            }
-            btnCreate.setText("Lưu Cập Nhật");
-        });
-
-        btnDelete.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row < 0) return;
-            int id = (int) tableModel.getValueAt(row, 0);
-            boolean confirm = NotificationUtil.confirm(frame, "Xác nhận", "Bạn có chắc chắn muốn xóa/hủy phiên này?");
-            if (confirm) {
-                String rep = auctionController.deleteAuction(id, currentUser.getId());
-                if (rep.equals("SUCCESS")) {
-                    NotificationUtil.success(frame, "Thông báo", "Đã xóa/hủy thành công.");
-                    refreshData();
-                } else {
-                    NotificationUtil.error(frame, "Lỗi", rep);
-                }
-            }
-        });
-
-        btnCloseAuction.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row < 0) return;
-            int auctionId = (int) tableModel.getValueAt(row, 0);
-            String r = auctionController.closeAuction(auctionId, currentUser.getId());
-            if (r.equals("SUCCESS")) {
-                NotificationUtil.success(frame, "Thông báo", "Đã kết thúc phiên!");
-                refreshData();
-            } else {
-                NotificationUtil.error(frame, "Lỗi", r);
-            }
-        });
-
-        btnLogout.addActionListener(e -> {
+        btnCreate.setOnAction(event -> saveAuction());
+        btnClear.setOnAction(event -> resetForm());
+        btnEdit.setOnAction(event -> loadSelectedAuctionForEdit());
+        btnDelete.setOnAction(event -> deleteSelectedAuction());
+        btnCloseAuction.setOnAction(event -> closeSelectedAuction());
+        btnLogout.setOnAction(event -> {
             currentUser = null;
             frame.showLogin();
         });
     }
 
-    private void resetForm() {
-        editingId = -1;
-        txtName.setText(""); txtDesc.setText(""); txtPrice.setText(""); txtCategory.setText("");
-        spinDuration.setValue(30);
-        btnCreate.setText("Tạo Mới");
-    }
-
-    private JLabel createFormLabel(String text) {
-        JLabel label = new JLabel(text + ":");
-        label.setFont(UITheme.labelFont());
-        label.setForeground(Color.BLACK);
-        return label;
-    }
-
     public void setUser(User user) {
         this.currentUser = user;
+        resetForm();
     }
 
     public void refreshData() {
-        if (currentUser == null) return;
-        tableModel.setRowCount(0);
-        long now = System.currentTimeMillis();
-        List<AuctionItem> myAuctions = auctionController.getAuctionsBySeller(currentUser.getId());
-        for (AuctionItem a : myAuctions) {
-            long totalMin = (a.getEndTime() - a.getStartTime()) / 60000;
-            String remaining;
-            long remainMs = a.getEndTime() - now;
-            if (remainMs <= 0) {
-                remaining = "Hết giờ";
-            } else {
-                long remainMin = remainMs / 60000;
-                long remainSec = (remainMs % 60000) / 1000;
-                remaining = remainMin + " phút " + remainSec + "s";
-            }
-            tableModel.addRow(new Object[] { 
-                a.getId(), a.getName(), a.getCategory(), 
-                a.getStartPrice(), a.getCurrentHighestBid(),
-                a.getStatus().name(),
-                totalMin + " phút",
-                remaining
-            });
+        if (currentUser == null) {
+            return;
         }
+        List<AuctionItem> myAuctions = auctionController.getAuctionsBySeller(currentUser.getId());
+        table.setItems(FXCollections.observableArrayList(myAuctions));
+    }
+
+    private void saveAuction() {
+        try {
+            String name = txtName.getText().trim();
+            String desc = txtDesc.getText().trim();
+            String cat = txtCategory.getText().trim();
+            double price = Double.parseDouble(txtPrice.getText().trim());
+            int durationMinutes = spinDuration.getValue();
+            long start = System.currentTimeMillis();
+            long end = start + (long) durationMinutes * 60 * 1000;
+
+            String result = editingId == -1
+                    ? auctionController.createAuction(name, desc, price, start, end, cat, currentUser.getId())
+                    : auctionController.updateAuction(editingId, currentUser.getId(), name, desc, price, start, end, cat);
+
+            if ("SUCCESS".equals(result)) {
+                NotificationUtil.success(frame.getWindow(), "THONG BAO", "Luu phien dau gia thanh cong.");
+                resetForm();
+                refreshData();
+            } else {
+                NotificationUtil.error(frame.getWindow(), "LOI", result);
+            }
+        } catch (NumberFormatException ex) {
+            NotificationUtil.error(frame.getWindow(), "LOI", "Gia khoi diem khong hop le.");
+        }
+    }
+
+    private void loadSelectedAuctionForEdit() {
+        AuctionItem item = table.getSelectionModel().getSelectedItem();
+        if (item == null) {
+            NotificationUtil.warning(frame.getWindow(), "THONG BAO", "Hay chon mot phien dau gia.");
+            return;
+        }
+
+        editingId = item.getId();
+        txtName.setText(item.getName());
+        txtCategory.setText(item.getCategory());
+        txtPrice.setText(String.valueOf(item.getStartPrice()));
+        txtDesc.setText(item.getDescription());
+
+        long durationMs = item.getEndTime() - item.getStartTime();
+        int durationMin = (int) Math.max(1, durationMs / 60000);
+        spinDuration.getValueFactory().setValue(durationMin);
+        btnCreate.setText("LUU CAP NHAT");
+    }
+
+    private void deleteSelectedAuction() {
+        AuctionItem item = table.getSelectionModel().getSelectedItem();
+        if (item == null) {
+            NotificationUtil.warning(frame.getWindow(), "THONG BAO", "Hay chon mot phien dau gia.");
+            return;
+        }
+        boolean confirm = NotificationUtil.confirm(frame.getWindow(), "XAC NHAN", "Ban co chac muon xoa hoac huy phien nay?");
+        if (!confirm) {
+            return;
+        }
+        String result = auctionController.deleteAuction(item.getId(), currentUser.getId());
+        if ("SUCCESS".equals(result)) {
+            NotificationUtil.success(frame.getWindow(), "THONG BAO", "Da xoa hoac huy phien thanh cong.");
+            refreshData();
+        } else {
+            NotificationUtil.error(frame.getWindow(), "LOI", result);
+        }
+    }
+
+    private void closeSelectedAuction() {
+        AuctionItem item = table.getSelectionModel().getSelectedItem();
+        if (item == null) {
+            NotificationUtil.warning(frame.getWindow(), "THONG BAO", "Hay chon mot phien dau gia.");
+            return;
+        }
+        String result = auctionController.closeAuction(item.getId(), currentUser.getId());
+        if ("SUCCESS".equals(result)) {
+            NotificationUtil.success(frame.getWindow(), "THONG BAO", "Da ket thuc phien dau gia.");
+            refreshData();
+        } else {
+            NotificationUtil.error(frame.getWindow(), "LOI", result);
+        }
+    }
+
+    private void resetForm() {
+        editingId = -1;
+        txtName.clear();
+        txtDesc.clear();
+        txtPrice.clear();
+        txtCategory.clear();
+        spinDuration.getValueFactory().setValue(30);
+        btnCreate.setText("TAO MOI");
+    }
+
+    private void buildColumns() {
+        TableColumn<AuctionItem, Integer> idColumn = new TableColumn<>("ID");
+        idColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
+        idColumn.setPrefWidth(70);
+
+        TableColumn<AuctionItem, String> nameColumn = new TableColumn<>("Ten SP");
+        nameColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getName()));
+
+        TableColumn<AuctionItem, String> categoryColumn = new TableColumn<>("Danh muc");
+        categoryColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getCategory()));
+
+        TableColumn<AuctionItem, String> startPriceColumn = new TableColumn<>("Gia khoi diem");
+        startPriceColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(UITheme.formatMoney(data.getValue().getStartPrice())));
+
+        TableColumn<AuctionItem, String> currentBidColumn = new TableColumn<>("Gia hien tai");
+        currentBidColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(UITheme.formatMoney(data.getValue().getCurrentHighestBid())));
+
+        TableColumn<AuctionItem, String> statusColumn = new TableColumn<>("Trang thai");
+        statusColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getStatus().name()));
+
+        TableColumn<AuctionItem, String> durationColumn = new TableColumn<>("Thoi gian");
+        durationColumn.setCellValueFactory(data -> {
+            long minutes = Math.max(1, (data.getValue().getEndTime() - data.getValue().getStartTime()) / 60000);
+            return new ReadOnlyStringWrapper(minutes + " phut");
+        });
+
+        TableColumn<AuctionItem, String> remainingColumn = new TableColumn<>("Con lai");
+        remainingColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(formatRemaining(data.getValue())));
+
+        table.getColumns().addAll(
+                idColumn,
+                nameColumn,
+                categoryColumn,
+                startPriceColumn,
+                currentBidColumn,
+                statusColumn,
+                durationColumn,
+                remainingColumn
+        );
+    }
+
+    private String formatRemaining(AuctionItem item) {
+        long remainMs = item.getEndTime() - System.currentTimeMillis();
+        if (remainMs <= 0) {
+            return "Het gio";
+        }
+        long remainMin = remainMs / 60000;
+        long remainSec = (remainMs % 60000) / 1000;
+        return remainMin + " phut " + remainSec + "s";
     }
 }

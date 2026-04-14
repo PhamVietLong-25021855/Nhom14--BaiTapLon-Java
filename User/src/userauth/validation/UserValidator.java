@@ -9,7 +9,7 @@ public class UserValidator {
     public static boolean isValidUsername(String username) {
         return username != null
                 && !username.isEmpty()
-                && username.length() >= 3
+                && username.length() >= 6
                 && username.length() <= 20;
     }
 
