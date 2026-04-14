@@ -1,0 +1,26 @@
+/* 1. The default state of the checkbox 'box' */
+.check-box > .box {
+    -fx-background-color:   #F0F0F0;
+    -fx-background-radius: 3; /* Optional: rounds the corners slightly */
+    -fx-border-color:  #00CCFF;
+    -fx-border-radius: 5
+}
+
+/* 2. The state of the 'box' when the checkbox is selected */
+.check-box:pressed > .box {
+    -fx-background-color: #00CCFF;
+}
+
+/* 3. The color of the actual checkmark (the 'mark') */
+/* This covers both the checked state and the indeterminate (dash) state */
+.check-box:selected > .box > .mark {
+    -fx-background-color:  #00CCFF;
+    /*This SVG path draws two crossing lines (an X)*/
+    -fx-shape: "M10.185,1.411 L8.773,-0.001 L5.092,3.680 L1.411,-0.001 L-0.001,1.411 L3.680,5.092 L-0.001,8.773 L1.411,10.185 L5.092,6.504 L8.773,10.185 L10.185,8.773 L6.504,5.092 L10.185,1.411 Z";
+}
+
+/* 4. Optional: Hover effect to make it feel interactive */
+.check-box:hover > .box {
+    -fx-border-color: white;
+    -fx-border-width: 1;
+}

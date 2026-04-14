@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="699.0" prefWidth="600.0" stylesheets="@ToggleButtonEffect.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.javafxtest.Controller">
+   <children>
+      <StackPane layoutY="82.0" prefHeight="82.0" prefWidth="600.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="110.0">
+         <children>
+            <HBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="63.0" prefWidth="210.0" style="-fx-background-color: E3E3E3; -fx-background-radius: 500;">
+               <children>
+                  <ToggleButton fx:id="login" mnemonicParsing="false" onAction="#toggleButton" prefHeight="55.0" prefWidth="100.0" selected="true" style="-fx-background-insets: 0; -fx-background-radius: 500; -fx-text-fill: #00CCFF; -fx-font-weight: Bold; -fx-border-color: #00CCFF; -fx-border-radius: 500; -fx-border-width: 3; -fx-font-size: 150%;" stylesheets="@ToggleButtonEffect.css" text="Login" textAlignment="CENTER">
+                     <toggleGroup>
+                        <ToggleGroup fx:id="NotLogIn" />
+                     </toggleGroup></ToggleButton>
+                  <ToggleButton fx:id="register" mnemonicParsing="false" onAction="#toggleButton" prefHeight="55.0" prefWidth="100.0" style="-fx-background-insets: 0; -fx-background-radius: 500; -fx-text-fill: #00CCFF; -fx-font-weight: Bold; -fx-border-color: #00CCFF; -fx-border-radius: 500; -fx-border-width: 3; -fx-font-size: 150%;" stylesheets="@ToggleButtonEffect.css" text="Register" textAlignment="CENTER" toggleGroup="$NotLogIn" />
+               </children>
+            </HBox>
+         </children>
+      </StackPane>
+      <VBox fx:id="loginPane" alignment="TOP_CENTER" layoutY="93.0" prefHeight="309.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="193.0">
+         <children>
+            <StackPane prefHeight="92.0" prefWidth="600.0">
+               <children>
+                  <TextField fx:id="loginUsername" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="43.0" prefWidth="325.0" style="-fx-font-size: 150%; -fx-font-weight: bold; -fx-border-width: 2; -fx-border-color: #00CCFF; -fx-border-radius: 10; -fx-background-color: #F0F0F0; -fx-background-radius: 10; -fx-control-inner-background: transparence;" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" style="-fx-font-size: 130%; -fx-font-weight: bold; -fx-fill: #828282;" text="Username:" wrappingWidth="125.62030029296875">
+                     <StackPane.margin>
+                        <Insets bottom="60.0" right="200.0" />
+                     </StackPane.margin>
+                  </Text>
+               </children>
+            </StackPane>
+            <StackPane prefHeight="92.0" prefWidth="600.0">
+               <children>
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" style="-fx-font-size: 130%; -fx-font-weight: bold; -fx-fill: #828282;" text="Password:" wrappingWidth="125.62030029296875">
+                     <StackPane.margin>
+                        <Insets bottom="60.0" right="200.0" />
+                     </StackPane.margin>
+                  </Text>
+                  <CheckBox fx:id="passwordCheckBox" maxHeight="-Infinity" maxWidth="-Infinity" mnemonicParsing="false" onAction="#showPassword" prefHeight="15.0" prefWidth="322.0" style="-fx-font-weight: bold; -fx-font-size: 100%; -fx-text-fill: #828282;" stylesheets="@CheckBox.css" text="Show password">
+                     <StackPane.margin>
+                        <Insets top="70.0" />
+                     </StackPane.margin>
+                  </CheckBox>
+                  <PasswordField fx:id="loginPassword" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="43.0" prefWidth="325.0" style="-fx-font-size: 150%; -fx-font-weight: bold; -fx-border-width: 2; -fx-border-color: #00CCFF; -fx-border-radius: 10; -fx-background-color: #F0F0F0; -fx-background-radius: 10;" />
+                  <TextField fx:id="passwordText" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="43.0" prefWidth="325.0" style="-fx-font-size: 150%; -fx-font-weight: bold; -fx-border-radius: 10; -fx-background-radius: 10; -fx-border-width: 2; -fx-border-color: #00CCFF; -fx-background-color: #F0F0F0;" visible="false" />
+               </children>
+            </StackPane>
+            <Button mnemonicParsing="false" onAction="#loginSubmit" prefHeight="45.0" prefWidth="321.0" style="-fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-font-size: 150%; -fx-background-color: #00CCFF; -fx-background-radius: 10;" text="Submit" textOverrun="CLIP">
+               <VBox.margin>
+                  <Insets top="20.0" />
+               </VBox.margin>
+            </Button>
+         </children>
+         <padding>
+            <Insets top="10.0" />
+         </padding>
+      </VBox>
+      <VBox fx:id="registerPane" alignment="TOP_CENTER" layoutX="10.0" layoutY="103.0" prefHeight="450.0" prefWidth="600.0" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="193.0">
+         <children>
+            <StackPane maxHeight="-Infinity" prefHeight="30.0" prefWidth="600.0">
+               <children>
+                  <ChoiceBox fx:id="registerRole" prefHeight="34.0" prefWidth="214.0" style="-fx-border-color: #00CCFF; -fx-border-width: 2; -fx-border-radius: 10; -fx-background-radius: 10; -fx-font-size: 100%; -fx-font-weight: bold; -fx-background-color: #F0F0F0;" stylesheets="@ChoiceBox.css">
+                     <StackPane.margin>
+                        <Insets left="50.0" />
+                     </StackPane.margin>
+                  </ChoiceBox>
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" style="-fx-font-size: 130%; -fx-font-weight: bold; -fx-fill: #828282;" text="Role:" wrappingWidth="44.820255279541016">
+                     <StackPane.margin>
+                        <Insets right="200.0" />
+                     </StackPane.margin>
+                  </Text>
+               </children>
+            </StackPane>
+            <StackPane layoutX="10.0" layoutY="20.0" prefHeight="92.0" prefWidth="600.0">
+               <children>
+                  <TextField fx:id="registerUsername" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="43.0" prefWidth="325.0" style="-fx-font-size: 150%; -fx-font-weight: bold; -fx-border-width: 2; -fx-border-color: #00CCFF; -fx-border-radius: 10; -fx-background-color: #F0F0F0; -fx-background-radius: 10; -fx-control-inner-background: transparence;" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" style="-fx-font-size: 130%; -fx-font-weight: bold; -fx-fill: #828282;" text="Username:" wrappingWidth="125.62030029296875">
+                     <StackPane.margin>
+                        <Insets bottom="60.0" right="200.0" />
+                     </StackPane.margin>
+                  </Text>
+               </children>
+            </StackPane>
+            <StackPane prefHeight="92.0" prefWidth="600.0">
+               <children>
+                  <TextField fx:id="registerEmail" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="43.0" prefWidth="325.0" style="-fx-font-size: 150%; -fx-font-weight: bold; -fx-border-width: 2; -fx-border-color: #00CCFF; -fx-border-radius: 10; -fx-background-color: #F0F0F0; -fx-background-radius: 10; -fx-control-inner-background: transparence;" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" style="-fx-font-size: 130%; -fx-font-weight: bold; -fx-fill: #828282;" text="Email:" wrappingWidth="125.62030029296875">
+                     <StackPane.margin>
+                        <Insets bottom="60.0" right="200.0" />
+                     </StackPane.margin>
+                  </Text>
+               </children>
+            </StackPane>
+            <StackPane prefHeight="92.0" prefWidth="600.0">
+               <children>
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" style="-fx-font-size: 130%; -fx-font-weight: bold; -fx-fill: #828282;" text="Password:" wrappingWidth="125.62030029296875">
+                     <StackPane.margin>
+                        <Insets bottom="60.0" right="200.0" />
+                     </StackPane.margin>
+                  </Text>
+                  <PasswordField fx:id="registerPassword1" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="43.0" prefWidth="325.0" style="-fx-font-size: 150%; -fx-font-weight: bold; -fx-border-width: 2; -fx-border-color: #00CCFF; -fx-border-radius: 10; -fx-background-color: #F0F0F0; -fx-background-radius: 10;" />
+               </children>
+            </StackPane>
+            <StackPane prefHeight="92.0" prefWidth="600.0">
+               <children>
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" style="-fx-font-size: 130%; -fx-font-weight: bold; -fx-fill: #828282;" text="Reconfirm password:" wrappingWidth="202.4202880859375">
+                     <StackPane.margin>
+                        <Insets bottom="60.0" right="120.0" />
+                     </StackPane.margin>
+                  </Text>
+                  <PasswordField fx:id="registerPassword2" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="43.0" prefWidth="325.0" style="-fx-font-size: 150%; -fx-font-weight: bold; -fx-border-width: 2; -fx-border-color: #00CCFF; -fx-border-radius: 10; -fx-background-color: #F0F0F0; -fx-background-radius: 10;" />
+               </children>
+            </StackPane>
+            <Button mnemonicParsing="false" onAction="#registerSubmit" prefHeight="45.0" prefWidth="321.0" style="-fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-font-size: 150%; -fx-background-color: #00CCFF; -fx-background-radius: 10;" text="Submit">
+               <VBox.margin>
+                  <Insets top="20.0" />
+               </VBox.margin>
+            </Button>
+         </children>
+      </VBox>
+      <StackPane prefHeight="150.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+         <children>
+            <Text boundsType="LOGICAL_VERTICAL_CENTER" strokeType="OUTSIDE" strokeWidth="0.0" style="-fx-font-weight: bold; -fx-fill: #00CCFF;" text="Online Auction" textAlignment="CENTER" textOrigin="CENTER" wrappingWidth="600.0">
+               <font>
+                  <Font size="65.0" />
+               </font>
+            </Text>
+         </children>
+      </StackPane>
+   </children>
+</AnchorPane>

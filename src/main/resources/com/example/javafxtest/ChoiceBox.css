@@ -1,0 +1,30 @@
+/* 1. Style the main box as it appears on the form */
+.choice-box {
+    -fx-background-color: #F0F0F0;
+    -fx-mark-color: #00CCFF; /* Color of the arrow */
+    -fx-padding: 5px;
+}
+
+/* 2. Style the text of the selected item */
+.choice-box > .label {
+    -fx-text-fill:  #828282;
+    -fx-font-weight: bold;
+    -fx-font-family: "Arial";
+}
+
+/* 3. Style the dropdown menu itself */
+.choice-box .context-menu {
+    -fx-background-color: #F0F0F0;
+}
+
+/* 4. Style the individual items in the list */
+.choice-box .menu-item > .label {
+    -fx-text-fill:  #828282;
+    -fx-font-weight: bold;
+    -fx-font-family: "Arial";
+}
+
+/* 5. Style the item when hovered */
+.choice-box .menu-item:focused {
+    -fx-background-color: #00CCFF;
+}

@@ -1,0 +1,14 @@
+/* Custom CSS */
+.toggle-button {
+    -fx-background-color: #FFFFFF; /* Base Color */
+}
+
+/* Maintain hover effect */
+.toggle-button:hover {
+    -fx-background-color: #d0d0d0;
+}
+
+/* Maintain selected/pressed effect */
+.toggle-button:selected {
+    -fx-background-color: #d0d0d0; /* New Color for Selected */
+}
