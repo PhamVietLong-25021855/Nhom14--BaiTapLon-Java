@@ -3,8 +3,6 @@ package userauth.service;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 import userauth.model.BidTransaction;
-import userauth.utils.ConsoleUI;
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,11 +20,13 @@ public class AuctionFileService {
             try (BufferedReader br = new BufferedReader(new FileReader(file))) {
                 String line;
                 while ((line = br.readLine()) != null) {
-                    if (line.trim().isEmpty())
-                        continue;
+                    if (line.trim().isEmpty()) continue;
+
                     String[] parts = line.split(",", -1);
-                    if (parts.length < 13)
-                        continue; // Must match toString: 13 parts
+                    if (parts.length < 13) {
+                        System.err.println("Dòng auction không đủ dữ liệu: " + line);
+                        continue;
+                    }
 
                     try {
                         int id = Integer.parseInt(parts[0].trim());
@@ -43,27 +43,31 @@ public class AuctionFileService {
                         int winnerId = Integer.parseInt(parts[11].trim());
                         AuctionStatus status = AuctionStatus.valueOf(parts[12].trim().toUpperCase());
 
-                        auctions.add(new AuctionItem(id, name, desc, startPrice, currentHighest, startTime, endTime,
-                                category, createdAt, updatedAt, sellerId, winnerId, status));
-                    } catch (NumberFormatException e) {
-                        System.out.println("Lỗi parse dòng auction: " + line);
+                        auctions.add(new AuctionItem(
+                                id, name, desc, startPrice, currentHighest,
+                                startTime, endTime, category, createdAt,
+                                updatedAt, sellerId, winnerId, status
+                        ));
+                    } catch ( IllegalArgumentException ex) {
+                        System.err.println("Lỗi parse auction: " + line + " | " + ex.getMessage());
                     }
                 }
             }
-        } catch (Exception e) {
-            System.out.println("Lỗi đọc file auctions.txt: " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Lỗi đọc file auctions.txt: " + e.getMessage());
         }
+
         return auctions;
     }
 
     public void saveAuctionsToFile(List<AuctionItem> auctions) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(AUCTION_FILE_PATH)))) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(AUCTION_FILE_PATH))) {
             for (AuctionItem a : auctions) {
                 bw.write(a.toString());
                 bw.newLine();
             }
         } catch (Exception e) {
-            System.out.println("Lỗi ghi file auctions.txt: " + e.getMessage());
+            System.err.println("Lỗi ghi file auctions.txt: " + e.getMessage());
         }
     }
 
@@ -76,11 +80,9 @@ public class AuctionFileService {
             try (BufferedReader br = new BufferedReader(new FileReader(file))) {
                 String line;
                 while ((line = br.readLine()) != null) {
-                    if (line.trim().isEmpty())
-                        continue;
+                    if (line.trim().isEmpty()) continue;
                     String[] parts = line.split(",", -1);
-                    if (parts.length < 6)
-                        continue;
+                    if (parts.length < 6) continue;
 
                     try {
                         int id = Integer.parseInt(parts[0].trim());
@@ -92,34 +94,40 @@ public class AuctionFileService {
 
                         bids.add(new BidTransaction(id, auctionId, bidderId, amount, timestamp, status));
                     } catch (NumberFormatException e) {
-                        System.out.println("Lỗi parse dòng bid: " + line);
+                        System.err.println("Lỗi parse dòng bid: " + line);
                     }
                 }
             }
         } catch (Exception e) {
-            System.out.println("Lỗi đọc file bids.txt: " + e.getMessage());
+            System.err.println("Lỗi đọc file bids.txt: " + e.getMessage());
         }
         return bids;
     }
 
     public void saveBidsToFile(List<BidTransaction> bids) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(BID_FILE_PATH)))) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(BID_FILE_PATH))) {
             for (BidTransaction b : bids) {
                 bw.write(b.toString());
                 bw.newLine();
             }
         } catch (Exception e) {
-            System.out.println("Lỗi ghi file bids.txt: " + e.getMessage());
+            System.err.println("Lỗi ghi file bids.txt: " + e.getMessage());
         }
     }
 
     private void ensureFileExists(File file) throws IOException {
         File parent = file.getParentFile();
         if (parent != null && !parent.exists()) {
-            parent.mkdirs();
+            boolean createdDir = parent.mkdirs();
+            if (!createdDir) {
+                throw new IOException("Could not create directory: " + parent);
+            }
         }
         if (!file.exists()) {
-            file.createNewFile();
+            boolean createdFile = file.createNewFile();
+            if (createdFile) {
+                throw new IOException("Could not create file: " + file);
+            }
         }
     }
 }
