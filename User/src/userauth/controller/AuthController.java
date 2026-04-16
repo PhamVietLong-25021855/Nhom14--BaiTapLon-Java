@@ -41,15 +41,6 @@ public class AuthController {
         }
     }
 
-    public String updateProfile(String username, String fullName, String email) {
-        try {
-            authService.updateProfile(username, fullName, email);
-            return "SUCCESS";
-        } catch (ValidationException e) {
-            return e.getMessage();
-        }
-    }
-
     public String toggleUserStatus(String adminUsername, int targetUserId) {
         try {
             authService.toggleUserStatus(adminUsername, targetUserId);

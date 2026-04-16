@@ -2,6 +2,8 @@ package userauth.controller;
 
 import userauth.model.AuctionItem;
 import userauth.model.BidTransaction;
+import userauth.model.Role;
+import userauth.model.User;
 import userauth.service.AuctionService;
 import userauth.exception.AuctionClosedException;
 import userauth.exception.InvalidBidException;
@@ -10,6 +12,7 @@ import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
 
 import java.util.List;
+import java.util.Map;
 
 public class AuctionController {
     private final AuctionService auctionService;
@@ -49,10 +52,6 @@ public class AuctionController {
         return auctionService.getAuctionsBySeller(sellerId);
     }
 
-    public List<AuctionItem> getActiveAuctions() {
-        return auctionService.getActiveAuctions();
-    }
-
     public List<AuctionItem> getAllAuctions() {
         return auctionService.getAllAuctions();
     }
@@ -77,5 +76,35 @@ public class AuctionController {
         } catch (ItemNotFoundException | UnauthorizedException | AuctionClosedException e) {
             return e.getMessage();
         }
+    }
+
+    public String startAdminEarlyCloseCountdown(User currentUser, int auctionId) {
+        if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
+            return "Chi admin moi duoc phep ra lenh ket thuc som.";
+        }
+
+        try {
+            auctionService.startAdminEarlyCloseCountdown(auctionId);
+            return "SUCCESS";
+        } catch (ItemNotFoundException | AuctionClosedException | ValidationException e) {
+            return e.getMessage();
+        }
+    }
+
+    public String cancelAdminEarlyCloseCountdown(User currentUser, int auctionId) {
+        if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
+            return "Chi admin moi duoc phep huy lenh ket thuc som.";
+        }
+
+        try {
+            auctionService.cancelAdminEarlyCloseCountdown(auctionId);
+            return "SUCCESS";
+        } catch (ItemNotFoundException | ValidationException e) {
+            return e.getMessage();
+        }
+    }
+
+    public Map<Integer, Integer> getAdminEarlyCloseCountdowns() {
+        return auctionService.getAdminEarlyCloseCountdowns();
     }
 }

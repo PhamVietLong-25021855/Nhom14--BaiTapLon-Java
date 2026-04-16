@@ -8,7 +8,7 @@ import userauth.dao.AuctionDAO;
 import userauth.dao.AuctionDAOImpl;
 import userauth.dao.UserDAO;
 import userauth.dao.UserDAOImpl;
-import userauth.gui.AuthFrame;
+import userauth.gui.fxml.AuthFrame;
 import userauth.service.AuctionScheduler;
 import userauth.service.AuctionService;
 import userauth.service.AuthService;
@@ -30,8 +30,8 @@ public class Main extends Application {
         scheduler.start();
 
         AuthFrame frame = new AuthFrame(stage, authController, auctionController);
-        frame.showLogin();
         frame.show();
+        frame.showHome();
     }
 
     @Override

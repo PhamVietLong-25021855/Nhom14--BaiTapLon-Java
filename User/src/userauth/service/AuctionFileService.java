@@ -5,7 +5,12 @@ import userauth.model.AuctionStatus;
 import userauth.model.BidTransaction;
 import userauth.utils.ConsoleUI;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,52 +24,28 @@ public class AuctionFileService {
 
         try {
             ensureFileExists(file);
-            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 String line;
-                while ((line = br.readLine()) != null) {
-                    if (line.trim().isEmpty())
+                while ((line = reader.readLine()) != null) {
+                    if (line.trim().isEmpty()) {
                         continue;
-                    String[] parts = line.split(",", -1);
-                    if (parts.length < 13)
-                        continue; // Must match toString: 13 parts
+                    }
 
-                    try {
-                        int id = Integer.parseInt(parts[0].trim());
-                        String name = parts[1].trim();
-                        String desc = parts[2].trim();
-                        double startPrice = Double.parseDouble(parts[3].trim());
-                        double currentHighest = Double.parseDouble(parts[4].trim());
-                        long startTime = Long.parseLong(parts[5].trim());
-                        long endTime = Long.parseLong(parts[6].trim());
-                        String category = parts[7].trim();
-                        long createdAt = Long.parseLong(parts[8].trim());
-                        long updatedAt = Long.parseLong(parts[9].trim());
-                        int sellerId = Integer.parseInt(parts[10].trim());
-                        int winnerId = Integer.parseInt(parts[11].trim());
-                        AuctionStatus status = AuctionStatus.valueOf(parts[12].trim().toUpperCase());
-
-                        auctions.add(new AuctionItem(id, name, desc, startPrice, currentHighest, startTime, endTime,
-                                category, createdAt, updatedAt, sellerId, winnerId, status));
-                    } catch (NumberFormatException e) {
-                        System.out.println("Lỗi parse dòng auction: " + line);
+                    AuctionItem auctionItem = parseAuction(line);
+                    if (auctionItem != null) {
+                        auctions.add(auctionItem);
                     }
                 }
             }
-        } catch (Exception e) {
-            System.out.println("Lỗi đọc file auctions.txt: " + e.getMessage());
+        } catch (IOException ex) {
+            ConsoleUI.printError("Loi doc file auctions.txt: " + ex.getMessage());
         }
+
         return auctions;
     }
 
     public void saveAuctionsToFile(List<AuctionItem> auctions) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(AUCTION_FILE_PATH)))) {
-            for (AuctionItem a : auctions) {
-                bw.write(a.toString());
-                bw.newLine();
-            }
-        } catch (Exception e) {
-            System.out.println("Lỗi ghi file auctions.txt: " + e.getMessage());
-        }
+        writeLines(new File(AUCTION_FILE_PATH), auctions.stream().map(AuctionItem::toString).toList(), "auctions.txt");
     }
 
     public List<BidTransaction> loadBidsFromFile() {
@@ -73,43 +54,92 @@ public class AuctionFileService {
 
         try {
             ensureFileExists(file);
-            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 String line;
-                while ((line = br.readLine()) != null) {
-                    if (line.trim().isEmpty())
+                while ((line = reader.readLine()) != null) {
+                    if (line.trim().isEmpty()) {
                         continue;
-                    String[] parts = line.split(",", -1);
-                    if (parts.length < 6)
-                        continue;
+                    }
 
-                    try {
-                        int id = Integer.parseInt(parts[0].trim());
-                        int auctionId = Integer.parseInt(parts[1].trim());
-                        int bidderId = Integer.parseInt(parts[2].trim());
-                        double amount = Double.parseDouble(parts[3].trim());
-                        long timestamp = Long.parseLong(parts[4].trim());
-                        String status = parts[5].trim();
-
-                        bids.add(new BidTransaction(id, auctionId, bidderId, amount, timestamp, status));
-                    } catch (NumberFormatException e) {
-                        System.out.println("Lỗi parse dòng bid: " + line);
+                    BidTransaction bid = parseBid(line);
+                    if (bid != null) {
+                        bids.add(bid);
                     }
                 }
             }
-        } catch (Exception e) {
-            System.out.println("Lỗi đọc file bids.txt: " + e.getMessage());
+        } catch (IOException ex) {
+            ConsoleUI.printError("Loi doc file bids.txt: " + ex.getMessage());
         }
+
         return bids;
     }
 
     public void saveBidsToFile(List<BidTransaction> bids) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(BID_FILE_PATH)))) {
-            for (BidTransaction b : bids) {
-                bw.write(b.toString());
-                bw.newLine();
+        writeLines(new File(BID_FILE_PATH), bids.stream().map(BidTransaction::toString).toList(), "bids.txt");
+    }
+
+    private AuctionItem parseAuction(String line) {
+        String[] parts = line.split(",", -1);
+        if (parts.length < 13) {
+            ConsoleUI.printWarning("Dong auction khong hop le, bo qua: " + line);
+            return null;
+        }
+
+        try {
+            return new AuctionItem(
+                    Integer.parseInt(parts[0].trim()),
+                    parts[1].trim(),
+                    parts[2].trim(),
+                    Double.parseDouble(parts[3].trim()),
+                    Double.parseDouble(parts[4].trim()),
+                    Long.parseLong(parts[5].trim()),
+                    Long.parseLong(parts[6].trim()),
+                    parts[7].trim(),
+                    Long.parseLong(parts[8].trim()),
+                    Long.parseLong(parts[9].trim()),
+                    Integer.parseInt(parts[10].trim()),
+                    Integer.parseInt(parts[11].trim()),
+                    AuctionStatus.valueOf(parts[12].trim().toUpperCase())
+            );
+        } catch (Exception ex) {
+            ConsoleUI.printError("Khong the parse dong auction: " + line);
+            return null;
+        }
+    }
+
+    private BidTransaction parseBid(String line) {
+        String[] parts = line.split(",", -1);
+        if (parts.length < 6) {
+            ConsoleUI.printWarning("Dong bid khong hop le, bo qua: " + line);
+            return null;
+        }
+
+        try {
+            return new BidTransaction(
+                    Integer.parseInt(parts[0].trim()),
+                    Integer.parseInt(parts[1].trim()),
+                    Integer.parseInt(parts[2].trim()),
+                    Double.parseDouble(parts[3].trim()),
+                    Long.parseLong(parts[4].trim()),
+                    parts[5].trim()
+            );
+        } catch (Exception ex) {
+            ConsoleUI.printError("Khong the parse dong bid: " + line);
+            return null;
+        }
+    }
+
+    private void writeLines(File file, List<String> lines, String fileName) {
+        try {
+            ensureFileExists(file);
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                for (String line : lines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
             }
-        } catch (Exception e) {
-            System.out.println("Lỗi ghi file bids.txt: " + e.getMessage());
+        } catch (IOException ex) {
+            ConsoleUI.printError("Loi ghi file " + fileName + ": " + ex.getMessage());
         }
     }
 

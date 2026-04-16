@@ -11,19 +11,19 @@ public class UserDAOImpl implements UserDAO {
     private final FileService fileService;
 
     public UserDAOImpl() {
-        this.fileService = new FileService();
-        this.users = new ArrayList<>(fileService.loadUsersFromFile());
+        fileService = new FileService();
+        users = new ArrayList<>(fileService.loadUsersFromFile());
     }
 
     @Override
     public void save(User user) {
         users.add(user);
-        fileService.saveUsersToFile(users);
+        persistUsers();
     }
 
     @Override
     public void update(User user) {
-        fileService.saveUsersToFile(users); // The reference object is modified, just flush list.
+        persistUsers();
     }
 
     @Override
@@ -49,5 +49,9 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public List<User> findAll() {
         return new ArrayList<>(users);
+    }
+
+    private void persistUsers() {
+        fileService.saveUsersToFile(users);
     }
 }

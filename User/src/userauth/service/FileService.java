@@ -7,7 +7,12 @@ import userauth.model.Seller;
 import userauth.model.User;
 import userauth.utils.ConsoleUI;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,51 +24,22 @@ public class FileService {
         File file = new File(FILE_PATH);
 
         try {
-            File parent = file.getParentFile();
-            if (parent != null && !parent.exists()) {
-                parent.mkdirs();
-            }
-
-            if (!file.exists()) {
-                file.createNewFile();
-                return users;
-            }
-
-            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            ensureFileExists(file);
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 String line;
-                while ((line = br.readLine()) != null) {
+                while ((line = reader.readLine()) != null) {
                     if (line.trim().isEmpty()) {
                         continue;
                     }
 
-                    String[] parts = line.split(",", -1);
-                    if (parts.length < 9) {
-                        ConsoleUI.printWarning("Dòng không hợp lệ, bỏ qua: " + line);
-                        continue;
-                    }
-
-                    try {
-                        int id = Integer.parseInt(parts[0].trim());
-                        String username = parts[1].trim();
-                        String password = parts[2].trim(); 
-                        String fullName = parts[3].trim();
-                        String email = parts[4].trim();
-                        Role role = Role.valueOf(parts[5].trim().toUpperCase());
-                        String status = parts[6].trim();
-                        long createdAt = Long.parseLong(parts[7].trim());
-                        long updatedAt = Long.parseLong(parts[8].trim());
-
-                        User user = createUserByRole(id, username, password, fullName, email, role, status, createdAt, updatedAt);
-                        if (user != null) {
-                            users.add(user);
-                        }
-                    } catch (Exception ex) {
-                         ConsoleUI.printError("Lỗi parse dòng user: " + line);
+                    User user = parseUser(line);
+                    if (user != null) {
+                        users.add(user);
                     }
                 }
             }
-        } catch (IOException | IllegalArgumentException e) {
-            ConsoleUI.printError("Lỗi đọc file users.txt: " + e.getMessage());
+        } catch (IOException ex) {
+            ConsoleUI.printError("Loi doc file users.txt: " + ex.getMessage());
         }
 
         return users;
@@ -73,32 +49,57 @@ public class FileService {
         File file = new File(FILE_PATH);
 
         try {
-            File parent = file.getParentFile();
-            if (parent != null && !parent.exists()) {
-                parent.mkdirs();
-            }
-
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+            ensureFileExists(file);
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
                 for (User user : users) {
-                    bw.write(user.toString());
-                    bw.newLine();
+                    writer.write(user.toString());
+                    writer.newLine();
                 }
             }
-        } catch (IOException e) {
-            ConsoleUI.printError("Lỗi ghi file users.txt: " + e.getMessage());
+        } catch (IOException ex) {
+            ConsoleUI.printError("Loi ghi file users.txt: " + ex.getMessage());
+        }
+    }
+
+    private User parseUser(String line) {
+        String[] parts = line.split(",", -1);
+        if (parts.length < 9) {
+            ConsoleUI.printWarning("Dong user khong hop le, bo qua: " + line);
+            return null;
+        }
+
+        try {
+            int id = Integer.parseInt(parts[0].trim());
+            String username = parts[1].trim();
+            String password = parts[2].trim();
+            String fullName = parts[3].trim();
+            String email = parts[4].trim();
+            Role role = Role.valueOf(parts[5].trim().toUpperCase());
+            String status = parts[6].trim();
+            long createdAt = Long.parseLong(parts[7].trim());
+            long updatedAt = Long.parseLong(parts[8].trim());
+            return createUserByRole(id, username, password, fullName, email, role, status, createdAt, updatedAt);
+        } catch (Exception ex) {
+            ConsoleUI.printError("Khong the parse dong user: " + line);
+            return null;
         }
     }
 
     private User createUserByRole(int id, String username, String password, String fullName, String email, Role role, String status, long createdAt, long updatedAt) {
-        switch (role) {
-            case ADMIN:
-                return new Admin(id, username, password, fullName, email, status, createdAt, updatedAt);
-            case SELLER:
-                return new Seller(id, username, password, fullName, email, status, createdAt, updatedAt);
-            case BIDDER:
-                return new Bidder(id, username, password, fullName, email, status, createdAt, updatedAt);
-            default:
-                return null;
+        return switch (role) {
+            case ADMIN -> new Admin(id, username, password, fullName, email, status, createdAt, updatedAt);
+            case SELLER -> new Seller(id, username, password, fullName, email, status, createdAt, updatedAt);
+            case BIDDER -> new Bidder(id, username, password, fullName, email, status, createdAt, updatedAt);
+        };
+    }
+
+    private void ensureFileExists(File file) throws IOException {
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
+        }
+        if (!file.exists()) {
+            file.createNewFile();
         }
     }
 }

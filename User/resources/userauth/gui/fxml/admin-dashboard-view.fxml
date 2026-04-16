@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+
+<StackPane maxHeight="Infinity" maxWidth="Infinity"
+           prefHeight="820.0" prefWidth="1260.0"
+           fx:controller="userauth.gui.fxml.AdminDashboardViewController"
+           styleClass="page-root"
+           stylesheets="@auth-theme.css"
+           xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <VBox maxHeight="Infinity" maxWidth="Infinity" prefHeight="772.0" prefWidth="1212.0" spacing="14.0">
+            <children>
+                <StackPane minWidth="320.0" prefWidth="1212.0" styleClass="hero-card">
+                    <children>
+                        <Circle fill="WHITE" opacity="0.10" radius="110.0" stroke="TRANSPARENT" translateX="48.0" translateY="-34.0"/>
+                        <Circle fill="#9fb4c2" opacity="0.16" radius="84.0" stroke="TRANSPARENT" translateX="-34.0" translateY="40.0"/>
+                        <VBox maxWidth="720.0" spacing="14.0">
+                            <children>
+                                <Label text="LIVE AUCTION HUB" styleClass="hero-badge"/>
+                                <Label text="TRUNG TAM DIEU HANH DAU GIA" wrapText="true" styleClass="hero-title"/>
+                                <Label text="Admin quan ly danh sach khach hang, theo doi cac phien dau gia va co the bat dau lenh dem 3 lan de ket thuc som neu khong con bid moi."
+                                       wrapText="true"
+                                       styleClass="hero-subtitle"/>
+                            </children>
+                        </VBox>
+                    </children>
+                </StackPane>
+                <VBox spacing="14.0" VBox.vgrow="ALWAYS">
+                    <children>
+                        <VBox spacing="16.0" styleClass="form-card">
+                            <children>
+                                <Label text="DANH SACH KHACH HANG VA TAI KHOAN" styleClass="section-title"/>
+                                <TableView fx:id="tableUsers" prefHeight="250.0" VBox.vgrow="ALWAYS">
+                                    <columns>
+                                        <TableColumn fx:id="colId" prefWidth="80.0" text="ID"/>
+                                        <TableColumn fx:id="colUsername" prefWidth="170.0" text="Ten dang nhap"/>
+                                        <TableColumn fx:id="colFullName" prefWidth="210.0" text="Ho ten"/>
+                                        <TableColumn fx:id="colEmail" prefWidth="240.0" text="Email"/>
+                                        <TableColumn fx:id="colRole" prefWidth="120.0" text="Vai tro"/>
+                                        <TableColumn fx:id="colStatus" prefWidth="140.0" text="Trang thai"/>
+                                    </columns>
+                                </TableView>
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+                                        <Button mnemonicParsing="false" onAction="#handleToggleStatus" text="KHOA / MO KHOA" styleClass="button primary-button"/>
+                                        <Button mnemonicParsing="false" onAction="#handleRefreshUsers" text="LAM MOI DS KHACH HANG" styleClass="button success-button"/>
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+                        <VBox spacing="16.0" styleClass="form-card" VBox.vgrow="ALWAYS">
+                            <children>
+                                <Label text="QUAN LY PHIEN DAU GIA SAN PHAM" styleClass="section-title"/>
+                                <Label text="Khi admin bat dau lenh dem som, neu qua 3 lan dem lien tiep ma khong co bid moi thi phien dau gia se ket thuc truoc thoi gian cai dat."
+                                       wrapText="true"
+                                       styleClass="body-text"/>
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+                                        <Label text="Sap xep san pham" styleClass="field-label"/>
+                                        <ComboBox fx:id="cbAuctionSort" onAction="#handleApplyAuctionSort" prefWidth="220.0"/>
+                                        <Button mnemonicParsing="false" onAction="#handleRefreshAuctions" text="LAM MOI PHIEN" styleClass="button ghost-button"/>
+                                        <Button mnemonicParsing="false" onAction="#handleStartEarlyCloseCountdown" text="BAT DAU DEM 3 LAN" styleClass="button warning-button"/>
+                                        <Button mnemonicParsing="false" onAction="#handleCancelEarlyCloseCountdown" text="HUY LENH DEM" styleClass="button ghost-button"/>
+                                    </children>
+                                </HBox>
+                                <TableView fx:id="tableAuctions" prefHeight="320.0" VBox.vgrow="ALWAYS">
+                                    <columns>
+                                        <TableColumn fx:id="colAuctionId" prefWidth="70.0" text="ID"/>
+                                        <TableColumn fx:id="colAuctionName" prefWidth="210.0" text="Ten san pham"/>
+                                        <TableColumn fx:id="colAuctionSeller" prefWidth="220.0" text="Nguoi ban"/>
+                                        <TableColumn fx:id="colAuctionCategory" prefWidth="140.0" text="Danh muc"/>
+                                        <TableColumn fx:id="colAuctionHighestBid" prefWidth="150.0" text="Gia cao nhat"/>
+                                        <TableColumn fx:id="colAuctionStatus" prefWidth="110.0" text="Trang thai"/>
+                                        <TableColumn fx:id="colAuctionTimeLeft" prefWidth="150.0" text="Con lai"/>
+                                        <TableColumn fx:id="colAuctionCountdown" prefWidth="130.0" text="Dem som"/>
+                                    </columns>
+                                </TableView>
+                            </children>
+                        </VBox>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Button mnemonicParsing="false" onAction="#handleChangePassword" text="DOI MAT KHAU" styleClass="button success-button"/>
+                                <Button mnemonicParsing="false" onAction="#handleLogout" text="DANG XUAT" styleClass="button ghost-button"/>
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+    </children>
+</StackPane>

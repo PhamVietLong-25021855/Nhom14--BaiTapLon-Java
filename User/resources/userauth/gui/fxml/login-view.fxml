@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
+
+<StackPane maxHeight="Infinity" maxWidth="Infinity"
+           prefHeight="700.0" prefWidth="980.0"
+           fx:controller="userauth.gui.fxml.LoginViewController"
+           styleClass="page-root"
+           stylesheets="@auth-theme.css"
+           xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <HBox maxHeight="Infinity" maxWidth="Infinity" prefHeight="652.0" prefWidth="932.0" spacing="18.0" styleClass="content-row">
+            <children>
+                <StackPane HBox.hgrow="ALWAYS" minWidth="320.0" prefWidth="474.0" styleClass="hero-card">
+                    <children>
+                        <Circle fill="WHITE" opacity="0.10" radius="110.0" stroke="TRANSPARENT" translateX="48.0" translateY="-34.0"/>
+                        <Circle fill="#9fb4c2" opacity="0.16" radius="84.0" stroke="TRANSPARENT" translateX="-34.0" translateY="40.0"/>
+                        <VBox maxWidth="420.0" spacing="14.0">
+                            <children>
+                                <Label text="LIVE AUCTION HUB" styleClass="hero-badge"/>
+                                <Label text="TRUNG TAM DAU GIA" wrapText="true" styleClass="hero-title"/>
+                                <Label text="Nen tang dau gia truc quan, nhanh va an toan cho nguoi ban va nguoi mua."
+                                       wrapText="true"
+                                       styleClass="hero-subtitle"/>
+                            </children>
+                        </VBox>
+                    </children>
+                </StackPane>
+                <VBox HBox.hgrow="ALWAYS" prefWidth="440.0" styleClass="card-wrapper">
+                    <children>
+                        <VBox maxWidth="440.0" prefWidth="440.0" spacing="16.0" styleClass="form-card">
+                            <children>
+                                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                    <children>
+                                        <Button mnemonicParsing="false" onAction="#handleShowHome" styleClass="button home-icon-button">
+                                            <graphic>
+                                                <SVGPath content="M 12 4 L 3 11 H 5 V 20 H 10 V 14 H 14 V 20 H 19 V 11 H 21 Z"
+                                                         styleClass="home-icon-shape"/>
+                                            </graphic>
+                                        </Button>
+                                        <Label text="DANG NHAP TAI KHOAN" styleClass="section-title"/>
+                                    </children>
+                                </HBox>
+                                <VBox spacing="10.0">
+                                    <children>
+                                        <Label text="Ten dang nhap" styleClass="field-label"/>
+                                        <TextField fx:id="txtUsername" promptText="Nhap ten dang nhap"/>
+                                        <Label text="Mat khau" styleClass="field-label"/>
+                                        <PasswordField fx:id="txtPassword" onAction="#handleLogin" promptText="Nhap mat khau"/>
+                                        <HBox spacing="10.0">
+                                            <children>
+                                                <Button mnemonicParsing="false" onAction="#handleLogin" prefWidth="140.0" text="DANG NHAP" styleClass="button primary-button"/>
+                                                <Button mnemonicParsing="false" onAction="#handleShowRegister" text="TAO TAI KHOAN" styleClass="button ghost-button"/>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </VBox>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </children>
+</StackPane>

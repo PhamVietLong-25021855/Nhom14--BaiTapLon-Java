@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+
+<StackPane maxHeight="Infinity" maxWidth="Infinity"
+           prefHeight="780.0" prefWidth="1220.0"
+           fx:controller="userauth.gui.fxml.SellerDashboardViewController"
+           styleClass="page-root"
+           stylesheets="@auth-theme.css"
+           xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <VBox maxHeight="Infinity" maxWidth="Infinity" prefHeight="732.0" prefWidth="1172.0" spacing="12.0">
+            <children>
+                <StackPane minWidth="320.0" prefWidth="1172.0" styleClass="hero-card">
+                    <children>
+                        <Circle fill="WHITE" opacity="0.10" radius="110.0" stroke="TRANSPARENT" translateX="48.0" translateY="-34.0"/>
+                        <Circle fill="#9fb4c2" opacity="0.16" radius="84.0" stroke="TRANSPARENT" translateX="-34.0" translateY="40.0"/>
+                        <VBox maxWidth="560.0" spacing="14.0">
+                            <children>
+                                <Label text="LIVE AUCTION HUB" styleClass="hero-badge"/>
+                                <Label text="TRUNG TAM NGUOI BAN" wrapText="true" styleClass="hero-title"/>
+                                <Label text="Tao, cap nhat va quan ly cac phien dau gia cua ban theo thoi gian thuc."
+                                       wrapText="true"
+                                       styleClass="hero-subtitle"/>
+                            </children>
+                        </VBox>
+                    </children>
+                </StackPane>
+                <VBox spacing="12.0" VBox.vgrow="ALWAYS">
+                    <children>
+                        <VBox spacing="16.0" styleClass="form-card">
+                            <children>
+                                <Label text="TAO PHIEN DAU GIA" styleClass="section-title"/>
+                                <GridPane hgap="12.0" vgap="10.0">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="130.0" prefWidth="170.0"/>
+                                        <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" prefWidth="290.0"/>
+                                        <ColumnConstraints minWidth="130.0" prefWidth="170.0"/>
+                                        <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" prefWidth="290.0"/>
+                                    </columnConstraints>
+                                    <children>
+                                        <Label text="Ten san pham" styleClass="field-label"/>
+                                        <TextField fx:id="txtName" promptText="Nhap ten san pham" GridPane.columnIndex="1"/>
+                                        <Label text="Danh muc" styleClass="field-label" GridPane.columnIndex="2"/>
+                                        <TextField fx:id="txtCategory" promptText="Vi du: Dien tu" GridPane.columnIndex="3"/>
+
+                                        <Label text="Mo ta" styleClass="field-label" GridPane.rowIndex="1"/>
+                                        <TextArea fx:id="txtDesc" prefRowCount="3" promptText="Mo ta ngan cho san pham" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                        <Label text="Gia khoi diem" styleClass="field-label" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+                                        <TextField fx:id="txtPrice" promptText="Gia khoi diem" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+
+                                        <Label text="Thoi gian dau gia (phut)" styleClass="field-label" GridPane.rowIndex="2"/>
+                                        <Spinner fx:id="spinDuration" editable="true" prefWidth="140.0" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                                        <HBox spacing="10.0" GridPane.columnSpan="4" GridPane.rowIndex="3">
+                                            <children>
+                                                <Button fx:id="btnCreate" mnemonicParsing="false" onAction="#handleSaveAuction" text="TAO MOI" styleClass="button success-button"/>
+                                                <Button mnemonicParsing="false" onAction="#handleClearForm" text="HUY CAP NHAT" styleClass="button ghost-button"/>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </GridPane>
+                            </children>
+                        </VBox>
+                        <VBox spacing="16.0" styleClass="form-card" VBox.vgrow="ALWAYS">
+                            <children>
+                                <Label text="PHIEN DAU GIA CUA TOI" styleClass="section-title"/>
+                                <TableView fx:id="tableAuctions" prefHeight="300.0" VBox.vgrow="ALWAYS">
+                                    <columns>
+                                        <TableColumn fx:id="colId" prefWidth="70.0" text="ID"/>
+                                        <TableColumn fx:id="colName" prefWidth="170.0" text="Ten SP"/>
+                                        <TableColumn fx:id="colCategory" prefWidth="140.0" text="Danh muc"/>
+                                        <TableColumn fx:id="colStartPrice" prefWidth="140.0" text="Gia khoi diem"/>
+                                        <TableColumn fx:id="colCurrentBid" prefWidth="140.0" text="Gia hien tai"/>
+                                        <TableColumn fx:id="colStatus" prefWidth="120.0" text="Trang thai"/>
+                                        <TableColumn fx:id="colDuration" prefWidth="120.0" text="Thoi gian"/>
+                                        <TableColumn fx:id="colRemaining" prefWidth="130.0" text="Con lai"/>
+                                    </columns>
+                                </TableView>
+                            </children>
+                        </VBox>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Button mnemonicParsing="false" onAction="#handleEditSelected" text="SUA DONG CHON" styleClass="button primary-button"/>
+                                <Button mnemonicParsing="false" onAction="#handleDeleteSelected" text="XOA / HUY PHIEN" styleClass="button success-button"/>
+                                <Button mnemonicParsing="false" onAction="#handleCloseAuction" text="KET THUC SOM" styleClass="button success-button"/>
+                                <Button mnemonicParsing="false" onAction="#handleLogout" text="DANG XUAT" styleClass="button ghost-button"/>
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+    </children>
+</StackPane>

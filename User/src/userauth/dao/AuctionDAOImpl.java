@@ -13,37 +13,40 @@ public class AuctionDAOImpl implements AuctionDAO {
     private final AuctionFileService fileService;
 
     public AuctionDAOImpl() {
-        this.fileService = new AuctionFileService();
-        this.auctions = new ArrayList<>(fileService.loadAuctionsFromFile());
-        this.bids = new ArrayList<>(fileService.loadBidsFromFile());
+        fileService = new AuctionFileService();
+        auctions = new ArrayList<>(fileService.loadAuctionsFromFile());
+        bids = new ArrayList<>(fileService.loadBidsFromFile());
     }
 
     @Override
     public void saveAuction(AuctionItem item) {
-        if (findAuctionById(item.getId()) == null) {
-            auctions.add(item);
-            fileService.saveAuctionsToFile(auctions);
+        if (findAuctionById(item.getId()) != null) {
+            return;
         }
+
+        auctions.add(item);
+        persistAuctions();
     }
 
     @Override
     public void updateAuction(AuctionItem item) {
-        // Dữ liệu đã lưu trong references List của bộ nhớ, ta chỉ cần xuất lại ra file
-        fileService.saveAuctionsToFile(auctions);
-    }
-
-    @Override
-    public AuctionItem findAuctionById(int id) {
-        for (AuctionItem a : auctions) {
-            if (a.getId() == id) return a;
-        }
-        return null;
+        persistAuctions();
     }
 
     @Override
     public void deleteAuction(int id) {
-        auctions.removeIf(a -> a.getId() == id);
-        fileService.saveAuctionsToFile(auctions);
+        auctions.removeIf(auction -> auction.getId() == id);
+        persistAuctions();
+    }
+
+    @Override
+    public AuctionItem findAuctionById(int id) {
+        for (AuctionItem auction : auctions) {
+            if (auction.getId() == id) {
+                return auction;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -60,11 +63,15 @@ public class AuctionDAOImpl implements AuctionDAO {
     @Override
     public List<BidTransaction> findBidsByAuction(int auctionId) {
         List<BidTransaction> result = new ArrayList<>();
-        for (BidTransaction b : bids) {
-            if (b.getAuctionId() == auctionId) {
-                result.add(b);
+        for (BidTransaction bid : bids) {
+            if (bid.getAuctionId() == auctionId) {
+                result.add(bid);
             }
         }
         return result;
+    }
+
+    private void persistAuctions() {
+        fileService.saveAuctionsToFile(auctions);
     }
 }

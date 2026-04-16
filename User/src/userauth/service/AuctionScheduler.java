@@ -1,36 +1,24 @@
 package userauth.service;
 
-import userauth.dao.AuctionDAO;
-import userauth.model.AuctionItem;
-import userauth.model.AuctionStatus;
-
-import java.util.List;
-
 public class AuctionScheduler {
+    private static final long REFRESH_INTERVAL_MS = 1000L;
+
     private final AuctionService auctionService;
     private Thread schedulerThread;
     private volatile boolean running;
 
     public AuctionScheduler(AuctionService auctionService) {
         this.auctionService = auctionService;
-        this.running = false;
     }
 
     public void start() {
+        if (running) {
+            return;
+        }
+
         running = true;
-        schedulerThread = new Thread(() -> {
-            while (running) {
-                try {
-                    auctionService.refreshAuctionStatuses();
-                    Thread.sleep(1000); // Check every second
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } catch (Exception e) {
-                    System.err.println("Lỗi trong AuctionScheduler:" + e.getMessage());
-                }
-            }
-        });
-        schedulerThread.setDaemon(true); // Don't prevent JVM shutdown
+        schedulerThread = new Thread(this::runLoop, "auction-scheduler");
+        schedulerThread.setDaemon(true);
         schedulerThread.start();
     }
 
@@ -38,6 +26,19 @@ public class AuctionScheduler {
         running = false;
         if (schedulerThread != null) {
             schedulerThread.interrupt();
+        }
+    }
+
+    private void runLoop() {
+        while (running) {
+            try {
+                auctionService.refreshAuctionStatuses();
+                Thread.sleep(REFRESH_INTERVAL_MS);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            } catch (Exception ex) {
+                System.err.println("Loi trong AuctionScheduler: " + ex.getMessage());
+            }
         }
     }
 }
