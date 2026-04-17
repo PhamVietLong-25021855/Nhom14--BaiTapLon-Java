@@ -6,6 +6,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import userauth.controller.AuctionController;
 import userauth.controller.AuthController;
+import userauth.controller.HomepageController;
 import userauth.model.AuctionItem;
 import userauth.model.BidTransaction;
 import userauth.model.User;
@@ -20,6 +21,7 @@ public class AuthFrame {
     private final Stage stage;
     private final AuthController authController;
     private final AuctionController auctionController;
+    private final HomepageController homepageController;
     private final Scene scene;
     private final AppShellController shellController;
 
@@ -27,13 +29,15 @@ public class AuthFrame {
     private final LoadedView<LoginViewController> loginView;
     private final LoadedView<RegisterViewController> registerView;
     private final LoadedView<AdminDashboardViewController> adminView;
+    private final LoadedView<AdminHomepageViewController> adminHomepageView;
     private final LoadedView<SellerDashboardViewController> sellerView;
     private final LoadedView<BidderDashboardViewController> bidderView;
 
-    public AuthFrame(Stage stage, AuthController authController, AuctionController auctionController) {
+    public AuthFrame(Stage stage, AuthController authController, AuctionController auctionController, HomepageController homepageController) {
         this.stage = stage;
         this.authController = authController;
         this.auctionController = auctionController;
+        this.homepageController = homepageController;
 
         stage.setTitle("HE THONG DAU GIA SAN PHAM");
         stage.setMinWidth(980);
@@ -51,6 +55,7 @@ public class AuthFrame {
         loginView = FxmlRuntime.loadView(AuthFrame.class, "login-view.fxml", "view");
         registerView = FxmlRuntime.loadView(AuthFrame.class, "register-view.fxml", "view");
         adminView = FxmlRuntime.loadView(AuthFrame.class, "admin-dashboard-view.fxml", "view");
+        adminHomepageView = FxmlRuntime.loadView(AuthFrame.class, "admin-homepage-view.fxml", "view");
         sellerView = FxmlRuntime.loadView(AuthFrame.class, "seller-dashboard-view.fxml", "view");
         bidderView = FxmlRuntime.loadView(AuthFrame.class, "bidder-dashboard-view.fxml", "view");
 
@@ -90,13 +95,7 @@ public class AuthFrame {
 
     public void showRoleDashboard(User user) {
         switch (user.getRole()) {
-            case ADMIN -> {
-                deactivateLiveViews();
-                adminView.controller().setUser(user);
-                adminView.controller().refreshData();
-                adminView.controller().activate();
-                switchView(adminView.root());
-            }
+            case ADMIN -> showAdminDashboard(user);
             case SELLER -> {
                 deactivateLiveViews();
                 sellerView.controller().setUser(user);
@@ -111,6 +110,22 @@ public class AuthFrame {
                 switchView(bidderView.root());
             }
         }
+    }
+
+    public void showAdminDashboard(User user) {
+        deactivateLiveViews();
+        adminView.controller().setUser(user);
+        adminView.controller().refreshData();
+        adminView.controller().activate();
+        switchView(adminView.root());
+    }
+
+    public void showAdminHomepageManager(User user) {
+        deactivateLiveViews();
+        adminHomepageView.controller().setUser(user);
+        adminHomepageView.controller().refreshData();
+        adminHomepageView.controller().activate();
+        switchView(adminHomepageView.root());
     }
 
     public void showChangePasswordDialog(User user) {
@@ -135,6 +150,8 @@ public class AuthFrame {
     private void wireControllers() {
         homeView.controller().setShowLoginHandler(this::showLogin);
         homeView.controller().setShowRegisterHandler(this::showRegister);
+        homeView.controller().setAuctionController(auctionController);
+        homeView.controller().setHomepageController(homepageController);
 
         loginView.controller().setAuthController(authController);
         loginView.controller().setShowHomeHandler(this::showHome);
@@ -153,6 +170,11 @@ public class AuthFrame {
         adminView.controller().setFrame(this);
         adminView.controller().setAuthController(authController);
         adminView.controller().setAuctionController(auctionController);
+        adminView.controller().setHomepageController(homepageController);
+
+        adminHomepageView.controller().setFrame(this);
+        adminHomepageView.controller().setAuctionController(auctionController);
+        adminHomepageView.controller().setHomepageController(homepageController);
 
         sellerView.controller().setFrame(this);
         sellerView.controller().setAuctionController(auctionController);
@@ -164,6 +186,7 @@ public class AuthFrame {
     private void deactivateLiveViews() {
         homeView.controller().deactivate();
         adminView.controller().deactivate();
+        adminHomepageView.controller().deactivate();
         bidderView.controller().deactivate();
     }
 

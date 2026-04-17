@@ -3,7 +3,14 @@ package userauth.gui.fxml;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+
 public final class AuctionViewFormatter {
+    private static final DateTimeFormatter DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.systemDefault());
+
     private AuctionViewFormatter() {
     }
 
@@ -40,6 +47,18 @@ public final class AuctionViewFormatter {
             return "Het gio";
         }
         return formatDurationText(remainingMs);
+    }
+
+    public static String formatDateTime(long timestamp) {
+        return DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(timestamp));
+    }
+
+    public static String formatScheduleRange(long startTime, long endTime) {
+        return formatDateTime(startTime) + " - " + formatDateTime(endTime);
+    }
+
+    public static String formatScheduleRange(AuctionItem item) {
+        return formatScheduleRange(item.getStartTime(), item.getEndTime());
     }
 
     private static String formatDurationText(long milliseconds) {

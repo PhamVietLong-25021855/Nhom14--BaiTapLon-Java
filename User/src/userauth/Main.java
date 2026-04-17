@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import userauth.controller.AuctionController;
 import userauth.controller.AuthController;
+import userauth.controller.HomepageController;
 import userauth.dao.AuctionDAO;
 import userauth.dao.AuctionDAOImpl;
 import userauth.dao.UserDAO;
@@ -12,6 +13,7 @@ import userauth.gui.fxml.AuthFrame;
 import userauth.service.AuctionScheduler;
 import userauth.service.AuctionService;
 import userauth.service.AuthService;
+import userauth.service.HomepageContentService;
 
 public class Main extends Application {
     private AuctionScheduler scheduler;
@@ -25,11 +27,13 @@ public class Main extends Application {
         AuctionDAO auctionDAO = new AuctionDAOImpl();
         AuctionService auctionService = new AuctionService(auctionDAO);
         AuctionController auctionController = new AuctionController(auctionService);
+        HomepageContentService homepageContentService = new HomepageContentService();
+        HomepageController homepageController = new HomepageController(homepageContentService);
 
         scheduler = new AuctionScheduler(auctionService);
         scheduler.start();
 
-        AuthFrame frame = new AuthFrame(stage, authController, auctionController);
+        AuthFrame frame = new AuthFrame(stage, authController, auctionController, homepageController);
         frame.show();
         frame.showHome();
     }

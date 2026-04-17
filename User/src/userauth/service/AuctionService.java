@@ -150,6 +150,9 @@ public class AuctionService {
             if (now < item.getStartTime() || now > item.getEndTime()) {
                 throw new AuctionClosedException("Thoi gian hien tai khong hop le de dat gia.");
             }
+            if (amount <= item.getStartPrice()) {
+                throw new InvalidBidException("So tien phai cao hon gia khoi diem (" + item.getStartPrice() + ").");
+            }
             if (amount <= item.getCurrentHighestBid()) {
                 throw new InvalidBidException("So tien phai cao hon gia hien tai (" + item.getCurrentHighestBid() + ").");
             }

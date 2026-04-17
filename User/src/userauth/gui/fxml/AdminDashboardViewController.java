@@ -13,6 +13,7 @@ import javafx.scene.control.TableView;
 import javafx.util.Duration;
 import userauth.controller.AuctionController;
 import userauth.controller.AuthController;
+import userauth.controller.HomepageController;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 import userauth.model.User;
@@ -91,6 +92,7 @@ public class AdminDashboardViewController {
     private AuthFrame frame;
     private AuthController authController;
     private AuctionController auctionController;
+    private HomepageController homepageController;
     private User currentUser;
 
     @FXML
@@ -112,6 +114,10 @@ public class AdminDashboardViewController {
 
     public void setAuctionController(AuctionController auctionController) {
         this.auctionController = auctionController;
+    }
+
+    public void setHomepageController(HomepageController homepageController) {
+        this.homepageController = homepageController;
     }
 
     public void setUser(User user) {
@@ -147,6 +153,25 @@ public class AdminDashboardViewController {
     @FXML
     private void handleRefreshAuctions() {
         refreshAuctionData();
+    }
+
+    @FXML
+    private void handleOpenHomepageManager() {
+        if (frame == null) {
+            NotificationUtil.info(ownerWindow(), "Thong bao", "Chua noi man hinh nay voi AuthFrame.");
+            return;
+        }
+        if (currentUser == null) {
+            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua co thong tin admin hien tai.");
+            return;
+        }
+        if (homepageController == null) {
+            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua gan HomepageController cho man hinh admin.");
+            return;
+        }
+
+        deactivate();
+        frame.showAdminHomepageManager(currentUser);
     }
 
     @FXML

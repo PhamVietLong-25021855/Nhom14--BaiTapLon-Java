@@ -69,6 +69,7 @@
                                         <Label text="Sap xep san pham" styleClass="field-label"/>
                                         <ComboBox fx:id="cbAuctionSort" onAction="#handleApplyAuctionSort" prefWidth="220.0"/>
                                         <Button mnemonicParsing="false" onAction="#handleRefreshAuctions" text="LAM MOI PHIEN" styleClass="button ghost-button"/>
+                                        <Button mnemonicParsing="false" onAction="#handleOpenHomepageManager" text="QUAN LY TRANG CHU" styleClass="button success-button"/>
                                         <Button mnemonicParsing="false" onAction="#handleStartEarlyCloseCountdown" text="BAT DAU DEM 3 LAN" styleClass="button warning-button"/>
                                         <Button mnemonicParsing="false" onAction="#handleCancelEarlyCloseCountdown" text="HUY LENH DEM" styleClass="button ghost-button"/>
                                     </children>
