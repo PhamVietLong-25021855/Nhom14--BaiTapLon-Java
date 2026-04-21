@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="10.0"
+      fx:controller="userauth.gui.fxml.HomeAuctionCardController"
+      styleClass="landing-feed-card"
+      stylesheets="@auth-theme.css"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <HBox spacing="10.0">
+            <children>
+                <Label fx:id="lblTitle"
+                       text="Ten san pham"
+                       wrapText="true"
+                       styleClass="feed-card-title"
+                       HBox.hgrow="ALWAYS"/>
+                <Label fx:id="lblStatusChip"
+                       text="TRANG THAI"
+                       styleClass="status-chip"/>
+            </children>
+        </HBox>
+        <Label fx:id="lblCategory"
+               text="Danh muc: -"
+               wrapText="true"
+               styleClass="feed-card-meta"/>
+        <Label fx:id="lblSchedule"
+               text="Lich: -"
+               wrapText="true"
+               styleClass="feed-card-body"/>
+        <Label fx:id="lblHighestBid"
+               text="Gia hien tai: -"
+               wrapText="true"
+               styleClass="feed-card-body"/>
+        <Label fx:id="lblTimeInfo"
+               text="Con lai: -"
+               wrapText="true"
+               styleClass="feed-card-foot"/>
+    </children>
+</VBox>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="10.0"
+      fx:controller="userauth.gui.fxml.HomeAnnouncementCardController"
+      styleClass="landing-feed-card"
+      stylesheets="@auth-theme.css"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <HBox spacing="10.0">
+            <children>
+                <Label fx:id="lblTitle"
+                       text="Tieu de bai dang"
+                       wrapText="true"
+                       styleClass="feed-card-title"
+                       HBox.hgrow="ALWAYS"/>
+                <Label fx:id="lblStatusChip"
+                       text="ADMIN"
+                       styleClass="status-chip"/>
+            </children>
+        </HBox>
+        <Label fx:id="lblSummary"
+               text="Tom tat bai dang"
+               wrapText="true"
+               styleClass="feed-card-body"/>
+        <Label fx:id="lblSchedule"
+               text="Lich dang: -"
+               wrapText="true"
+               styleClass="feed-card-body"/>
+        <VBox fx:id="linkedAuctionBox"
+              spacing="4.0"
+              styleClass="linked-auction-box">
+            <children>
+                <Label fx:id="lblLinkedAuctionTitle"
+                       text="Vat pham lien ket: -"
+                       wrapText="true"
+                       styleClass="feed-card-meta"/>
+                <Label fx:id="lblLinkedAuctionSchedule"
+                       text="Khung gio: -"
+                       wrapText="true"
+                       styleClass="feed-card-foot"/>
+            </children>
+        </VBox>
+        <Label fx:id="lblDetails"
+               text="Thong tin bo sung"
+               wrapText="true"
+               styleClass="feed-card-foot"/>
+        <Label fx:id="lblUpdatedAt"
+               text="Cap nhat luc: -"
+               wrapText="true"
+               styleClass="feed-card-foot"/>
+    </children>
+</VBox>

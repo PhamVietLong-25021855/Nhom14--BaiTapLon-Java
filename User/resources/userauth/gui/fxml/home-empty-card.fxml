@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="8.0"
+      fx:controller="userauth.gui.fxml.HomeEmptyCardController"
+      styleClass="landing-feed-card landing-feed-empty-card"
+      stylesheets="@auth-theme.css"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <Label fx:id="lblTitle"
+               text="Thong bao"
+               wrapText="true"
+               styleClass="feed-card-title"/>
+        <Label fx:id="lblBody"
+               text="Noi dung se cap nhat sau"
+               wrapText="true"
+               styleClass="feed-card-foot"/>
+    </children>
+</VBox>
