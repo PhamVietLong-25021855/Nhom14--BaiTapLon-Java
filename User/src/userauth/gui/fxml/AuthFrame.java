@@ -39,7 +39,7 @@ public class AuthFrame {
         this.auctionController = auctionController;
         this.homepageController = homepageController;
 
-        stage.setTitle("HE THONG DAU GIA SAN PHAM");
+        stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
         stage.setMinWidth(980);
         stage.setMinHeight(700);
         stage.setMaximized(OPEN_FULLSCREEN);
@@ -77,6 +77,18 @@ public class AuthFrame {
         return stage;
     }
 
+    public void setLanguage(AppLanguage language) {
+        UiText.setCurrentLanguage(language);
+        stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
+        applyLanguage(homeView.root());
+        applyLanguage(loginView.root());
+        applyLanguage(registerView.root());
+        applyLanguage(adminView.root());
+        applyLanguage(adminHomepageView.root());
+        applyLanguage(sellerView.root());
+        applyLanguage(bidderView.root());
+    }
+
     public void showHome() {
         deactivateLiveViews();
         switchView(homeView.root());
@@ -99,15 +111,14 @@ public class AuthFrame {
             case SELLER -> {
                 deactivateLiveViews();
                 sellerView.controller().setUser(user);
-                sellerView.controller().refreshData();
                 switchView(sellerView.root());
+                sellerView.controller().activate();
             }
             case BIDDER -> {
                 deactivateLiveViews();
                 bidderView.controller().setUser(user);
-                bidderView.controller().refreshData();
-                bidderView.controller().activate();
                 switchView(bidderView.root());
+                bidderView.controller().activate();
             }
         }
     }
@@ -115,32 +126,30 @@ public class AuthFrame {
     public void showAdminDashboard(User user) {
         deactivateLiveViews();
         adminView.controller().setUser(user);
-        adminView.controller().refreshData();
-        adminView.controller().activate();
         switchView(adminView.root());
+        adminView.controller().activate();
     }
 
     public void showAdminHomepageManager(User user) {
         deactivateLiveViews();
         adminHomepageView.controller().setUser(user);
-        adminHomepageView.controller().refreshData();
-        adminHomepageView.controller().activate();
         switchView(adminHomepageView.root());
+        adminHomepageView.controller().activate();
     }
 
     public void showChangePasswordDialog(User user) {
         LoadedView<ChangePasswordDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "change-password-dialog.fxml", "dialog");
-        Stage dialog = FxmlRuntime.createModalDialog(stage, "DOI MAT KHAU", view.root(), 440, 320);
+        Stage dialog = FxmlRuntime.createModalDialog(stage, "CHANGE PASSWORD", view.root(), 440, 320);
         view.controller().setDialogStage(dialog);
         view.controller().setAuthController(authController);
         view.controller().setUser(user);
-        view.controller().setSuccessHandler(message -> NotificationUtil.success(stage, "THONG BAO", message));
+        view.controller().setSuccessHandler(message -> NotificationUtil.success(stage, "NOTIFICATION", message));
         dialog.showAndWait();
     }
 
     public void showBidHistoryDialog(AuctionItem auctionItem, List<BidTransaction> bids) {
         LoadedView<BidHistoryDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "bid-history-dialog.fxml", "dialog");
-        Stage dialog = FxmlRuntime.createModalDialog(stage, "LICH SU BID", view.root(), 720, 460);
+        Stage dialog = FxmlRuntime.createModalDialog(stage, "BID HISTORY", view.root(), 720, 460);
         view.controller().setDialogStage(dialog);
         view.controller().setAuction(auctionItem);
         view.controller().setBids(bids);
@@ -157,15 +166,15 @@ public class AuthFrame {
         loginView.controller().setShowHomeHandler(this::showHome);
         loginView.controller().setShowRegisterHandler(this::showRegister);
         loginView.controller().setLoginSuccessHandler(this::showRoleDashboard);
-        loginView.controller().setInfoHandler(message -> NotificationUtil.info(stage, "THONG BAO", message));
-        loginView.controller().setErrorHandler(message -> NotificationUtil.error(stage, "DANG NHAP THAT BAI", message));
+        loginView.controller().setInfoHandler(message -> NotificationUtil.info(stage, "NOTIFICATION", message));
+        loginView.controller().setErrorHandler(message -> NotificationUtil.error(stage, "LOGIN FAILED", message));
 
         registerView.controller().setAuthController(authController);
         registerView.controller().setShowHomeHandler(this::showHome);
         registerView.controller().setBackToLoginHandler(this::showLogin);
-        registerView.controller().setSuccessHandler(message -> NotificationUtil.success(stage, "THANH CONG", message));
-        registerView.controller().setWarningHandler(message -> NotificationUtil.warning(stage, "THONG BAO", message));
-        registerView.controller().setErrorHandler(message -> NotificationUtil.error(stage, "LOI", message));
+        registerView.controller().setSuccessHandler(message -> NotificationUtil.success(stage, "SUCCESS", message));
+        registerView.controller().setWarningHandler(message -> NotificationUtil.warning(stage, "NOTIFICATION", message));
+        registerView.controller().setErrorHandler(message -> NotificationUtil.error(stage, "ERROR", message));
 
         adminView.controller().setFrame(this);
         adminView.controller().setAuthController(authController);
@@ -188,6 +197,7 @@ public class AuthFrame {
         adminView.controller().deactivate();
         adminHomepageView.controller().deactivate();
         bidderView.controller().deactivate();
+        sellerView.controller().deactivate();
     }
 
     private void switchView(Parent root) {
@@ -201,5 +211,9 @@ public class AuthFrame {
             stage.setHeight(Math.max(stage.getMinHeight(), region.prefHeight(-1)));
             stage.centerOnScreen();
         }
+    }
+
+    private void applyLanguage(Parent root) {
+        UiText.apply(root);
     }
 }

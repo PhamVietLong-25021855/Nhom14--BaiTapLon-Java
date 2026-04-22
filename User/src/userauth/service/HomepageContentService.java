@@ -1,25 +1,26 @@
 package userauth.service;
 
+import userauth.dao.HomepageAnnouncementDAO;
+import userauth.dao.HomepageAnnouncementDAOImpl;
 import userauth.exception.ValidationException;
 import userauth.model.HomepageAnnouncement;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 public class HomepageContentService {
-    private final HomepageFileService fileService;
-    private final List<HomepageAnnouncement> announcements;
-    private int nextId;
+    private final HomepageAnnouncementDAO announcementDAO;
 
     public HomepageContentService() {
-        this.fileService = new HomepageFileService();
-        this.announcements = new ArrayList<>(fileService.loadAnnouncementsFromFile());
-        this.nextId = findNextId();
+        this(new HomepageAnnouncementDAOImpl());
+    }
+
+    public HomepageContentService(HomepageAnnouncementDAO announcementDAO) {
+        this.announcementDAO = announcementDAO;
     }
 
     public synchronized List<HomepageAnnouncement> getAllAnnouncements() {
-        return announcements.stream()
+        return announcementDAO.findAll().stream()
                 .sorted(Comparator.comparingLong(HomepageAnnouncement::getUpdatedAt).reversed())
                 .map(this::copyAnnouncement)
                 .toList();
@@ -39,8 +40,8 @@ public class HomepageContentService {
         long now = System.currentTimeMillis();
         HomepageAnnouncement existing = findById(announcementId == null ? -1 : announcementId);
         if (existing == null) {
-            announcements.add(new HomepageAnnouncement(
-                    nextId++,
+            announcementDAO.save(new HomepageAnnouncement(
+                    0,
                     normalizedTitle,
                     normalizedSummary,
                     normalizedDetails,
@@ -58,30 +59,28 @@ public class HomepageContentService {
             existing.setLinkedAuctionId(safeAuctionId);
             existing.setAuthorId(authorId);
             existing.setUpdatedAt(now);
+            announcementDAO.update(existing);
         }
-
-        persist();
     }
 
     public synchronized void deleteAnnouncement(int announcementId) throws ValidationException {
         HomepageAnnouncement existing = findById(announcementId);
         if (existing == null) {
-            throw new ValidationException("Khong tim thay bai dang tren trang chu.");
+            throw new ValidationException("Homepage announcement not found.");
         }
 
-        announcements.remove(existing);
-        persist();
+        announcementDAO.delete(announcementId);
     }
 
     private void validate(String title, String summary, String scheduleText) throws ValidationException {
         if (title.isEmpty()) {
-            throw new ValidationException("Tieu de bai dang khong duoc rong.");
+            throw new ValidationException("Announcement title cannot be empty.");
         }
         if (summary.isEmpty()) {
-            throw new ValidationException("Tom tat bai dang khong duoc rong.");
+            throw new ValidationException("Announcement summary cannot be empty.");
         }
         if (scheduleText.isEmpty()) {
-            throw new ValidationException("Thong tin lich dau gia khong duoc rong.");
+            throw new ValidationException("Auction schedule information cannot be empty.");
         }
     }
 
@@ -90,22 +89,7 @@ public class HomepageContentService {
     }
 
     private HomepageAnnouncement findById(int announcementId) {
-        for (HomepageAnnouncement announcement : announcements) {
-            if (announcement.getId() == announcementId) {
-                return announcement;
-            }
-        }
-        return null;
-    }
-
-    private int findNextId() {
-        int maxId = 0;
-        for (HomepageAnnouncement announcement : announcements) {
-            if (announcement.getId() > maxId) {
-                maxId = announcement.getId();
-            }
-        }
-        return maxId + 1;
+        return announcementDAO.findById(announcementId);
     }
 
     private HomepageAnnouncement copyAnnouncement(HomepageAnnouncement source) {
@@ -120,9 +104,5 @@ public class HomepageContentService {
                 source.getCreatedAt(),
                 source.getUpdatedAt()
         );
-    }
-
-    private void persist() {
-        fileService.saveAnnouncementsToFile(announcements);
     }
 }

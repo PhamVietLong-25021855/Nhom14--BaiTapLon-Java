@@ -9,6 +9,7 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
@@ -26,6 +27,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class AdminHomepageViewController {
     @FXML
@@ -79,8 +81,38 @@ public class AdminHomepageViewController {
     @FXML
     private TableColumn<AuctionItem, String> colUpcomingStatus;
 
+    @FXML
+    private Label lblCmsSidebar;
+
+    @FXML
+    private Label lblCmsAdminName;
+
+    @FXML
+    private Label lblAnnouncementCount;
+
+    @FXML
+    private Label lblLinkedCount;
+
+    @FXML
+    private Label lblUpcomingCount;
+
+    @FXML
+    private Label lblPreviewTitle;
+
+    @FXML
+    private Label lblPreviewSchedule;
+
+    @FXML
+    private Label lblPreviewSummary;
+
+    @FXML
+    private Label lblPreviewLinkedAuction;
+
+    @FXML
+    private Label lblPreviewDetails;
+
     private final Timeline refreshTimeline = new Timeline(
-            new KeyFrame(Duration.seconds(2), event -> refreshData())
+            new KeyFrame(Duration.seconds(5), event -> refreshData())
     );
 
     private final Map<Integer, AuctionItem> auctionLookup = new HashMap<>();
@@ -90,13 +122,17 @@ public class AdminHomepageViewController {
     private HomepageController homepageController;
     private User currentUser;
     private int editingAnnouncementId = -1;
+    private long refreshTicket;
+    private boolean actionInProgress;
 
     @FXML
     private void initialize() {
         initializeAnnouncementTable();
         initializeUpcomingAuctionTable();
         initializeAuctionComboBox();
+        registerPreviewListeners();
         refreshTimeline.setCycleCount(Animation.INDEFINITE);
+        updatePreview();
     }
 
     public void setFrame(AuthFrame frame) {
@@ -113,6 +149,9 @@ public class AdminHomepageViewController {
 
     public void setUser(User user) {
         this.currentUser = user;
+        String name = user == null ? UiText.text("Admin CMS") : user.getFullName() + " (" + user.getUsername() + ")";
+        lblCmsAdminName.setText(name);
+        lblCmsSidebar.setText(name);
         resetForm();
     }
 
@@ -124,6 +163,7 @@ public class AdminHomepageViewController {
     }
 
     public void deactivate() {
+        refreshTicket++;
         refreshTimeline.stop();
     }
 
@@ -132,37 +172,34 @@ public class AdminHomepageViewController {
             return;
         }
 
+        long ticket = ++refreshTicket;
         Integer selectedLinkedAuctionId = selectedLinkedAuctionId();
         int selectedAnnouncementId = selectedAnnouncementId();
         int selectedPreviewAuctionId = selectedPreviewAuctionId();
 
-        List<AuctionItem> allAuctions = auctionController.getAllAuctions().stream()
-                .sorted(Comparator.comparingLong(AuctionItem::getStartTime))
-                .toList();
-        auctionLookup.clear();
-        for (AuctionItem auction : allAuctions) {
-            auctionLookup.put(auction.getId(), auction);
-        }
-
-        cbLinkedAuction.setItems(FXCollections.observableArrayList(allAuctions));
-        restoreLinkedAuctionSelection(selectedLinkedAuctionId);
-
-        List<HomepageAnnouncement> announcements = homepageController.getAllAnnouncements();
-        tableAnnouncements.setItems(FXCollections.observableArrayList(announcements));
-        reselectAnnouncement(selectedAnnouncementId);
-
-        List<AuctionItem> displayAuctions = allAuctions.stream()
-                .filter(item -> item.getStatus() == AuctionStatus.OPEN || item.getStatus() == AuctionStatus.RUNNING)
-                .toList();
-        tableUpcomingAuctions.setItems(FXCollections.observableArrayList(displayAuctions));
-        reselectPreviewAuction(selectedPreviewAuctionId);
-        tableAnnouncements.refresh();
-        tableUpcomingAuctions.refresh();
+        UiAsync.run(
+                this::loadHomepageSnapshot,
+                snapshot -> {
+                    if (ticket != refreshTicket) {
+                        return;
+                    }
+                    applyHomepageSnapshot(snapshot, selectedLinkedAuctionId, selectedAnnouncementId, selectedPreviewAuctionId);
+                },
+                error -> {
+                    if (ticket != refreshTicket) {
+                        return;
+                    }
+                    lblPreviewTitle.setText(UiText.text("Unable to load homepage data"));
+                }
+        );
     }
 
     @FXML
     private void handleSaveAnnouncement() {
         if (!hasManagementContext()) {
+            return;
+        }
+        if (actionInProgress) {
             return;
         }
 
@@ -172,32 +209,36 @@ public class AdminHomepageViewController {
             scheduleText = AuctionViewFormatter.formatScheduleRange(linkedAuction);
             txtAnnouncementSchedule.setText(scheduleText);
         }
+        Integer announcementId = editingAnnouncementId < 0 ? null : editingAnnouncementId;
+        Integer linkedAuctionId = linkedAuction == null ? null : linkedAuction.getId();
+        String title = txtAnnouncementTitle.getText();
+        String summary = txtAnnouncementSummary.getText();
+        String details = txtAnnouncementDetails.getText();
+        String finalScheduleText = scheduleText;
 
-        String result = homepageController.saveAnnouncement(
-                currentUser,
-                editingAnnouncementId < 0 ? null : editingAnnouncementId,
-                txtAnnouncementTitle.getText(),
-                txtAnnouncementSummary.getText(),
-                txtAnnouncementDetails.getText(),
-                scheduleText,
-                linkedAuction == null ? null : linkedAuction.getId()
+        runActionAsync(
+                () -> homepageController.saveAnnouncement(
+                        currentUser,
+                        announcementId,
+                        title,
+                        summary,
+                        details,
+                        finalScheduleText,
+                        linkedAuctionId
+                ),
+                "Homepage announcement updated successfully.",
+                () -> {
+                    resetForm();
+                    refreshData();
+                }
         );
-
-        if ("SUCCESS".equals(result)) {
-            NotificationUtil.success(ownerWindow(), "Thong bao", "Da cap nhat bai dang trang chu.");
-            resetForm();
-            refreshData();
-            return;
-        }
-
-        NotificationUtil.error(ownerWindow(), "Loi", result);
     }
 
     @FXML
     private void handleEditSelectedAnnouncement() {
         HomepageAnnouncement selected = tableAnnouncements.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Hay chon mot bai dang de sua.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "Please select an announcement to edit.");
             return;
         }
 
@@ -207,7 +248,8 @@ public class AdminHomepageViewController {
         txtAnnouncementSummary.setText(selected.getSummary());
         txtAnnouncementDetails.setText(selected.getDetails());
         selectLinkedAuction(selected.getLinkedAuctionId());
-        btnSaveAnnouncement.setText("LUU CAP NHAT");
+        btnSaveAnnouncement.setText(UiText.text("SAVE CHANGES"));
+        updatePreview();
     }
 
     @FXML
@@ -215,29 +257,32 @@ public class AdminHomepageViewController {
         if (!hasManagementContext()) {
             return;
         }
-
-        HomepageAnnouncement selected = tableAnnouncements.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Hay chon mot bai dang de xoa.");
+        if (actionInProgress) {
             return;
         }
 
-        boolean confirmed = NotificationUtil.confirm(ownerWindow(), "Xac nhan", "Ban co chac muon xoa bai dang nay khoi trang chu?");
+        HomepageAnnouncement selected = tableAnnouncements.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Please select an announcement to delete.");
+            return;
+        }
+
+        boolean confirmed = NotificationUtil.confirm(ownerWindow(), "Confirm", "Are you sure you want to remove this announcement from the homepage?");
         if (!confirmed) {
             return;
         }
 
-        String result = homepageController.deleteAnnouncement(currentUser, selected.getId());
-        if ("SUCCESS".equals(result)) {
-            NotificationUtil.success(ownerWindow(), "Thong bao", "Da xoa bai dang trang chu.");
-            if (editingAnnouncementId == selected.getId()) {
-                resetForm();
-            }
-            refreshData();
-            return;
-        }
-
-        NotificationUtil.error(ownerWindow(), "Loi", result);
+        int announcementId = selected.getId();
+        runActionAsync(
+                () -> homepageController.deleteAnnouncement(currentUser, announcementId),
+                "Homepage announcement deleted successfully.",
+                () -> {
+                    if (editingAnnouncementId == announcementId) {
+                        resetForm();
+                    }
+                    refreshData();
+                }
+        );
     }
 
     @FXML
@@ -247,15 +292,16 @@ public class AdminHomepageViewController {
             selected = tableUpcomingAuctions.getSelectionModel().getSelectedItem();
         }
         if (selected == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Hay chon mot phien dau gia de lay lich.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "Please select an auction to use its schedule.");
             return;
         }
 
         cbLinkedAuction.getSelectionModel().select(selected);
         txtAnnouncementSchedule.setText(AuctionViewFormatter.formatScheduleRange(selected));
         if (txtAnnouncementTitle.getText() == null || txtAnnouncementTitle.getText().isBlank()) {
-            txtAnnouncementTitle.setText("Thong bao lich dau gia: " + selected.getName());
+            txtAnnouncementTitle.setText(UiText.text("Auction schedule update") + ": " + selected.getName());
         }
+        updatePreview();
     }
 
     @FXML
@@ -279,15 +325,25 @@ public class AdminHomepageViewController {
     @FXML
     private void handleChangePassword() {
         if (currentUser == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua co thong tin admin hien tai.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current admin information is unavailable.");
             return;
         }
         if (frame == null) {
-            NotificationUtil.info(ownerWindow(), "Thong bao", "Da gan su kien doi mat khau. Hay noi controller voi AuthFrame khi tich hop.");
+            NotificationUtil.info(ownerWindow(), "Notification", "The change-password action is prepared. Connect this controller to AuthFrame when integrating.");
             return;
         }
 
         frame.showChangePasswordDialog(currentUser);
+    }
+
+    @FXML
+    private void handleSwitchToEnglish() {
+        switchLanguage(AppLanguage.ENGLISH);
+    }
+
+    @FXML
+    private void handleSwitchToVietnamese() {
+        switchLanguage(AppLanguage.VIETNAMESE);
     }
 
     @FXML
@@ -311,7 +367,7 @@ public class AdminHomepageViewController {
         colUpcomingId.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
         colUpcomingName.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getName()));
         colUpcomingSchedule.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatScheduleRange(data.getValue())));
-        colUpcomingStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getStatus().name()));
+        colUpcomingStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(UiText.auctionStatus(data.getValue().getStatus())));
     }
 
     private void initializeAuctionComboBox() {
@@ -329,16 +385,92 @@ public class AdminHomepageViewController {
                 return null;
             }
         });
-        cbLinkedAuction.setPromptText("Khong lien ket phien nao");
+        cbLinkedAuction.setPromptText(UiText.text("No linked auction"));
+    }
+
+    private void registerPreviewListeners() {
+        txtAnnouncementTitle.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        txtAnnouncementSchedule.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        txtAnnouncementSummary.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        txtAnnouncementDetails.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        cbLinkedAuction.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+    }
+
+    private void updateMetrics(List<HomepageAnnouncement> announcements, List<AuctionItem> displayAuctions) {
+        long linked = announcements.stream().filter(item -> item.getLinkedAuctionId() > 0).count();
+        lblAnnouncementCount.setText(String.valueOf(announcements.size()));
+        lblLinkedCount.setText(String.valueOf(linked));
+        lblUpcomingCount.setText(String.valueOf(displayAuctions.size()));
+    }
+
+    private HomepageSnapshot loadHomepageSnapshot() {
+        List<AuctionItem> allAuctions = auctionController.getAllAuctions().stream()
+                .sorted(Comparator.comparingLong(AuctionItem::getStartTime))
+                .toList();
+        List<HomepageAnnouncement> announcements = homepageController.getAllAnnouncements();
+        List<AuctionItem> displayAuctions = allAuctions.stream()
+                .filter(item -> item.getStatus() == AuctionStatus.OPEN || item.getStatus() == AuctionStatus.RUNNING)
+                .toList();
+        return new HomepageSnapshot(allAuctions, announcements, displayAuctions);
+    }
+
+    private void applyHomepageSnapshot(
+            HomepageSnapshot snapshot,
+            Integer selectedLinkedAuctionId,
+            int selectedAnnouncementId,
+            int selectedPreviewAuctionId
+    ) {
+        auctionLookup.clear();
+        for (AuctionItem auction : snapshot.allAuctions()) {
+            auctionLookup.put(auction.getId(), auction);
+        }
+
+        cbLinkedAuction.setItems(FXCollections.observableArrayList(snapshot.allAuctions()));
+        restoreLinkedAuctionSelection(selectedLinkedAuctionId);
+
+        tableAnnouncements.setItems(FXCollections.observableArrayList(snapshot.announcements()));
+        reselectAnnouncement(selectedAnnouncementId);
+
+        tableUpcomingAuctions.setItems(FXCollections.observableArrayList(snapshot.displayAuctions()));
+        reselectPreviewAuction(selectedPreviewAuctionId);
+        tableAnnouncements.refresh();
+        tableUpcomingAuctions.refresh();
+
+        updateMetrics(snapshot.announcements(), snapshot.displayAuctions());
+        updatePreview();
+    }
+
+    private void updatePreview() {
+        String title = txtAnnouncementTitle.getText() == null || txtAnnouncementTitle.getText().isBlank()
+                ? UiText.text("Announcement Title")
+                : txtAnnouncementTitle.getText().trim();
+        String schedule = txtAnnouncementSchedule.getText() == null || txtAnnouncementSchedule.getText().isBlank()
+                ? "-"
+                : txtAnnouncementSchedule.getText().trim();
+        String summary = txtAnnouncementSummary.getText() == null || txtAnnouncementSummary.getText().isBlank()
+                ? UiText.text("A short summary will appear here.")
+                : txtAnnouncementSummary.getText().trim();
+        String details = txtAnnouncementDetails.getText() == null || txtAnnouncementDetails.getText().isBlank()
+                ? UiText.text("Additional details and instructions will appear here.")
+                : txtAnnouncementDetails.getText().trim();
+        AuctionItem linkedAuction = cbLinkedAuction.getValue();
+
+        lblPreviewTitle.setText(title);
+        lblPreviewSchedule.setText(schedule);
+        lblPreviewSummary.setText(summary);
+        lblPreviewDetails.setText(details);
+        lblPreviewLinkedAuction.setText(linkedAuction == null
+                ? UiText.text("Not linked")
+                : linkedAuction.getName() + " | " + AuctionViewFormatter.formatScheduleRange(linkedAuction));
     }
 
     private boolean hasManagementContext() {
         if (homepageController == null || auctionController == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua gan du controller cho man hinh quan ly trang chu.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "Required controllers have not been assigned to the homepage management screen.");
             return false;
         }
         if (currentUser == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua co thong tin admin hien tai.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current admin information is unavailable.");
             return false;
         }
         return true;
@@ -351,16 +483,17 @@ public class AdminHomepageViewController {
         txtAnnouncementSummary.clear();
         txtAnnouncementDetails.clear();
         cbLinkedAuction.getSelectionModel().clearSelection();
-        btnSaveAnnouncement.setText("DANG BAI LEN TRANG CHU");
+        btnSaveAnnouncement.setText(UiText.text("PUBLISH TO HOMEPAGE"));
+        updatePreview();
     }
 
     private String resolveAuctionName(int auctionId) {
         if (auctionId <= 0) {
-            return "Khong lien ket";
+            return UiText.text("Not linked");
         }
 
         AuctionItem auction = auctionLookup.get(auctionId);
-        return auction == null ? "Phien #" + auctionId : auction.getName();
+        return auction == null ? UiText.text("Auction #") + auctionId : auction.getName();
     }
 
     private Integer selectedLinkedAuctionId() {
@@ -424,5 +557,75 @@ public class AdminHomepageViewController {
 
     private javafx.stage.Window ownerWindow() {
         return frame == null ? null : frame.getWindow();
+    }
+
+    private void switchLanguage(AppLanguage language) {
+        if (frame == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Language settings are unavailable.");
+            return;
+        }
+        frame.setLanguage(language);
+        cbLinkedAuction.setPromptText(UiText.text("No linked auction"));
+        tableAnnouncements.refresh();
+        tableUpcomingAuctions.refresh();
+        updatePreview();
+        NotificationUtil.success(ownerWindow(), "Notification", "Language updated.");
+    }
+
+    private void runActionAsync(Supplier<String> action, String successMessage, Runnable successAction) {
+        actionInProgress = true;
+        setActionBusy(true);
+        UiAsync.run(
+                action::get,
+                result -> {
+                    actionInProgress = false;
+                    setActionBusy(false);
+                    if ("SUCCESS".equals(result)) {
+                        NotificationUtil.success(ownerWindow(), "Notification", successMessage);
+                        successAction.run();
+                        return;
+                    }
+                    NotificationUtil.error(ownerWindow(), "Error", result);
+                },
+                error -> {
+                    actionInProgress = false;
+                    setActionBusy(false);
+                    NotificationUtil.error(ownerWindow(), "Error", "Unable to complete this action right now.");
+                }
+        );
+    }
+
+    private void setActionBusy(boolean busy) {
+        if (txtAnnouncementTitle != null) {
+            txtAnnouncementTitle.setDisable(busy);
+        }
+        if (txtAnnouncementSchedule != null) {
+            txtAnnouncementSchedule.setDisable(busy);
+        }
+        if (txtAnnouncementSummary != null) {
+            txtAnnouncementSummary.setDisable(busy);
+        }
+        if (txtAnnouncementDetails != null) {
+            txtAnnouncementDetails.setDisable(busy);
+        }
+        if (cbLinkedAuction != null) {
+            cbLinkedAuction.setDisable(busy);
+        }
+        if (btnSaveAnnouncement != null) {
+            btnSaveAnnouncement.setDisable(busy);
+        }
+        if (tableAnnouncements != null) {
+            tableAnnouncements.setDisable(busy);
+        }
+        if (tableUpcomingAuctions != null) {
+            tableUpcomingAuctions.setDisable(busy);
+        }
+    }
+
+    private record HomepageSnapshot(
+            List<AuctionItem> allAuctions,
+            List<HomepageAnnouncement> announcements,
+            List<AuctionItem> displayAuctions
+    ) {
     }
 }

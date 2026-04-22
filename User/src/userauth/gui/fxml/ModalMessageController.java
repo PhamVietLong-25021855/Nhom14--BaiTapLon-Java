@@ -31,10 +31,10 @@ public class ModalMessageController {
                           String primaryStyleClass,
                           String secondaryText,
                           boolean showSecondary) {
-        lblTitle.setText(title == null || title.isBlank() ? "THONG BAO" : title);
-        lblMessage.setText(message == null ? "" : message);
+        lblTitle.setText(UiText.text(title == null || title.isBlank() ? "NOTIFICATION" : title));
+        lblMessage.setText(UiText.text(message == null ? "" : message));
 
-        btnPrimary.setText(primaryText == null || primaryText.isBlank() ? "DONG" : primaryText);
+        btnPrimary.setText(UiText.text(primaryText == null || primaryText.isBlank() ? "CLOSE" : primaryText));
         btnPrimary.getStyleClass().setAll("button", primaryStyleClass == null || primaryStyleClass.isBlank()
                 ? "primary-button"
                 : primaryStyleClass);
@@ -42,7 +42,7 @@ public class ModalMessageController {
         btnSecondary.setManaged(showSecondary);
         btnSecondary.setVisible(showSecondary);
         if (showSecondary) {
-            btnSecondary.setText(secondaryText == null || secondaryText.isBlank() ? "HUY" : secondaryText);
+            btnSecondary.setText(UiText.text(secondaryText == null || secondaryText.isBlank() ? "CANCEL" : secondaryText));
             btnSecondary.getStyleClass().setAll("button", "ghost-button");
         }
     }

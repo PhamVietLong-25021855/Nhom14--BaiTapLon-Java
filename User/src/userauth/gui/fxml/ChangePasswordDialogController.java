@@ -27,6 +27,7 @@ public class ChangePasswordDialogController {
     private AuthController authController;
     private User user;
     private Consumer<String> successHandler = message -> {};
+    private boolean submitInProgress;
 
     @FXML
     private void initialize() {
@@ -43,7 +44,7 @@ public class ChangePasswordDialogController {
 
     public void setUser(User user) {
         this.user = user;
-        lblUsername.setText(user == null ? "Tai khoan: -" : "Tai khoan: " + user.getUsername());
+        lblUsername.setText(user == null ? UiText.text("Account: -") : UiText.text("Account:") + " " + user.getUsername());
     }
 
     public void setSuccessHandler(Consumer<String> successHandler) {
@@ -55,7 +56,7 @@ public class ChangePasswordDialogController {
         hideError();
 
         if (authController == null || user == null) {
-            showError("Chua du thong tin de doi mat khau.");
+            showError(UiText.text("Not enough information to change the password."));
             return;
         }
 
@@ -63,18 +64,35 @@ public class ChangePasswordDialogController {
         String newPassword = txtNewPassword.getText() == null ? "" : txtNewPassword.getText().trim();
 
         if (oldPassword.isEmpty() || newPassword.isEmpty()) {
-            showError("Vui long nhap day du mat khau hien tai va mat khau moi.");
+            showError(UiText.text("Please enter both the current password and the new password."));
             return;
         }
 
-        String result = authController.changePassword(user.getUsername(), oldPassword, newPassword);
-        if ("SUCCESS".equals(result)) {
-            successHandler.accept("Doi mat khau thanh cong.");
-            closeDialog();
+        if (submitInProgress) {
             return;
         }
 
-        showError(result);
+        submitInProgress = true;
+        setBusy(true);
+        UiAsync.run(
+                () -> authController.changePassword(user.getUsername(), oldPassword, newPassword),
+                result -> {
+                    submitInProgress = false;
+                    setBusy(false);
+                    if ("SUCCESS".equals(result)) {
+                        successHandler.accept(UiText.text("Password changed successfully."));
+                        closeDialog();
+                        return;
+                    }
+
+                    showError(result);
+                },
+                error -> {
+                    submitInProgress = false;
+                    setBusy(false);
+                    showError(UiText.text("Unable to change the password right now."));
+                }
+        );
     }
 
     @FXML
@@ -83,7 +101,7 @@ public class ChangePasswordDialogController {
     }
 
     private void showError(String message) {
-        lblError.setText(message == null ? "" : message);
+        lblError.setText(UiText.text(message == null ? "" : message));
         lblError.setManaged(true);
         lblError.setVisible(true);
     }
@@ -97,6 +115,15 @@ public class ChangePasswordDialogController {
     private void closeDialog() {
         if (dialogStage != null) {
             dialogStage.close();
+        }
+    }
+
+    private void setBusy(boolean busy) {
+        if (txtOldPassword != null) {
+            txtOldPassword.setDisable(busy);
+        }
+        if (txtNewPassword != null) {
+            txtNewPassword.setDisable(busy);
         }
     }
 }

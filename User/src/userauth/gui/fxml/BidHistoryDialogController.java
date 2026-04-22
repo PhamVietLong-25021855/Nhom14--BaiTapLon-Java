@@ -32,29 +32,36 @@ public class BidHistoryDialogController {
 
     public void setAuction(AuctionItem auctionItem) {
         lblAuctionName.setText(auctionItem == null
-                ? "San pham: -"
-                : "San pham: " + auctionItem.getName() + " | Danh muc: " + auctionItem.getCategory());
+                ? UiText.text("Product") + ": -"
+                : UiText.text("Product") + ": " + auctionItem.getName() + " | " + UiText.text("Category") + ": " + auctionItem.getCategory());
     }
 
     public void setBids(List<BidTransaction> bids) {
         int count = bids == null ? 0 : bids.size();
-        lblSummary.setText("Tong giao dich: " + count);
+        lblSummary.setText(UiText.text("Total transactions") + ": " + count);
 
         if (bids == null || bids.isEmpty()) {
-            txtHistory.setText("Chua co giao dich bid nao.");
+            txtHistory.setText(UiText.text("No bid transactions yet."));
             return;
         }
 
         StringBuilder history = new StringBuilder();
         for (BidTransaction bid : bids) {
-            history.append("User ID: ")
+            history.append(UiText.text("User ID"))
+                    .append(": ")
                     .append(bid.getBidderId())
-                    .append(" | Gia: ")
+                    .append(" | ")
+                    .append(UiText.text("Price"))
+                    .append(": ")
                     .append(AuctionViewFormatter.formatMoney(bid.getAmount()))
-                    .append(" | Luc: ")
+                    .append(" | ")
+                    .append(UiText.text("At"))
+                    .append(": ")
                     .append(BID_TIME.format(Instant.ofEpochMilli(bid.getTimestamp()).atZone(ZoneId.systemDefault())))
-                    .append(" | Trang thai: ")
-                    .append(bid.getStatus())
+                    .append(" | ")
+                    .append(UiText.text("Status"))
+                    .append(": ")
+                    .append(UiText.text(bid.getStatus()))
                     .append('\n');
         }
         txtHistory.setText(history.toString());

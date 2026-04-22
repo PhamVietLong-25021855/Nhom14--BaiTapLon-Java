@@ -5,7 +5,9 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 
 import java.io.IOException;
 
@@ -19,9 +21,10 @@ final class FxmlRuntime {
         FXMLLoader loader = new FXMLLoader(anchor.getResource(FXML_BASE + fileName));
         try {
             Parent root = loader.load();
+            UiText.apply(root);
             return new LoadedView<>(root, loader.getController());
         } catch (IOException ex) {
-            throw new IllegalStateException("Khong the tai FXML " + resourceKind + ": " + fileName, ex);
+            throw new IllegalStateException("Unable to load FXML " + resourceKind + ": " + fileName, ex);
         }
     }
 
@@ -31,9 +34,25 @@ final class FxmlRuntime {
         if (owner != null) {
             dialog.initOwner(owner);
         }
-        dialog.setTitle(title == null || title.isBlank() ? "Thong bao" : title);
+        dialog.initStyle(StageStyle.TRANSPARENT);
+        dialog.setTitle(UiText.text(title == null || title.isBlank() ? "Notification" : title));
         dialog.setResizable(false);
-        dialog.setScene(new Scene(root, width, height));
+        Scene scene = new Scene(root, width, height);
+        scene.setFill(null);
+        dialog.setScene(scene);
+        if (root != null) {
+            root.setOpacity(0);
+            root.setTranslateX(0);
+            root.setTranslateY(10);
+            dialog.addEventHandler(WindowEvent.WINDOW_SHOWN, event -> playDialogReveal(root));
+        }
         return dialog;
+    }
+
+    private static void playDialogReveal(Parent root) {
+        if (root == null) {
+            return;
+        }
+        UiEffects.playEntrance(root, 0, 0, 10);
     }
 }

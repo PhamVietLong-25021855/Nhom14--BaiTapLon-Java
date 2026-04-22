@@ -43,15 +43,15 @@ public class TextInputDialogController {
                           String primaryText,
                           String secondaryText,
                           String primaryStyleClass) {
-        lblTitle.setText(title == null || title.isBlank() ? "NHAP DU LIEU" : title);
-        lblMessage.setText(message == null ? "" : message);
+        lblTitle.setText(UiText.text(title == null || title.isBlank() ? "INPUT" : title));
+        lblMessage.setText(UiText.text(message == null ? "" : message));
         txtInput.setText(defaultValue == null ? "" : defaultValue);
         txtInput.positionCaret(txtInput.getText().length());
-        btnPrimary.setText(primaryText == null || primaryText.isBlank() ? "XAC NHAN" : primaryText);
+        btnPrimary.setText(UiText.text(primaryText == null || primaryText.isBlank() ? "CONFIRM" : primaryText));
         btnPrimary.getStyleClass().setAll("button", primaryStyleClass == null || primaryStyleClass.isBlank()
                 ? "primary-button"
                 : primaryStyleClass);
-        btnSecondary.setText(secondaryText == null || secondaryText.isBlank() ? "HUY" : secondaryText);
+        btnSecondary.setText(UiText.text(secondaryText == null || secondaryText.isBlank() ? "CANCEL" : secondaryText));
         btnSecondary.getStyleClass().setAll("button", "ghost-button");
         hideError();
     }
@@ -65,7 +65,7 @@ public class TextInputDialogController {
     }
 
     public void showError(String message) {
-        lblError.setText(message == null ? "" : message);
+        lblError.setText(UiText.text(message == null ? "" : message));
         lblError.setManaged(true);
         lblError.setVisible(true);
     }

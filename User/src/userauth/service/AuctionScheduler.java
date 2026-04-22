@@ -37,7 +37,7 @@ public class AuctionScheduler {
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
             } catch (Exception ex) {
-                System.err.println("Loi trong AuctionScheduler: " + ex.getMessage());
+                System.err.println("AuctionScheduler error: " + ex.getMessage());
             }
         }
     }

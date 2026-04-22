@@ -12,5 +12,6 @@ public interface AuctionDAO {
     List<AuctionItem> findAllAuctions();
     
     void saveBid(BidTransaction bid);
+    List<BidTransaction> findAllBids();
     List<BidTransaction> findBidsByAuction(int auctionId);
 }

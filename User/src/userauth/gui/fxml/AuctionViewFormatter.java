@@ -20,13 +20,13 @@ public final class AuctionViewFormatter {
 
     public static String formatDuration(AuctionItem item) {
         long minutes = Math.max(1, (item.getEndTime() - item.getStartTime()) / 60000);
-        return minutes + " phut";
+        return minutes + " " + UiText.text("min");
     }
 
     public static String formatRemaining(long endTime) {
         long remainingMs = endTime - System.currentTimeMillis();
         if (remainingMs <= 0) {
-            return "Het gio";
+            return UiText.text("Ended");
         }
         return formatDurationText(remainingMs);
     }
@@ -39,12 +39,12 @@ public final class AuctionViewFormatter {
             return "-";
         }
         if (now < item.getStartTime()) {
-            return "Chua bat dau (" + formatDurationText(item.getStartTime() - now) + ")";
+            return UiText.text("Not started") + " (" + formatDurationText(item.getStartTime() - now) + ")";
         }
 
         long remainingMs = item.getEndTime() - now;
         if (remainingMs <= 0) {
-            return "Het gio";
+            return UiText.text("Ended");
         }
         return formatDurationText(remainingMs);
     }
@@ -64,6 +64,6 @@ public final class AuctionViewFormatter {
     private static String formatDurationText(long milliseconds) {
         long minutes = milliseconds / 60000;
         long seconds = (milliseconds % 60000) / 1000;
-        return minutes + " phut " + seconds + "s";
+        return minutes + " " + UiText.text("min") + " " + seconds + " " + UiText.text("sec");
     }
 }

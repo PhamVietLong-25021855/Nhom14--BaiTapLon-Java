@@ -1,15 +1,15 @@
 package userauth.controller;
 
-import userauth.model.AuctionItem;
-import userauth.model.BidTransaction;
-import userauth.model.Role;
-import userauth.model.User;
-import userauth.service.AuctionService;
 import userauth.exception.AuctionClosedException;
 import userauth.exception.InvalidBidException;
 import userauth.exception.ItemNotFoundException;
 import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
+import userauth.model.AuctionItem;
+import userauth.model.BidTransaction;
+import userauth.model.Role;
+import userauth.model.User;
+import userauth.service.AuctionService;
 
 import java.util.List;
 import java.util.Map;
@@ -21,18 +21,18 @@ public class AuctionController {
         this.auctionService = auctionService;
     }
 
-    public String createAuction(String name, String desc, double startPrice, long startTime, long endTime, String category, int sellerId) {
+    public String createAuction(String name, String desc, double startPrice, long startTime, long endTime, String category, String imageSource, int sellerId) {
         try {
-            auctionService.createAuction(name, desc, startPrice, startTime, endTime, category, sellerId);
+            auctionService.createAuction(name, desc, startPrice, startTime, endTime, category, imageSource, sellerId);
             return "SUCCESS";
         } catch (ValidationException e) {
             return e.getMessage();
         }
     }
 
-    public String updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice, long startTime, long endTime, String category) {
+    public String updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice, long startTime, long endTime, String category, String imageSource) {
         try {
-            auctionService.updateAuction(auctionId, sellerId, name, desc, startPrice, startTime, endTime, category);
+            auctionService.updateAuction(auctionId, sellerId, name, desc, startPrice, startTime, endTime, category, imageSource);
             return "SUCCESS";
         } catch (ItemNotFoundException | UnauthorizedException | ValidationException e) {
             return e.getMessage();
@@ -60,6 +60,10 @@ public class AuctionController {
         return auctionService.getBidsForAuction(auctionId);
     }
 
+    public List<BidTransaction> getAllBids() {
+        return auctionService.getAllBids();
+    }
+
     public String placeBid(int auctionId, int bidderId, double amount) {
         try {
             auctionService.placeBid(auctionId, bidderId, amount);
@@ -80,7 +84,7 @@ public class AuctionController {
 
     public String startAdminEarlyCloseCountdown(User currentUser, int auctionId) {
         if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
-            return "Chi admin moi duoc phep ra lenh ket thuc som.";
+            return "Only admins can issue early-close commands.";
         }
 
         try {
@@ -93,7 +97,7 @@ public class AuctionController {
 
     public String cancelAdminEarlyCloseCountdown(User currentUser, int auctionId) {
         if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
-            return "Chi admin moi duoc phep huy lenh ket thuc som.";
+            return "Only admins can cancel early-close commands.";
         }
 
         try {

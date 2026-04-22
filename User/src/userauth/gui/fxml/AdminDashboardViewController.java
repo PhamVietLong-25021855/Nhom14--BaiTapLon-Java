@@ -7,8 +7,11 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.util.Duration;
 import userauth.controller.AuctionController;
@@ -23,13 +26,15 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class AdminDashboardViewController {
-    private static final String SORT_DEFAULT = "Mac dinh";
-    private static final String SORT_NAME = "Ten san pham A-Z";
-    private static final String SORT_PRICE = "Gia cao nhat giam dan";
-    private static final String SORT_ENDING = "Sap het gio";
-    private static final String SORT_CATEGORY = "Danh muc A-Z";
+    private static final String SORT_DEFAULT = "Default";
+    private static final String SORT_NAME = "Product Name A-Z";
+    private static final String SORT_PRICE = "Highest Bid Descending";
+    private static final String SORT_ENDING = "Ending Soon";
+    private static final String SORT_CATEGORY = "Category A-Z";
+    private static final long ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
 
     @FXML
     private TableView<User> tableUsers;
@@ -82,12 +87,41 @@ public class AdminDashboardViewController {
     @FXML
     private TableColumn<AuctionItem, String> colAuctionCountdown;
 
+    @FXML
+    private Label lblAdminSidebar;
+
+    @FXML
+    private Label lblAdminName;
+
+    @FXML
+    private Label lblTotalUsers;
+
+    @FXML
+    private Label lblRunningAuctions;
+
+    @FXML
+    private Label lblFinishedAuctions;
+
+    @FXML
+    private Label lblTotalBids;
+
+    @FXML
+    private Label lblUserSelectionSummary;
+
+    @FXML
+    private Label lblAuctionSelectionSummary;
+
+    @FXML
+    private PieChart auctionStatusChart;
+
     private final Timeline auctionRefreshTimeline = new Timeline(
-            new KeyFrame(Duration.seconds(1), event -> refreshAuctionData())
+            new KeyFrame(Duration.seconds(5), event -> refreshData())
     );
 
     private final Map<Integer, User> userLookup = new HashMap<>();
     private Map<Integer, Integer> countdownSnapshot = Map.of();
+    private long refreshTicket;
+    private boolean actionInProgress;
 
     private AuthFrame frame;
     private AuthController authController;
@@ -100,8 +134,9 @@ public class AdminDashboardViewController {
         initializeUserTable();
         initializeAuctionTable();
         initializeSortOptions();
-
+        registerSelectionListeners();
         auctionRefreshTimeline.setCycleCount(Animation.INDEFINITE);
+        auctionStatusChart.setAnimated(false);
     }
 
     public void setFrame(AuthFrame frame) {
@@ -122,6 +157,9 @@ public class AdminDashboardViewController {
 
     public void setUser(User user) {
         this.currentUser = user;
+        String name = user == null ? UiText.text("Admin") : user.getFullName() + " (" + user.getUsername() + ")";
+        lblAdminName.setText(name);
+        lblAdminSidebar.setText(name);
     }
 
     public void activate() {
@@ -132,41 +170,65 @@ public class AdminDashboardViewController {
     }
 
     public void deactivate() {
+        refreshTicket++;
         auctionRefreshTimeline.stop();
     }
 
     public void refreshData() {
-        refreshUsers();
-        refreshAuctionData();
+        if (authController == null || auctionController == null) {
+            return;
+        }
+
+        long ticket = ++refreshTicket;
+        int selectedUserId = selectedUserId();
+        int selectedAuctionId = selectedAuctionId();
+        String sortOption = cbAuctionSort == null ? SORT_DEFAULT : cbAuctionSort.getValue();
+
+        UiAsync.run(
+                () -> loadAdminSnapshot(sortOption),
+                snapshot -> {
+                    if (ticket != refreshTicket) {
+                        return;
+                    }
+                    applyAdminSnapshot(snapshot, selectedUserId, selectedAuctionId);
+                },
+                error -> {
+                    if (ticket != refreshTicket) {
+                        return;
+                    }
+                    lblUserSelectionSummary.setText(UiText.text("Unable to load admin data."));
+                    lblAuctionSelectionSummary.setText(UiText.text("Unable to load auction data."));
+                }
+        );
     }
 
     @FXML
     private void handleRefreshUsers() {
-        refreshUsers();
+        refreshData();
     }
 
     @FXML
     private void handleApplyAuctionSort() {
-        refreshAuctionData();
+        refreshData();
     }
 
     @FXML
     private void handleRefreshAuctions() {
-        refreshAuctionData();
+        refreshData();
     }
 
     @FXML
     private void handleOpenHomepageManager() {
         if (frame == null) {
-            NotificationUtil.info(ownerWindow(), "Thong bao", "Chua noi man hinh nay voi AuthFrame.");
+            NotificationUtil.info(ownerWindow(), "Notification", "This screen has not been connected to AuthFrame yet.");
             return;
         }
         if (currentUser == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua co thong tin admin hien tai.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current admin information is unavailable.");
             return;
         }
         if (homepageController == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua gan HomepageController cho man hinh admin.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "HomepageController has not been assigned to the admin screen.");
             return;
         }
 
@@ -179,14 +241,20 @@ public class AdminDashboardViewController {
         if (!hasAuctionManagementContext()) {
             return;
         }
+        if (actionInProgress) {
+            return;
+        }
 
-        AuctionItem selected = getSelectedAuction("Hay chon mot phien dau gia dang dien ra.");
+        AuctionItem selected = getSelectedAuction("Please select a running auction.");
         if (selected == null) {
             return;
         }
 
-        String result = auctionController.startAdminEarlyCloseCountdown(currentUser, selected.getId());
-        handleActionResult(result, "Da bat dau dem 3 lan. Neu khong co bid moi, he thong se ket thuc som.", this::refreshAuctionData);
+        int auctionId = selected.getId();
+        runActionAsync(
+                () -> auctionController.startAdminEarlyCloseCountdown(currentUser, auctionId),
+                "The 3-count early close countdown has started. If no new bid arrives, the auction will close early."
+        );
     }
 
     @FXML
@@ -194,48 +262,70 @@ public class AdminDashboardViewController {
         if (!hasAuctionManagementContext()) {
             return;
         }
+        if (actionInProgress) {
+            return;
+        }
 
-        AuctionItem selected = getSelectedAuction("Hay chon mot phien dau gia dang duoc dem som.");
+        AuctionItem selected = getSelectedAuction("Please select an auction with an active early-close countdown.");
         if (selected == null) {
             return;
         }
 
-        String result = auctionController.cancelAdminEarlyCloseCountdown(currentUser, selected.getId());
-        handleActionResult(result, "Da huy lenh dem ket thuc som.", this::refreshAuctionData);
+        int auctionId = selected.getId();
+        runActionAsync(
+                () -> auctionController.cancelAdminEarlyCloseCountdown(currentUser, auctionId),
+                "The early-close countdown has been cancelled."
+        );
     }
 
     @FXML
     private void handleToggleStatus() {
         if (authController == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua gan AuthController cho man hinh admin.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "AuthController has not been assigned to the admin screen.");
             return;
         }
         if (currentUser == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua co thong tin nguoi dung hien tai.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current user information is unavailable.");
+            return;
+        }
+        if (actionInProgress) {
             return;
         }
 
-        User selected = getSelectedUser("Hay chon mot tai khoan.");
+        User selected = getSelectedUser("Please select an account.");
         if (selected == null) {
             return;
         }
 
-        String result = authController.toggleUserStatus(currentUser.getUsername(), selected.getId());
-        handleActionResult(result, "Cap nhat trang thai tai khoan thanh cong.", this::refreshUsers);
+        int selectedUserId = selected.getId();
+        runActionAsync(
+                () -> authController.toggleUserStatus(currentUser.getUsername(), selectedUserId),
+                "Account status updated successfully."
+        );
     }
 
     @FXML
     private void handleChangePassword() {
         if (currentUser == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua co nguoi dung hien tai.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current user is unavailable.");
             return;
         }
         if (frame == null) {
-            NotificationUtil.info(ownerWindow(), "Thong bao", "Da gan su kien doi mat khau. Hay noi controller voi AuthFrame khi tich hop.");
+            NotificationUtil.info(ownerWindow(), "Notification", "The change-password action is prepared. Connect this controller to AuthFrame when integrating.");
             return;
         }
 
         frame.showChangePasswordDialog(currentUser);
+    }
+
+    @FXML
+    private void handleSwitchToEnglish() {
+        switchLanguage(AppLanguage.ENGLISH);
+    }
+
+    @FXML
+    private void handleSwitchToVietnamese() {
+        switchLanguage(AppLanguage.VIETNAMESE);
     }
 
     @FXML
@@ -245,44 +335,37 @@ public class AdminDashboardViewController {
         if (frame != null) {
             frame.showLogin();
         } else {
-            NotificationUtil.info(ownerWindow(), "Thong bao", "Da gan su kien dang xuat. Hay noi controller voi AuthFrame khi tich hop.");
+            NotificationUtil.info(ownerWindow(), "Notification", "The logout action is prepared. Connect this controller to AuthFrame when integrating.");
         }
     }
 
-    private void refreshUsers() {
-        if (authController == null) {
-            return;
-        }
-
-        int selectedId = selectedUserId();
-        try {
-            List<User> users = authController.getAllUsersList();
-            userLookup.clear();
-            for (User user : users) {
-                userLookup.put(user.getId(), user);
-            }
-
-            tableUsers.setItems(FXCollections.observableArrayList(users));
-            reselectUser(selectedId);
-        } catch (Exception ex) {
-            NotificationUtil.error(ownerWindow(), "Loi", "Khong the tai danh sach khach hang.");
-        }
-    }
-
-    private void refreshAuctionData() {
-        if (auctionController == null) {
-            return;
-        }
-
-        int selectedAuctionId = selectedAuctionId();
-        countdownSnapshot = auctionController.getAdminEarlyCloseCountdowns();
-
+    private AdminSnapshot loadAdminSnapshot(String sortOption) {
+        List<User> users = authController.getAllUsersList();
+        Map<Integer, Integer> countdowns = auctionController.getAdminEarlyCloseCountdowns();
         List<AuctionItem> auctions = new ArrayList<>(auctionController.getAllAuctions());
-        sortAuctions(auctions);
+        sortAuctions(auctions, sortOption);
+        int totalBids = auctionController.getAllBids().size();
+        return new AdminSnapshot(users, auctions, countdowns, totalBids);
+    }
 
-        tableAuctions.setItems(FXCollections.observableArrayList(auctions));
+    private void applyAdminSnapshot(AdminSnapshot snapshot, int selectedUserId, int selectedAuctionId) {
+        userLookup.clear();
+        for (User user : snapshot.users()) {
+            userLookup.put(user.getId(), user);
+        }
+
+        tableUsers.setItems(FXCollections.observableArrayList(snapshot.users()));
+        reselectUser(selectedUserId);
+        lblTotalUsers.setText(String.valueOf(snapshot.users().size()));
+        updateUserSelectionSummary(tableUsers.getSelectionModel().getSelectedItem());
+
+        countdownSnapshot = snapshot.countdowns();
+        tableAuctions.setItems(FXCollections.observableArrayList(snapshot.auctions()));
         reselectAuction(selectedAuctionId);
         tableAuctions.refresh();
+        updateAuctionMetrics(snapshot.auctions(), snapshot.totalBids());
+        updateAuctionSelectionSummary(tableAuctions.getSelectionModel().getSelectedItem());
+        updateAuctionStatusChart(snapshot.auctions());
     }
 
     private void initializeUserTable() {
@@ -290,8 +373,8 @@ public class AdminDashboardViewController {
         colUsername.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getUsername()));
         colFullName.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getFullName()));
         colEmail.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getEmail()));
-        colRole.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getRoleName()));
-        colStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getStatus()));
+        colRole.setCellValueFactory(data -> new ReadOnlyStringWrapper(UiText.text(data.getValue().getRoleName())));
+        colStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(UiText.userStatus(data.getValue().getStatus())));
     }
 
     private void initializeAuctionTable() {
@@ -300,9 +383,10 @@ public class AdminDashboardViewController {
         colAuctionSeller.setCellValueFactory(data -> new ReadOnlyStringWrapper(resolveSellerName(data.getValue().getSellerId())));
         colAuctionCategory.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getCategory()));
         colAuctionHighestBid.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatMoney(data.getValue().getCurrentHighestBid())));
-        colAuctionStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getStatus().name()));
+        colAuctionStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(UiText.auctionStatus(data.getValue().getStatus())));
         colAuctionTimeLeft.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatTimeLeft(data.getValue())));
         colAuctionCountdown.setCellValueFactory(data -> new ReadOnlyStringWrapper(formatCountdown(data.getValue())));
+        tableAuctions.setRowFactory(this::createAuctionRow);
     }
 
     private void initializeSortOptions() {
@@ -314,10 +398,94 @@ public class AdminDashboardViewController {
                 SORT_CATEGORY
         );
         cbAuctionSort.setValue(SORT_DEFAULT);
+        UiText.configureTranslatedComboBox(cbAuctionSort);
     }
 
-    private void sortAuctions(List<AuctionItem> auctions) {
-        String sortOption = cbAuctionSort == null ? SORT_DEFAULT : cbAuctionSort.getValue();
+    private void registerSelectionListeners() {
+        tableUsers.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) ->
+                updateUserSelectionSummary(newValue));
+        tableAuctions.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) ->
+                updateAuctionSelectionSummary(newValue));
+    }
+
+    private void updateAuctionMetrics(List<AuctionItem> auctions, int totalBids) {
+        long running = auctions.stream().filter(item -> item.getStatus() == AuctionStatus.RUNNING).count();
+        long finished = auctions.stream()
+                .filter(item -> item.getStatus() == AuctionStatus.FINISHED
+                        || item.getStatus() == AuctionStatus.PAID
+                        || item.getStatus() == AuctionStatus.CANCELED)
+                .count();
+
+        lblRunningAuctions.setText(String.valueOf(running));
+        lblFinishedAuctions.setText(String.valueOf(finished));
+        lblTotalBids.setText(String.valueOf(totalBids));
+    }
+
+    private void updateAuctionStatusChart(List<AuctionItem> auctions) {
+        Map<String, Integer> counts = new HashMap<>();
+        for (AuctionItem auction : auctions) {
+            counts.merge(UiText.auctionStatus(auction.getStatus()), 1, Integer::sum);
+        }
+
+        auctionStatusChart.setData(FXCollections.observableArrayList(
+                counts.entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .map(entry -> new PieChart.Data(entry.getKey(), entry.getValue()))
+                        .toList()
+        ));
+    }
+
+    private void updateUserSelectionSummary(User selected) {
+        if (selected == null) {
+            lblUserSelectionSummary.setText(UiText.text("Select a user to view a summary here."));
+            return;
+        }
+
+        lblUserSelectionSummary.setText(
+                selected.getFullName() + " | " + UiText.text(selected.getRoleName()) + " | " + UiText.text("Status") + ": " + UiText.userStatus(selected.getStatus())
+        );
+    }
+
+    private void updateAuctionSelectionSummary(AuctionItem selected) {
+        if (selected == null) {
+            lblAuctionSelectionSummary.setText(UiText.text("Select an auction to track its countdown and status here."));
+            return;
+        }
+
+        lblAuctionSelectionSummary.setText(
+                selected.getName()
+                        + " | " + UiText.auctionStatus(selected.getStatus())
+                        + " | " + AuctionViewFormatter.formatTimeLeft(selected)
+                        + " | " + formatCountdown(selected)
+        );
+    }
+
+    private TableRow<AuctionItem> createAuctionRow(TableView<AuctionItem> ignored) {
+        return new TableRow<>() {
+            @Override
+            protected void updateItem(AuctionItem item, boolean empty) {
+                super.updateItem(item, empty);
+                getStyleClass().removeAll("table-row-live", "table-row-ending", "table-row-closed");
+                if (empty || item == null) {
+                    return;
+                }
+
+                if (item.getStatus() == AuctionStatus.RUNNING) {
+                    long remaining = item.getEndTime() - System.currentTimeMillis();
+                    getStyleClass().add(remaining <= ENDING_SOON_THRESHOLD_MS ? "table-row-ending" : "table-row-live");
+                    return;
+                }
+
+                if (item.getStatus() == AuctionStatus.FINISHED
+                        || item.getStatus() == AuctionStatus.PAID
+                        || item.getStatus() == AuctionStatus.CANCELED) {
+                    getStyleClass().add("table-row-closed");
+                }
+            }
+        };
+    }
+
+    private void sortAuctions(List<AuctionItem> auctions, String sortOption) {
         switch (sortOption) {
             case SORT_NAME -> auctions.sort(Comparator.comparing(item -> item.getName().toLowerCase()));
             case SORT_PRICE -> auctions.sort(Comparator.comparingDouble(AuctionItem::getCurrentHighestBid).reversed());
@@ -363,7 +531,7 @@ public class AdminDashboardViewController {
     private String resolveSellerName(int sellerId) {
         User seller = userLookup.get(sellerId);
         if (seller == null) {
-            return "Seller ID " + sellerId;
+            return UiText.text("Seller ID") + " " + sellerId;
         }
         return seller.getFullName() + " (" + seller.getUsername() + ")";
     }
@@ -375,18 +543,18 @@ public class AdminDashboardViewController {
 
         Integer remaining = countdownSnapshot.get(item.getId());
         if (remaining == null) {
-            return "Chua kich hoat";
+            return UiText.text("Not active");
         }
-        return "Con " + remaining + " lan";
+        return remaining + " " + UiText.text("counts left");
     }
 
     private boolean hasAuctionManagementContext() {
         if (auctionController == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua gan AuctionController cho man hinh admin.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "AuctionController has not been assigned to the admin screen.");
             return false;
         }
         if (currentUser == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", "Chua co thong tin admin hien tai.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current admin information is unavailable.");
             return false;
         }
         return true;
@@ -395,7 +563,7 @@ public class AdminDashboardViewController {
     private AuctionItem getSelectedAuction(String emptyMessage) {
         AuctionItem selected = tableAuctions.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", emptyMessage);
+            NotificationUtil.warning(ownerWindow(), "Notification", emptyMessage);
         }
         return selected;
     }
@@ -403,21 +571,70 @@ public class AdminDashboardViewController {
     private User getSelectedUser(String emptyMessage) {
         User selected = tableUsers.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            NotificationUtil.warning(ownerWindow(), "Thong bao", emptyMessage);
+            NotificationUtil.warning(ownerWindow(), "Notification", emptyMessage);
         }
         return selected;
     }
 
     private void handleActionResult(String result, String successMessage, Runnable successAction) {
         if ("SUCCESS".equals(result)) {
-            NotificationUtil.success(ownerWindow(), "Thong bao", successMessage);
+            NotificationUtil.success(ownerWindow(), "Notification", successMessage);
             successAction.run();
             return;
         }
-        NotificationUtil.error(ownerWindow(), "Loi", result);
+        NotificationUtil.error(ownerWindow(), "Error", result);
+    }
+
+    private void runActionAsync(Supplier<String> action, String successMessage) {
+        actionInProgress = true;
+        setActionBusy(true);
+        UiAsync.run(
+                action::get,
+                result -> {
+                    actionInProgress = false;
+                    setActionBusy(false);
+                    handleActionResult(result, successMessage, this::refreshData);
+                },
+                error -> {
+                    actionInProgress = false;
+                    setActionBusy(false);
+                    NotificationUtil.error(ownerWindow(), "Error", "Unable to complete this action right now.");
+                }
+        );
+    }
+
+    private void setActionBusy(boolean busy) {
+        if (tableUsers != null) {
+            tableUsers.setDisable(busy);
+        }
+        if (tableAuctions != null) {
+            tableAuctions.setDisable(busy);
+        }
+        if (cbAuctionSort != null) {
+            cbAuctionSort.setDisable(busy);
+        }
     }
 
     private javafx.stage.Window ownerWindow() {
         return frame == null ? null : frame.getWindow();
+    }
+
+    private void switchLanguage(AppLanguage language) {
+        if (frame == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Language settings are unavailable.");
+            return;
+        }
+        frame.setLanguage(language);
+        UiText.refreshTranslatedComboBox(cbAuctionSort);
+        refreshData();
+        NotificationUtil.success(ownerWindow(), "Notification", "Language updated.");
+    }
+
+    private record AdminSnapshot(
+            List<User> users,
+            List<AuctionItem> auctions,
+            Map<Integer, Integer> countdowns,
+            int totalBids
+    ) {
     }
 }

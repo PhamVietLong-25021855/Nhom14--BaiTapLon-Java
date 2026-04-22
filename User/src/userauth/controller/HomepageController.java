@@ -22,7 +22,7 @@ public class HomepageController {
     public String saveAnnouncement(User currentUser, Integer announcementId, String title, String summary,
                                    String details, String scheduleText, Integer linkedAuctionId) {
         if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
-            return "Chi admin moi duoc dang bai len trang chu.";
+            return "Only admins can publish announcements to the homepage.";
         }
 
         try {
@@ -43,7 +43,7 @@ public class HomepageController {
 
     public String deleteAnnouncement(User currentUser, int announcementId) {
         if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
-            return "Chi admin moi duoc xoa bai dang tren trang chu.";
+            return "Only admins can delete homepage announcements.";
         }
 
         try {

@@ -7,21 +7,21 @@
 <?import javafx.scene.layout.VBox?>
 
 <StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
-           prefHeight="240.0" prefWidth="420.0"
+           prefHeight="260.0" prefWidth="440.0"
            fx:controller="userauth.gui.fxml.ModalMessageController"
-           styleClass="page-root"
+           styleClass="dialog-root"
            stylesheets="@auth-theme.css"
            xmlns="http://javafx.com/javafx/21"
            xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox maxWidth="372.0" prefWidth="372.0" spacing="16.0" styleClass="form-card">
+        <VBox maxWidth="396.0" prefWidth="396.0" spacing="18.0" styleClass="dialog-card">
             <children>
-                <Label fx:id="lblTitle" text="THONG BAO" styleClass="section-title"/>
-                <Label fx:id="lblMessage" text="Noi dung thong bao" wrapText="true" styleClass="body-text"/>
+                <Label fx:id="lblTitle" text="NOTIFICATION" styleClass="section-title"/>
+                <Label fx:id="lblMessage" text="Notification content" wrapText="true" styleClass="body-text"/>
                 <HBox spacing="10.0" styleClass="dialog-actions">
                     <children>
-                        <Button fx:id="btnSecondary" mnemonicParsing="false" onAction="#handleSecondary" text="HUY" styleClass="button ghost-button"/>
-                        <Button fx:id="btnPrimary" mnemonicParsing="false" onAction="#handlePrimary" text="DONG" styleClass="button primary-button"/>
+                        <Button fx:id="btnSecondary" mnemonicParsing="false" onAction="#handleSecondary" text="CANCEL" styleClass="button ghost-button"/>
+                        <Button fx:id="btnPrimary" mnemonicParsing="false" onAction="#handlePrimary" text="CLOSE" styleClass="button primary-button"/>
                     </children>
                 </HBox>
             </children>

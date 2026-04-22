@@ -14,6 +14,7 @@ public abstract class Entity {
         return id;
     }
 
-    // Phương thức trừu tượng - các lớp con bắt buộc override (Polymorphism)
-    public abstract void printInfo();
+    public void setId(int id) {
+        this.id = id;
+    }
 }

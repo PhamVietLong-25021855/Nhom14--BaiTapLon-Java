@@ -8,22 +8,22 @@
 <?import javafx.scene.layout.VBox?>
 
 <StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
-           prefHeight="460.0" prefWidth="720.0"
+           prefHeight="500.0" prefWidth="760.0"
            fx:controller="userauth.gui.fxml.BidHistoryDialogController"
-           styleClass="page-root"
+           styleClass="dialog-root"
            stylesheets="@auth-theme.css"
            xmlns="http://javafx.com/javafx/21"
            xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox maxWidth="672.0" prefWidth="672.0" spacing="14.0" styleClass="form-card">
+        <VBox maxWidth="712.0" prefWidth="712.0" spacing="16.0" styleClass="dialog-card">
             <children>
-                <Label text="LICH SU BID" styleClass="section-title"/>
-                <Label fx:id="lblAuctionName" text="San pham: -" wrapText="true" styleClass="body-text"/>
-                <Label fx:id="lblSummary" text="Tong giao dich: 0" styleClass="secondary-text"/>
-                <TextArea fx:id="txtHistory" editable="false" prefHeight="300.0" wrapText="true" VBox.vgrow="ALWAYS"/>
+                <Label text="BID HISTORY" styleClass="section-title"/>
+                <Label fx:id="lblAuctionName" text="Product: -" wrapText="true" styleClass="body-text"/>
+                <Label fx:id="lblSummary" text="Total transactions: 0" styleClass="secondary-text"/>
+                <TextArea fx:id="txtHistory" editable="false" prefHeight="330.0" wrapText="true" VBox.vgrow="ALWAYS"/>
                 <HBox spacing="10.0" styleClass="dialog-actions">
                     <children>
-                        <Button mnemonicParsing="false" onAction="#handleClose" text="DONG" styleClass="button primary-button"/>
+                        <Button mnemonicParsing="false" onAction="#handleClose" text="CLOSE" styleClass="button primary-button"/>
                     </children>
                 </HBox>
             </children>

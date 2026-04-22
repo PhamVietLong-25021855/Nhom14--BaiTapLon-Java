@@ -15,11 +15,9 @@ import java.util.List;
 
 public class AuthService {
     private final UserDAO userDAO;
-    private int idCounter;
 
     public AuthService(UserDAO userDAO) {
         this.userDAO = userDAO;
-        this.idCounter = findNextId();
     }
 
     public void register(String username, String password, String fullName, String email, Role role) throws ValidationException {
@@ -31,22 +29,22 @@ public class AuthService {
 
         long now = System.currentTimeMillis();
         String hashedPassword = PasswordUtil.hashPassword(password);
-        User user = createUser(idCounter++, normalizedUsername, hashedPassword, fullName, normalizedEmail, role, now);
+        User user = createUser(0, normalizedUsername, hashedPassword, fullName, normalizedEmail, role, now);
         userDAO.save(user);
     }
 
     public User login(String username, String password) throws UnauthorizedException {
         String normalizedUsername = username == null ? null : username.trim();
         if (normalizedUsername == null || normalizedUsername.isEmpty() || password == null || password.isBlank()) {
-            throw new UnauthorizedException("Vui long nhap tai khoan va mat khau.");
+            throw new UnauthorizedException("Please enter your username and password.");
         }
 
         User user = userDAO.findByUsername(normalizedUsername);
         if (user == null || !user.checkPassword(password)) {
-            throw new UnauthorizedException("Sai tai khoan hoac mat khau.");
+            throw new UnauthorizedException("Incorrect username or password.");
         }
         if ("BLOCKED".equals(user.getStatus())) {
-            throw new UnauthorizedException("Tai khoan cua ban da bi khoa.");
+            throw new UnauthorizedException("Your account has been locked.");
         }
 
         return user;
@@ -60,10 +58,10 @@ public class AuthService {
             throws ValidationException, UnauthorizedException {
         User user = requireExistingUser(username);
         if (!user.checkPassword(oldPassword)) {
-            throw new UnauthorizedException("Mat khau cu khong chinh xac.");
+            throw new UnauthorizedException("Current password is incorrect.");
         }
         if (!UserValidator.isValidPassword(newPassword)) {
-            throw new ValidationException("Mat khau moi phai co it nhat 6 ky tu gom chu va so.");
+            throw new ValidationException("New password must be at least 6 characters and include letters and numbers.");
         }
 
         user.setPassword(PasswordUtil.hashPassword(newPassword));
@@ -75,15 +73,15 @@ public class AuthService {
             throws UnauthorizedException, ValidationException {
         User admin = requireExistingUser(adminUsername);
         if (admin.getRole() != Role.ADMIN) {
-            throw new UnauthorizedException("Chi admin moi co quyen khoa/mo tai khoan.");
+            throw new UnauthorizedException("Only admins can lock or unlock accounts.");
         }
 
         User target = findUserById(targetUserId);
         if (target == null) {
-            throw new ValidationException("Khong tim thay tai khoan de khoa/mo.");
+            throw new ValidationException("Account for lock or unlock was not found.");
         }
         if (target.getId() == admin.getId()) {
-            throw new ValidationException("Khong the tu khoa tai khoan cua chinh minh.");
+            throw new ValidationException("You cannot lock your own account.");
         }
 
         target.setStatus("ACTIVE".equals(target.getStatus()) ? "BLOCKED" : "ACTIVE");
@@ -91,41 +89,31 @@ public class AuthService {
         userDAO.update(target);
     }
 
-    private int findNextId() {
-        int maxId = 0;
-        for (User user : userDAO.findAll()) {
-            if (user.getId() > maxId) {
-                maxId = user.getId();
-            }
-        }
-        return maxId + 1;
-    }
-
     private void validateRegistrationInput(String username, String password, String fullName, String email, Role role)
             throws ValidationException {
         if (!UserValidator.isValidUsername(username)) {
-            throw new ValidationException("Username khong hop le. Phai tu 3-20 ky tu va khong duoc de trong.");
+            throw new ValidationException("Invalid username. It must be 3 to 20 characters long and cannot be empty.");
         }
         if (!UserValidator.isValidPassword(password)) {
-            throw new ValidationException("Mat khau khong hop le. Phai co it nhat 6 ky tu, gom chu va so.");
+            throw new ValidationException("Invalid password. It must be at least 6 characters long and include letters and numbers.");
         }
         if (!UserValidator.isValidEmail(email)) {
-            throw new ValidationException("Email khong hop le.");
+            throw new ValidationException("Invalid email.");
         }
         if (role == null) {
-            throw new ValidationException("Role khong hop le.");
+            throw new ValidationException("Invalid role.");
         }
         if (fullName == null || fullName.trim().isEmpty()) {
-            throw new ValidationException("Ho ten khong duoc de trong.");
+            throw new ValidationException("Full name cannot be empty.");
         }
     }
 
     private void ensureUniqueUser(String username, String email) throws ValidationException {
         if (userDAO.findByUsername(username) != null) {
-            throw new ValidationException("Username da ton tai.");
+            throw new ValidationException("Username already exists.");
         }
         if (userDAO.findByEmail(email) != null) {
-            throw new ValidationException("Email da ton tai.");
+            throw new ValidationException("Email already exists.");
         }
     }
 
@@ -140,7 +128,7 @@ public class AuthService {
     private User requireExistingUser(String username) throws UnauthorizedException {
         User user = userDAO.findByUsername(username);
         if (user == null) {
-            throw new UnauthorizedException("Khong tim thay nguoi dung.");
+            throw new UnauthorizedException("User not found.");
         }
         return user;
     }

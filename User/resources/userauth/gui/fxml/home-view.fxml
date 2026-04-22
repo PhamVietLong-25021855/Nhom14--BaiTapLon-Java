@@ -10,26 +10,16 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
 
-<StackPane maxHeight="Infinity" maxWidth="Infinity"
-           prefHeight="900.0" prefWidth="1280.0"
-           fx:controller="userauth.gui.fxml.HomeViewController"
-           styleClass="page-root landing-root"
-           stylesheets="@auth-theme.css"
-           xmlns="http://javafx.com/javafx/21"
-           xmlns:fx="http://javafx.com/fxml/1">
+<StackPane maxHeight="Infinity" maxWidth="Infinity" prefHeight="920.0" prefWidth="1320.0" styleClass="page-root landing-root" stylesheets="@auth-theme.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.HomeViewController">
     <children>
         <Pane mouseTransparent="true" pickOnBounds="false">
             <children>
-                <Circle fx:id="orbOne" fill="#ffffff" layoutX="162.0" layoutY="118.0" opacity="0.26" radius="96.0" stroke="TRANSPARENT"/>
-                <Circle fx:id="orbTwo" fill="#b8c9d4" layoutX="1126.0" layoutY="174.0" opacity="0.33" radius="126.0" stroke="TRANSPARENT"/>
-                <Circle fx:id="orbThree" fill="#8799a7" layoutX="980.0" layoutY="664.0" opacity="0.25" radius="78.0" stroke="TRANSPARENT"/>
+                <Circle fx:id="orbOne" layoutX="164.0" layoutY="128.0" opacity="0.28" radius="102.0" stroke="TRANSPARENT" styleClass="accent-orb accent-orb-soft" />
+                <Circle fx:id="orbTwo" layoutX="1128.0" layoutY="172.0" opacity="0.18" radius="128.0" stroke="TRANSPARENT" styleClass="accent-orb accent-orb-blue" />
+                <Circle fx:id="orbThree" layoutX="986.0" layoutY="688.0" opacity="0.15" radius="82.0" stroke="TRANSPARENT" styleClass="accent-orb accent-orb-gold" />
             </children>
         </Pane>
-        <ScrollPane fx:id="landingScrollPane"
-                    fitToWidth="true"
-                    hbarPolicy="NEVER"
-                    pannable="true"
-                    styleClass="landing-scroll">
+        <ScrollPane fx:id="landingScrollPane" fitToWidth="true" hbarPolicy="NEVER" pannable="true" styleClass="landing-scroll">
             <content>
                 <VBox maxHeight="Infinity" maxWidth="Infinity" spacing="30.0" styleClass="landing-shell">
                     <children>
@@ -37,123 +27,80 @@
                             <children>
                                 <HBox alignment="CENTER_LEFT" spacing="12.0">
                                     <children>
-                                        <StackPane minHeight="44.0" minWidth="44.0" prefHeight="44.0" prefWidth="44.0" styleClass="brand-mark">
+                                        <StackPane minHeight="48.0" minWidth="48.0" prefHeight="48.0" prefWidth="48.0" styleClass="brand-mark">
                                             <children>
-                                                <Label text="A" styleClass="brand-mark-text"/>
+                                                <Label styleClass="brand-mark-text" text="A" />
                                             </children>
                                         </StackPane>
                                         <VBox spacing="2.0">
                                             <children>
-                                                <Label text="AUCTION HOUSE" styleClass="brand-title"/>
-                                                <Label text="San dau gia truc tuyen cho nguoi ban va nguoi mua" styleClass="brand-subtitle"/>
+                                                <Label styleClass="brand-title" text="AUCTION HOUSE" />
+                                                <Label styleClass="brand-subtitle" text="Online auctions for bidders, sellers, and admins" />
                                             </children>
                                         </VBox>
                                     </children>
                                 </HBox>
-                                <Region HBox.hgrow="ALWAYS"/>
+                                <Region HBox.hgrow="ALWAYS" />
                                 <HBox alignment="CENTER_RIGHT" spacing="12.0">
                                     <children>
-                                        <Button mnemonicParsing="false" onAction="#handleShowLogin" text="DANG NHAP" styleClass="button nav-button nav-button-outline"/>
-                                        <Button mnemonicParsing="false" onAction="#handleShowRegister" text="DANG KY" styleClass="button nav-button nav-button-solid"/>
+                                        <Button mnemonicParsing="false" onAction="#handleShowLogin" styleClass="button nav-button nav-button-outline" text="LOG IN" />
+                                        <Button mnemonicParsing="false" onAction="#handleShowRegister" styleClass="button nav-button nav-button-solid" text="REGISTER" />
                                     </children>
                                 </HBox>
                             </children>
                         </HBox>
-                        <HBox alignment="CENTER" maxWidth="Infinity" spacing="30.0" styleClass="landing-content">
+                        <HBox alignment="CENTER" maxWidth="Infinity" spacing="26.0" styleClass="landing-content">
                             <children>
-                                <VBox fx:id="heroPanel" HBox.hgrow="ALWAYS" minWidth="760.0" spacing="22.0" styleClass="landing-hero">
+                                <VBox fx:id="heroPanel" minWidth="760.0" spacing="20.0" styleClass="landing-hero" HBox.hgrow="ALWAYS">
                                     <children>
-                                        <Label text="HOME" styleClass="landing-badge"/>
-                                        <Label text="CHAO MUNG DEN VOI HE THONG DAU GIA SAN PHAM"
-                                               wrapText="true"
-                                               styleClass="landing-title"/>
-                                        <Label text="Trang chu nay giu nguyen phan gioi thieu ben tren, dong thoi bo sung lich dau gia va bang tin do admin quan ly. Moi thay doi se duoc cap nhat lai ngay khi admin dang bai hoac khi phien dau gia thay doi theo thoi gian thuc."
-                                               wrapText="true"
-                                               styleClass="landing-copy"/>
-                                        <Label text="Cuon xuong de xem san pham sap len lich, bai dang tu admin va cac thong bao moi nhat truoc khi dang nhap."
-                                               wrapText="true"
-                                               styleClass="landing-note"/>
+                                        <Label styleClass="landing-badge" text="PREMIUM AUCTION APP" />
+                                        <Label styleClass="landing-title" text="PRODUCT AUCTION PLATFORM" wrapText="true" />
+                                        <Label styleClass="landing-copy" text="Browse live auctions, see upcoming listings, and follow admin updates from one homepage." wrapText="true" />
+                                        <Label styleClass="landing-note" text="Log in to bid, sell, or manage the platform." wrapText="true" />
                                         <HBox fx:id="statsRow" spacing="18.0" styleClass="stats-row">
                                             <children>
-                                                <VBox HBox.hgrow="ALWAYS" minWidth="220.0" spacing="8.0" styleClass="stat-card">
+                                                <VBox minWidth="220.0" spacing="8.0" styleClass="stat-card" HBox.hgrow="ALWAYS">
                                                     <children>
-                                                        <Label text="PHIEN DANG CHAY" styleClass="stat-label"/>
-                                                        <Label fx:id="statRunningValue" text="0" styleClass="stat-value"/>
-                                                        <Label text="So phien dang dien ra va con cho bidder dat gia ngay luc nay." wrapText="true" styleClass="stat-help"/>
+                                                        <Label styleClass="stat-label" text="LIVE AUCTIONS" />
+                                                        <Label fx:id="statRunningValue" styleClass="stat-value" text="0" />
                                                     </children>
                                                 </VBox>
-                                                <VBox HBox.hgrow="ALWAYS" minWidth="220.0" spacing="8.0" styleClass="stat-card">
+                                                <VBox minWidth="220.0" spacing="8.0" styleClass="stat-card" HBox.hgrow="ALWAYS">
                                                     <children>
-                                                        <Label text="SAP DAU GIA" styleClass="stat-label"/>
-                                                        <Label fx:id="statUpcomingValue" text="0" styleClass="stat-value"/>
-                                                        <Label text="Cac phien da duoc tao lich va sap mo tren he thong." wrapText="true" styleClass="stat-help"/>
+                                                        <Label styleClass="stat-label" text="OPENING SOON" />
+                                                        <Label fx:id="statUpcomingValue" styleClass="stat-value" text="0" />
                                                     </children>
                                                 </VBox>
-                                                <VBox HBox.hgrow="ALWAYS" minWidth="220.0" spacing="8.0" styleClass="stat-card">
+                                                <VBox minWidth="220.0" spacing="8.0" styleClass="stat-card" HBox.hgrow="ALWAYS">
                                                     <children>
-                                                        <Label text="BANG TIN ADMIN" styleClass="stat-label"/>
-                                                        <Label fx:id="statAnnouncementValue" text="0" styleClass="stat-value"/>
-                                                        <Label text="Thong bao, lich dau gia va bai gioi thieu vat pham do admin dang." wrapText="true" styleClass="stat-help"/>
+                                                        <Label styleClass="stat-label" text="ADMIN UPDATES" />
+                                                        <Label fx:id="statAnnouncementValue" styleClass="stat-value" text="0" />
                                                     </children>
                                                 </VBox>
                                             </children>
                                         </HBox>
                                     </children>
                                 </VBox>
-                                <VBox fx:id="featurePanel" HBox.hgrow="ALWAYS" minWidth="420.0" prefWidth="500.0" spacing="18.0" styleClass="spotlight-panel">
+                                <VBox fx:id="featurePanel" minWidth="320.0" prefWidth="360.0" spacing="14.0" styleClass="spotlight-panel" HBox.hgrow="ALWAYS">
                                     <children>
-                                        <VBox spacing="14.0" styleClass="spotlight-card">
+                                        <VBox spacing="12.0" styleClass="spotlight-card">
                                             <children>
-                                                <Label text="TRANG CHU CO CAP NHAT LIVE" styleClass="spotlight-eyebrow"/>
-                                                <Label text="Nguoi xem co the theo doi lich dau gia ngay khi vua mo app"
-                                                       wrapText="true"
-                                                       styleClass="spotlight-title"/>
-                                                <Label text="Khoi noi dung ben duoi duoc lam moi dinh ky, vi vay admin chi can cap nhat bai dang o man hinh quan tri la trang chu se hien ra ngay. Danh sach phien dau gia cung duoc cap nhat theo thay doi thoi gian va trang thai."
-                                                       wrapText="true"
-                                                       styleClass="body-text landing-muted"/>
+                                                <Label styleClass="spotlight-eyebrow" text="FAST OVERVIEW" />
+                                                <Label styleClass="spotlight-title" text="Live stats, featured auctions, and homepage updates stay in one place" wrapText="true" />
+                                                <Label styleClass="body-text landing-muted" text="The homepage now opens straight to the information users actually need." wrapText="true" />
                                             </children>
                                         </VBox>
                                         <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="feature-card">
                                             <children>
                                                 <StackPane minHeight="42.0" minWidth="42.0" prefHeight="42.0" prefWidth="42.0" styleClass="feature-badge">
                                                     <children>
-                                                        <Label text="01" styleClass="feature-badge-text"/>
+                                                        <Label styleClass="feature-badge-text" text="01" />
                                                     </children>
                                                 </StackPane>
                                                 <VBox spacing="4.0">
                                                     <children>
-                                                        <Label text="Cuon xem lich" styleClass="feature-title"/>
-                                                        <Label text="Trang chu da duoc boc trong ScrollPane de xem them noi dung ma van giu khoi gioi thieu o tren cung." wrapText="true" styleClass="feature-copy"/>
-                                                    </children>
-                                                </VBox>
-                                            </children>
-                                        </HBox>
-                                        <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="feature-card">
-                                            <children>
-                                                <StackPane minHeight="42.0" minWidth="42.0" prefHeight="42.0" prefWidth="42.0" styleClass="feature-badge">
-                                                    <children>
-                                                        <Label text="02" styleClass="feature-badge-text"/>
-                                                    </children>
-                                                </StackPane>
-                                                <VBox spacing="4.0">
-                                                    <children>
-                                                        <Label text="Admin dang bai" styleClass="feature-title"/>
-                                                        <Label text="Thong tin vat pham, lich dau gia va thong bao se den tu bai dang do admin quan ly rieng." wrapText="true" styleClass="feature-copy"/>
-                                                    </children>
-                                                </VBox>
-                                            </children>
-                                        </HBox>
-                                        <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="feature-card">
-                                            <children>
-                                                <StackPane minHeight="42.0" minWidth="42.0" prefHeight="42.0" prefWidth="42.0" styleClass="feature-badge">
-                                                    <children>
-                                                        <Label text="03" styleClass="feature-badge-text"/>
-                                                    </children>
-                                                </StackPane>
-                                                <VBox spacing="4.0">
-                                                    <children>
-                                                        <Label text="Cap nhat thoi gian thuc" styleClass="feature-title"/>
-                                                        <Label text="Neu phien chuyen tu OPEN sang RUNNING hoac admin sua bai dang, danh sach nay se duoc lam moi tu dong." wrapText="true" styleClass="feature-copy"/>
+                                                        <Label styleClass="feature-title" text="Realtime" />
+                                                        <Label styleClass="feature-copy" text="Counts and featured content refresh automatically without crowding the screen." wrapText="true" />
                                                     </children>
                                                 </VBox>
                                             </children>
@@ -168,28 +115,24 @@
                                     <children>
                                         <VBox spacing="4.0" HBox.hgrow="ALWAYS">
                                             <children>
-                                                <Label text="LICH DAU GIA VA CAP NHAT TU ADMIN" styleClass="section-title"/>
-                                                <Label text="Ben trai la danh sach phien dang chay hoac sap mo. Ben phai la bai dang do admin cap nhat cho trang chu."
-                                                       wrapText="true"
-                                                       styleClass="body-text"/>
+                                                <Label styleClass="section-title" text="FEATURED AUCTIONS AND HOMEPAGE UPDATES" />
+                                                <Label styleClass="body-text" text="Live and upcoming auctions are listed beside homepage announcements." wrapText="true" />
                                             </children>
                                         </VBox>
                                     </children>
                                 </HBox>
                                 <HBox spacing="20.0" styleClass="landing-grid">
                                     <children>
-                                        <VBox fx:id="auctionColumn" HBox.hgrow="ALWAYS" spacing="14.0" styleClass="landing-column-card">
+                                        <VBox fx:id="auctionColumn" spacing="14.0" styleClass="landing-column-card" HBox.hgrow="ALWAYS">
                                             <children>
-                                                <Label text="PHIEN DAU GIA NOI BAT" styleClass="section-title"/>
-                                                <Label text="Tu dong sap xep theo trang thai va thoi gian de nguoi xem nhin thay lich dau gia moi nhat." wrapText="true" styleClass="secondary-text"/>
-                                                <VBox fx:id="upcomingAuctionsContainer" spacing="12.0"/>
+                                                <Label styleClass="section-title" text="AUCTION SPOTLIGHT" />
+                                                <VBox fx:id="upcomingAuctionsContainer" spacing="12.0" />
                                             </children>
                                         </VBox>
-                                        <VBox fx:id="announcementColumn" HBox.hgrow="ALWAYS" spacing="14.0" styleClass="landing-column-card">
+                                        <VBox fx:id="announcementColumn" spacing="14.0" styleClass="landing-column-card" HBox.hgrow="ALWAYS">
                                             <children>
-                                                <Label text="BANG TIN TRANG CHU" styleClass="section-title"/>
-                                                <Label text="Noi dung nay duoc admin dang tu man hinh quan tri rieng, phu hop de thong bao lich mo phien, giai thich vat pham va gui nhac nho." wrapText="true" styleClass="secondary-text"/>
-                                                <VBox fx:id="announcementsContainer" spacing="12.0"/>
+                                                <Label styleClass="section-title" text="HOMEPAGE UPDATES" />
+                                                <VBox fx:id="announcementsContainer" spacing="12.0" />
                                             </children>
                                         </VBox>
                                     </children>

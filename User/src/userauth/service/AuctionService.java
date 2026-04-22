@@ -34,58 +34,51 @@ public class AuctionService {
         return auctionLocks.computeIfAbsent(auctionId, ignored -> new ReentrantLock());
     }
 
-    public void createAuction(String name, String desc, double startPrice, long startTime, long endTime, String category, int sellerId)
+    public void createAuction(String name, String desc, double startPrice, long startTime, long endTime, String category, String imageSource, int sellerId)
             throws ValidationException {
         if (name == null || name.trim().isEmpty()) {
-            throw new ValidationException("Ten san pham khong duoc rong.");
+            throw new ValidationException("Product name cannot be empty.");
         }
         if (startPrice <= 0) {
-            throw new ValidationException("Gia khoi diem phai lon hon 0.");
+            throw new ValidationException("Starting price must be greater than 0.");
         }
         if (startTime >= endTime) {
-            throw new ValidationException("Thoi gian bat dau phai truoc thoi gian ket thuc.");
+            throw new ValidationException("Start time must be earlier than end time.");
         }
         if (endTime <= System.currentTimeMillis()) {
-            throw new ValidationException("Khong the tao phien da het han.");
+            throw new ValidationException("Cannot create an expired auction.");
         }
 
-        int newId = 1;
-        for (AuctionItem item : auctionDAO.findAllAuctions()) {
-            if (item.getId() >= newId) {
-                newId = item.getId() + 1;
-            }
-        }
-
-        AuctionItem item = new AuctionItem(newId, name, desc, startPrice, startTime, endTime, category, sellerId);
+        AuctionItem item = new AuctionItem(0, name, desc, startPrice, startTime, endTime, category, normalizeOptionalText(imageSource), sellerId);
         auctionDAO.saveAuction(item);
     }
 
-    public void updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice, long startTime, long endTime, String category)
+    public void updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice, long startTime, long endTime, String category, String imageSource)
             throws ItemNotFoundException, UnauthorizedException, ValidationException {
         AuctionItem item = auctionDAO.findAuctionById(auctionId);
         if (item == null) {
-            throw new ItemNotFoundException("Khong tim thay san pham dau gia.");
+            throw new ItemNotFoundException("Auction item not found.");
         }
         if (item.getSellerId() != sellerId) {
-            throw new UnauthorizedException("Chi nguoi tao moi duoc sua san pham.");
+            throw new UnauthorizedException("Only the creator can edit this item.");
         }
 
         List<BidTransaction> bids = auctionDAO.findBidsByAuction(auctionId);
         if (!bids.isEmpty()) {
-            throw new ValidationException("San pham da co nguoi tra gia, khong the sua thong tin.");
+            throw new ValidationException("This item already has bids and can no longer be edited.");
         }
         if (item.getStatus() == AuctionStatus.RUNNING || item.getStatus() == AuctionStatus.FINISHED) {
-            throw new ValidationException("Chi co the sua khi phien chua chay hoac dang o trang thai OPEN.");
+            throw new ValidationException("This item can only be edited before it starts or while it is in OPEN status.");
         }
 
         if (name == null || name.trim().isEmpty()) {
-            throw new ValidationException("Ten san pham khong duoc rong.");
+            throw new ValidationException("Product name cannot be empty.");
         }
         if (startPrice <= 0) {
-            throw new ValidationException("Gia khoi diem phai lon hon 0.");
+            throw new ValidationException("Starting price must be greater than 0.");
         }
         if (startTime >= endTime) {
-            throw new ValidationException("Thoi gian bat dau phai truoc thoi gian ket thuc.");
+            throw new ValidationException("Start time must be earlier than end time.");
         }
 
         item.setName(name);
@@ -95,6 +88,7 @@ public class AuctionService {
         item.setStartTime(startTime);
         item.setEndTime(endTime);
         item.setCategory(category);
+        item.setImageSource(normalizeOptionalText(imageSource));
         item.setUpdatedAt(System.currentTimeMillis());
         auctionDAO.updateAuction(item);
     }
@@ -102,10 +96,10 @@ public class AuctionService {
     public void deleteAuction(int auctionId, int sellerId) throws ItemNotFoundException, UnauthorizedException {
         AuctionItem item = auctionDAO.findAuctionById(auctionId);
         if (item == null) {
-            throw new ItemNotFoundException("Khong tim thay san pham dau gia.");
+            throw new ItemNotFoundException("Auction item not found.");
         }
         if (item.getSellerId() != sellerId) {
-            throw new UnauthorizedException("Chi nguoi tao moi duoc xoa/huy san pham.");
+            throw new UnauthorizedException("Only the creator can delete or cancel this item.");
         }
 
         List<BidTransaction> bids = auctionDAO.findBidsByAuction(auctionId);
@@ -133,6 +127,10 @@ public class AuctionService {
         return auctionDAO.findBidsByAuction(auctionId);
     }
 
+    public List<BidTransaction> getAllBids() {
+        return auctionDAO.findAllBids();
+    }
+
     public void placeBid(int auctionId, int bidderId, double amount)
             throws ItemNotFoundException, AuctionClosedException, InvalidBidException {
         ReentrantLock lock = getLockForAuction(auctionId);
@@ -140,36 +138,29 @@ public class AuctionService {
         try {
             AuctionItem item = auctionDAO.findAuctionById(auctionId);
             if (item == null) {
-                throw new ItemNotFoundException("Khong tim thay san pham dau gia.");
+                throw new ItemNotFoundException("Auction item not found.");
             }
             if (item.getStatus() != AuctionStatus.RUNNING) {
-                throw new AuctionClosedException("Phien dau gia khong o trang thai dang dien ra.");
+                throw new AuctionClosedException("The auction is not currently running.");
             }
 
             long now = System.currentTimeMillis();
             if (now < item.getStartTime() || now > item.getEndTime()) {
-                throw new AuctionClosedException("Thoi gian hien tai khong hop le de dat gia.");
+                throw new AuctionClosedException("The current time is not valid for bidding.");
             }
             if (amount <= item.getStartPrice()) {
-                throw new InvalidBidException("So tien phai cao hon gia khoi diem (" + item.getStartPrice() + ").");
+                throw new InvalidBidException("The amount must be higher than the starting price (" + item.getStartPrice() + ").");
             }
             if (amount <= item.getCurrentHighestBid()) {
-                throw new InvalidBidException("So tien phai cao hon gia hien tai (" + item.getCurrentHighestBid() + ").");
+                throw new InvalidBidException("The amount must be higher than the current price (" + item.getCurrentHighestBid() + ").");
             }
 
-            int bidId = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
-            if (bidId < 0) {
-                bidId = -bidId;
-            }
-
-            BidTransaction bid = new BidTransaction(bidId, auctionId, bidderId, amount, now);
-            auctionDAO.saveBid(bid);
+            auctionDAO.saveBid(new BidTransaction(0, auctionId, bidderId, amount, now, "ACCEPTED"));
 
             item.setCurrentHighestBid(amount);
             item.setWinnerId(bidderId);
             item.setUpdatedAt(now);
             auctionDAO.updateAuction(item);
-
             refreshEarlyCloseSnapshot(auctionId, item, now);
         } finally {
             lock.unlock();
@@ -180,15 +171,15 @@ public class AuctionService {
             throws ItemNotFoundException, UnauthorizedException, AuctionClosedException {
         AuctionItem item = auctionDAO.findAuctionById(auctionId);
         if (item == null) {
-            throw new ItemNotFoundException("Khong tim thay san pham.");
+            throw new ItemNotFoundException("Item not found.");
         }
         if (item.getSellerId() != sellerId) {
-            throw new UnauthorizedException("Ban khong co quyen dong phien dau gia nay.");
+            throw new UnauthorizedException("You do not have permission to close this auction.");
         }
         if (item.getStatus() == AuctionStatus.FINISHED ||
                 item.getStatus() == AuctionStatus.CANCELED ||
                 item.getStatus() == AuctionStatus.PAID) {
-            throw new AuctionClosedException("Phien dau gia da ket thuc hoac bi huy.");
+            throw new AuctionClosedException("The auction has already ended or was cancelled.");
         }
 
         item.setStatus(AuctionStatus.FINISHED);
@@ -205,13 +196,13 @@ public class AuctionService {
         try {
             AuctionItem item = auctionDAO.findAuctionById(auctionId);
             if (item == null) {
-                throw new ItemNotFoundException("Khong tim thay phien dau gia.");
+                throw new ItemNotFoundException("Auction not found.");
             }
             if (item.getStatus() != AuctionStatus.RUNNING) {
-                throw new AuctionClosedException("Chi co the dem ket thuc som khi phien dang RUNNING.");
+                throw new AuctionClosedException("Early-close countdown is only available while the auction is RUNNING.");
             }
             if (adminEarlyCloseStates.containsKey(auctionId)) {
-                throw new ValidationException("Phien dau gia nay dang trong qua trinh dem ket thuc som.");
+                throw new ValidationException("This auction is already in an early-close countdown process.");
             }
 
             List<BidTransaction> bids = auctionDAO.findBidsByAuction(auctionId);
@@ -227,10 +218,10 @@ public class AuctionService {
         try {
             AuctionItem item = auctionDAO.findAuctionById(auctionId);
             if (item == null) {
-                throw new ItemNotFoundException("Khong tim thay phien dau gia.");
+                throw new ItemNotFoundException("Auction not found.");
             }
             if (adminEarlyCloseStates.remove(auctionId) == null) {
-                throw new ValidationException("Phien dau gia nay chua duoc kich hoat dem ket thuc som.");
+                throw new ValidationException("This auction has not activated the early-close countdown.");
             }
         } finally {
             lock.unlock();
@@ -337,6 +328,14 @@ public class AuctionService {
             }
         }
         return latestTimestamp;
+    }
+
+    private String normalizeOptionalText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private static final class AdminEarlyCloseState {
