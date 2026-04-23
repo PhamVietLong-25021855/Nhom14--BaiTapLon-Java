@@ -26,7 +26,7 @@
                             <children>
                                 <Label styleClass="hero-badge" text="AUCTION HOUSE STUDIO" />
                                 <Label styleClass="hero-title" text="Create a new auction account" wrapText="true" />
-                                <Label styleClass="hero-subtitle" text="Register once, then sign in as a bidder, seller, or admin." wrapText="true" />
+                                <Label styleClass="hero-subtitle" text="Register once, then sign in as a bidder or seller. Admins should use an existing admin account." wrapText="true" />
                                 <VBox spacing="12.0">
                                     <children>
                                         <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="feature-card">
@@ -88,7 +88,6 @@
                                                 <FXCollections fx:factory="observableArrayList">
                                                     <String fx:value="BIDDER" />
                                                     <String fx:value="SELLER" />
-                                                    <String fx:value="ADMIN" />
                                                 </FXCollections>
                                             </items>
                                         </ComboBox>
