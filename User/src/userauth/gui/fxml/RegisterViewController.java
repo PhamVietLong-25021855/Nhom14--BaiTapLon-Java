@@ -61,7 +61,7 @@ public class RegisterViewController {
     @FXML
     private void initialize() {
         if (cbRole.getItems().isEmpty()) {
-            cbRole.getItems().addAll(Role.BIDDER.name(), Role.SELLER.name());
+            cbRole.getItems().addAll(Role.BIDDER.name(), Role.SELLER.name(), Role.ADMIN.name());
         }
         if (cbRole.getValue() == null) {
             cbRole.setValue(Role.BIDDER.name());

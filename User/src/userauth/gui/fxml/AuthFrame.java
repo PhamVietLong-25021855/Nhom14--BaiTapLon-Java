@@ -6,6 +6,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import userauth.controller.AuctionController;
 import userauth.controller.AuthController;
+import userauth.controller.AutobidController;
 import userauth.controller.HomepageController;
 import userauth.model.AuctionItem;
 import userauth.model.BidTransaction;
@@ -24,6 +25,7 @@ public class AuthFrame {
     private final HomepageController homepageController;
     private final Scene scene;
     private final AppShellController shellController;
+    private final AutobidController autobidController;
 
     private final LoadedView<HomeViewController> homeView;
     private final LoadedView<LoginViewController> loginView;
@@ -33,11 +35,12 @@ public class AuthFrame {
     private final LoadedView<SellerDashboardViewController> sellerView;
     private final LoadedView<BidderDashboardViewController> bidderView;
 
-    public AuthFrame(Stage stage, AuthController authController, AuctionController auctionController, HomepageController homepageController) {
+    public AuthFrame(Stage stage, AuthController authController, AuctionController auctionController, HomepageController homepageController, AutobidController autobidController) {
         this.stage = stage;
         this.authController = authController;
         this.auctionController = auctionController;
         this.homepageController = homepageController;
+        this.autobidController = autobidController;
 
         stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
         stage.setMinWidth(980);
@@ -190,6 +193,7 @@ public class AuthFrame {
 
         bidderView.controller().setFrame(this);
         bidderView.controller().setAuctionController(auctionController);
+        bidderView.controller().setAutobidController(autobidController);
     }
 
     private void deactivateLiveViews() {

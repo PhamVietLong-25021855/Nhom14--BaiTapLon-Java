@@ -120,6 +120,7 @@ public class AuctionService {
     }
 
     public List<AuctionItem> getAllAuctions() {
+
         return auctionDAO.findAllAuctions();
     }
 

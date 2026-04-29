@@ -103,6 +103,7 @@ public final class DatabaseConfig {
     }
 
     private String buildJdbcUrl(String targetDatabase) {
+        System.out.println("jdbc:postgresql://" + host + ":" + port + "/" + targetDatabase + "?" + buildQueryString());
         return "jdbc:postgresql://" + host + ":" + port + "/" + targetDatabase + "?" + buildQueryString();
     }
 

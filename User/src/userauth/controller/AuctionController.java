@@ -55,6 +55,7 @@ public class AuctionController {
     public List<AuctionItem> getAllAuctions() {
         return auctionService.getAllAuctions();
     }
+    
 
     public List<BidTransaction> getBidsForAuction(int auctionId) {
         return auctionService.getBidsForAuction(auctionId);

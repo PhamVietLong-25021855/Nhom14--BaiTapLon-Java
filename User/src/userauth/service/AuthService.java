@@ -103,9 +103,6 @@ public class AuthService {
         if (role == null) {
             throw new ValidationException("Invalid role.");
         }
-        if (role == Role.ADMIN) {
-            throw new ValidationException("Admin accounts cannot be created from registration.");
-        }
         if (fullName == null || fullName.trim().isEmpty()) {
             throw new ValidationException("Full name cannot be empty.");
         }

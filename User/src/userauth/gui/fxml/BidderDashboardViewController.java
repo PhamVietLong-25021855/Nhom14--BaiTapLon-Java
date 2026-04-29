@@ -23,10 +23,10 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import userauth.controller.AuctionController;
-import userauth.model.AuctionItem;
-import userauth.model.AuctionStatus;
-import userauth.model.BidTransaction;
-import userauth.model.User;
+import userauth.controller.AutobidController;
+import userauth.dao.AutoBidDAO;
+import userauth.model.*;
+import userauth.service.AutobidService;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -45,6 +45,8 @@ public class BidderDashboardViewController {
     private static final long ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
     private static final DateTimeFormatter LIVE_TIME =
             DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
+
+
 
     @FXML
     private TableView<AuctionItem> tableAuctions;
@@ -66,6 +68,19 @@ public class BidderDashboardViewController {
 
     @FXML
     private TableColumn<AuctionItem, String> colTimeLeft;
+
+    @FXML
+    private TableColumn<AutoBid, Integer> colIdAB;
+
+    @FXML
+    private TableColumn<AutoBid, Double> colIncrementAB;
+
+    @FXML
+    private TableColumn<AutoBid, Integer> colItemAB;
+
+    @FXML
+    private TableColumn<AutoBid, Double> colMaxPriceAB;
+
 
     @FXML
     private TextField txtSearch;
@@ -142,8 +157,21 @@ public class BidderDashboardViewController {
     @FXML
     private NumberAxis yAxisBidTrend;
 
+    @FXML
+    private TextField idAutobid;
+
+    @FXML
+    private TextField maxPrice;
+
+    @FXML
+    private TextField incrementAutobid;
+
+    @FXML
+    private TableView<AutoBid> tableAutoBid;
+
     private AuthFrame frame;
     private AuctionController auctionController;
+    private AutobidController autobidController;
     private User currentUser;
     private Timeline timeline;
     private final PauseTransition filterRefreshDebounce = new PauseTransition(Duration.millis(220));
@@ -162,6 +190,12 @@ public class BidderDashboardViewController {
         colHighestBid.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatMoney(data.getValue().getCurrentHighestBid())));
         colStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(UiText.auctionStatus(data.getValue().getStatus())));
         colTimeLeft.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatTimeLeft(data.getValue())));
+
+        colIdAB.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
+        colItemAB.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getAuctionId()));
+        colIncrementAB.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getIncrement()));
+        colMaxPriceAB.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getMaxPrice()));
+
         AuctionImageUtil.installRoundedClip(imgDetailAuction, 32, 32);
 
         cbStatusFilter.setItems(FXCollections.observableArrayList(
@@ -198,6 +232,9 @@ public class BidderDashboardViewController {
     public void setAuctionController(AuctionController auctionController) {
         this.auctionController = auctionController;
     }
+    public void setAutobidController(AutobidController autobidController) {
+        this.autobidController = autobidController;
+    }
 
     public void setUser(User user) {
         this.currentUser = user;
@@ -229,7 +266,7 @@ public class BidderDashboardViewController {
     }
 
     public void refreshData() {
-        if (auctionController == null || currentUser == null) {
+        if (auctionController == null || autobidController == null || currentUser == null) {
             return;
         }
 
@@ -249,15 +286,20 @@ public class BidderDashboardViewController {
                 error -> {
                 }
         );
+        UiAsync.run(
+                () -> loadAutobidSnapshot(),
+                snapshot -> {
+                    applyAutobidSnapshot(snapshot);
+                },
+                error -> {
+                }
+        );
     }
 
     @FXML
     private void handlePlaceBid() {
         if (auctionController == null || currentUser == null) {
-            NotificationUtil.warning(ownerWindow(), "Notification", "Bid placement is not ready.");
-            return;
-        }
-        if (bidActionInProgress) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "AutoBid is not ready.");
             return;
         }
 
@@ -267,8 +309,9 @@ public class BidderDashboardViewController {
             return;
         }
 
+
         String bidInput = txtBidAmount.getText() == null ? "" : txtBidAmount.getText().trim();
-        if (bidInput.isBlank()) {
+        if (bidInput.isBlank()){
             setBidStatus("Please enter a bid amount before placing a bid.", true);
             NotificationUtil.warning(ownerWindow(), "Notification", "Please enter a bid amount.");
             return;
@@ -278,38 +321,43 @@ public class BidderDashboardViewController {
             double amount = Double.parseDouble(bidInput);
             int auctionId = selected.getId();
             int bidderId = currentUser.getId();
-
-            bidActionInProgress = true;
-            setBidControlsBusy(true);
-            setBidStatus("Submitting your bid...", false);
-            UiAsync.run(
-                    () -> auctionController.placeBid(auctionId, bidderId, amount),
-                    result -> {
-                        bidActionInProgress = false;
-                        setBidControlsBusy(false);
-                        if ("SUCCESS".equals(result)) {
-                            txtBidAmount.clear();
-                            setBidStatus("Bid placed successfully. Refreshing the selected auction.", false);
-                            NotificationUtil.success(ownerWindow(), "Notification", "Bid placed successfully.");
-                            refreshData();
-                            return;
-                        }
-
-                        setBidStatus(result, true);
-                        NotificationUtil.error(ownerWindow(), "Error", result);
-                    },
-                    error -> {
-                        bidActionInProgress = false;
-                        setBidControlsBusy(false);
-                        setBidStatus("Unable to place a bid right now.", true);
-                        NotificationUtil.error(ownerWindow(), "Error", "Unable to place a bid right now.");
-                    }
-            );
+            setBid(amount,auctionId,bidderId);
         } catch (NumberFormatException ex) {
             setBidStatus("Invalid amount.", true);
             NotificationUtil.error(ownerWindow(), "Error", "Invalid amount.");
         }
     }
+
+    @FXML
+    private void handleAutobid(){
+
+        String max = maxPrice.getText() == null ? "" : maxPrice.getText().trim();
+        String increment = incrementAutobid.getText() == null ? "" : incrementAutobid.getText().trim();
+        String id = idAutobid.getText() == null ? "" : idAutobid.getText().trim();
+        if (max.isBlank() || increment.isBlank()) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Please enter a bid amount and increment.");
+            return;
+        }
+
+        try {
+            double maxAmount = Double.parseDouble(max);
+            int auctionId = tableAuctions.getSelectionModel().getSelectedItem().getId();
+            int bidderId = currentUser.getId();
+            //Create autobid
+            if (id.isBlank()){
+                autobidController.createAutobid(bidderId,auctionId,maxAmount, Double.parseDouble(increment));
+            }else {
+                if (increment.isBlank()){
+                    autobidController.deleteAutoBid(bidderId, Integer.parseInt(id));
+                }else {
+                    autobidController.updateAutobid(bidderId, Integer.parseInt(id), maxAmount, Double.parseDouble(increment));
+                }
+            }
+            refreshData();
+        } catch (NumberFormatException ex) {
+            NotificationUtil.error(ownerWindow(), "Error", "Invalid number.");
+        }
+    };
 
     @FXML
     private void handleShowHistory() {
@@ -718,6 +766,19 @@ public class BidderDashboardViewController {
         tableAuctions.refresh();
     }
 
+    //tableAuctions
+    //tableAutoBid
+    private AutobidSnapshot loadAutobidSnapshot() {
+        int bidderId = currentUser.getId();
+        List<AutoBid> allAutobid = autobidController.getAutobidByBidder(bidderId);
+        return new AutobidSnapshot(allAutobid);
+    }
+
+    private void applyAutobidSnapshot(AutobidSnapshot snapshot) {
+        tableAutoBid.setItems(FXCollections.observableArrayList(snapshot.allAutobids()));
+        tableAutoBid.refresh();
+    }
+
     private String resolveDisplayName(User user) {
         String fullName = safeText(user.getFullName(), "");
         if (!fullName.isBlank()) {
@@ -745,6 +806,38 @@ public class BidderDashboardViewController {
             List<AuctionItem> allAuctions,
             List<AuctionItem> filteredAuctions,
             Map<Integer, List<BidTransaction>> groupedBids
-    ) {
+    ) {}
+
+    private record AutobidSnapshot(
+            List<AutoBid> allAutobids
+    ) {}
+
+    private  void setBid (double amount, int auctionId, int bidderId){
+        bidActionInProgress = true;
+        setBidControlsBusy(true);
+        setBidStatus("Submitting your bid...", false);
+        UiAsync.run(
+                () -> auctionController.placeBid(auctionId, bidderId, amount),
+                result -> {
+                    bidActionInProgress = false;
+                    setBidControlsBusy(false);
+                    if ("SUCCESS".equals(result)) {
+                        txtBidAmount.clear();
+                        setBidStatus("Bid placed successfully. Refreshing the selected auction.", false);
+                        NotificationUtil.success(ownerWindow(), "Notification", "Bid placed successfully.");
+                        refreshData();
+                        return;
+                    }
+
+                    setBidStatus(result, true);
+                    NotificationUtil.error(ownerWindow(), "Error", result);
+                },
+                error -> {
+                    bidActionInProgress = false;
+                    setBidControlsBusy(false);
+                    setBidStatus("Unable to place a bid right now.", true);
+                    NotificationUtil.error(ownerWindow(), "Error", "Unable to place a bid right now.");
+                }
+        );
     }
 }

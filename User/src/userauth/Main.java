@@ -4,17 +4,12 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import userauth.controller.AuctionController;
 import userauth.controller.AuthController;
+import userauth.controller.AutobidController;
 import userauth.controller.HomepageController;
-import userauth.dao.AuctionDAO;
-import userauth.dao.AuctionDAOImpl;
-import userauth.dao.UserDAO;
-import userauth.dao.UserDAOImpl;
+import userauth.dao.*;
 import userauth.database.DatabaseInitializer;
 import userauth.gui.fxml.AuthFrame;
-import userauth.service.AuctionScheduler;
-import userauth.service.AuctionService;
-import userauth.service.AuthService;
-import userauth.service.HomepageContentService;
+import userauth.service.*;
 
 public class Main extends Application {
     private static final String SCHEDULER_PROPERTY = "app.scheduler.enabled";
@@ -33,6 +28,10 @@ public class Main extends Application {
         AuctionDAO auctionDAO = new AuctionDAOImpl();
         AuctionService auctionService = new AuctionService(auctionDAO);
         AuctionController auctionController = new AuctionController(auctionService);
+
+        AutoBidDAO autoBidDAO = new AutoBidDAOImpl();
+        AutobidService autobidService = new AutobidService(autoBidDAO);
+        AutobidController autobidController = new AutobidController(autobidService);
         HomepageContentService homepageContentService = new HomepageContentService();
         HomepageController homepageController = new HomepageController(homepageContentService);
 
@@ -41,7 +40,7 @@ public class Main extends Application {
             scheduler.start();
         }
 
-        AuthFrame frame = new AuthFrame(stage, authController, auctionController, homepageController);
+        AuthFrame frame = new AuthFrame(stage, authController, auctionController, homepageController, autobidController);
         frame.show();
         frame.showHome();
     }

@@ -642,7 +642,7 @@ final class UiText {
         put(values, "Use your existing username and password to enter the auction workspace.", "Dùng tài khoản hiện có để vào hệ thống đấu giá.");
         put(values, "Complete all required information to join the online auction system.", "Hoàn tất đầy đủ thông tin để tham gia hệ thống đấu giá trực tuyến.");
         put(values, "Create a new auction account", "Tạo tài khoản đấu giá mới");
-        put(values, "Register once, then sign in as a bidder or seller. Admins should use an existing admin account.", "Đăng ký một lần rồi đăng nhập với vai trò người đấu giá hoặc người bán. Quản trị viên dùng tài khoản quản trị hiện có.");
+        put(values, "Register once, then sign in as a bidder, seller, or admin.", "Đăng ký một lần rồi đăng nhập với vai trò người đấu giá, người bán hoặc quản trị.");
         put(values, "Sign in to the auction platform", "Đăng nhập vào nền tảng đấu giá");
         put(values, "Access bidder, seller, or admin workspaces from one account system.", "Truy cập khu người đấu giá, người bán hoặc quản trị từ một hệ thống tài khoản.");
         put(values, "Live Validation", "Kiểm tra trực tiếp");
@@ -657,7 +657,6 @@ final class UiText {
         put(values, "Invalid email.", "Email không hợp lệ.");
         put(values, "Password confirmation does not match.", "Xác nhận mật khẩu không khớp.");
         put(values, "Invalid role.", "Vai trò không hợp lệ.");
-        put(values, "Admin accounts cannot be created from registration.", "Không thể tạo tài khoản quản trị từ đăng ký.");
         put(values, "Please fill in all required information.", "Vui lòng điền đầy đủ thông tin bắt buộc.");
     }
 
