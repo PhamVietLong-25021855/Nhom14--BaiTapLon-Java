@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane maxHeight="Infinity" maxWidth="Infinity"
+           prefHeight="940.0" prefWidth="1440.0"
+           fx:controller="userauth.gui.fxml.AdminDashboardViewController"
+           styleClass="page-root dashboard-root"
+           stylesheets="@auth-theme.css"
+           xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <HBox maxHeight="Infinity" maxWidth="Infinity" spacing="20.0" styleClass="shell-frame">
+            <children>
+                <VBox prefWidth="236.0" spacing="18.0" styleClass="sidebar-surface">
+                    <children>
+                        <VBox spacing="6.0">
+                            <children>
+                                <Label text="AUCTION HOUSE" styleClass="sidebar-brand-title"/>
+                            </children>
+                        </VBox>
+                        <VBox spacing="10.0">
+                            <children>
+                                <Label text="MODULES" styleClass="sidebar-nav-title"/>
+                                <Label text="Overview" styleClass="sidebar-nav-item sidebar-nav-item-active"/>
+                                <Label text="Users" styleClass="sidebar-nav-item"/>
+                                <Label text="Auctions" styleClass="sidebar-nav-item"/>
+                                <Label text="Homepage" styleClass="sidebar-nav-item"/>
+                            </children>
+                        </VBox>
+                        <Region VBox.vgrow="ALWAYS"/>
+                        <Label fx:id="lblAdminSidebar" text="Admin" wrapText="true" styleClass="sidebar-foot-title"/>
+                    </children>
+                </VBox>
+                <VBox HBox.hgrow="ALWAYS" spacing="18.0">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="topbar-surface">
+                            <children>
+                                <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label text="Admin Dashboard" styleClass="topbar-title"/>
+                                        <Label text="Monitor users, auctions, and system activity from one dashboard." styleClass="topbar-subtitle"/>
+                                    </children>
+                                </VBox>
+                                <VBox spacing="2.0" styleClass="user-pill">
+                                    <children>
+                                        <Label fx:id="lblAdminName" text="Admin" styleClass="user-name"/>
+                                        <Label text="Role: ADMIN" styleClass="user-role"/>
+                                    </children>
+                                </VBox>
+                                <MenuButton mnemonicParsing="false" styleClass="button settings-menu-button" text="SETTINGS">
+                                    <items>
+                                        <MenuItem mnemonicParsing="false" onAction="#handleSwitchToEnglish" text="English"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#handleSwitchToVietnamese" text="Vietnamese"/>
+                                        <SeparatorMenuItem/>
+                                        <MenuItem mnemonicParsing="false" onAction="#handleLogout" text="LOG OUT"/>
+                                    </items>
+                                </MenuButton>
+                            </children>
+                        </HBox>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="dashboard-scroll" VBox.vgrow="ALWAYS">
+                            <content>
+                                <VBox spacing="18.0">
+                                    <children>
+                                        <HBox spacing="16.0">
+                                            <children>
+                                                <VBox HBox.hgrow="ALWAYS" spacing="12.0" styleClass="hero-banner hero-banner-dark">
+                                                    <children>
+                                                        <Label text="SYSTEM CONTROL CENTER" styleClass="dashboard-eyebrow"/>
+                                                        <Label text="Monitor users, auctions, and homepage activity from one control panel."
+                                                               wrapText="true"
+                                                               styleClass="dashboard-title"/>
+                                                        <Label text="Use the tables below for account actions, homepage access, and auction control."
+                                                               wrapText="true"
+                                                               styleClass="dashboard-copy"/>
+                                                    </children>
+                                                </VBox>
+                                                <HBox spacing="12.0">
+                                                    <children>
+                                                        <VBox spacing="8.0" prefWidth="170.0" styleClass="metric-card">
+                                                            <children>
+                                                                <Label text="TOTAL USERS" styleClass="metric-label"/>
+                                                                <Label fx:id="lblTotalUsers" text="0" styleClass="metric-value"/>
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="8.0" prefWidth="170.0" styleClass="metric-card">
+                                                            <children>
+                                                                <Label text="RUNNING AUCTIONS" styleClass="metric-label"/>
+                                                                <Label fx:id="lblRunningAuctions" text="0" styleClass="metric-value"/>
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="8.0" prefWidth="170.0" styleClass="metric-card">
+                                                            <children>
+                                                                <Label text="FINISHED" styleClass="metric-label"/>
+                                                                <Label fx:id="lblFinishedAuctions" text="0" styleClass="metric-value"/>
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="8.0" prefWidth="170.0" styleClass="metric-card">
+                                                            <children>
+                                                                <Label text="TOTAL BIDS" styleClass="metric-label"/>
+                                                                <Label fx:id="lblTotalBids" text="0" styleClass="metric-value"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </HBox>
+                                        <HBox alignment="TOP_LEFT" spacing="18.0">
+                                            <children>
+                                                <VBox HBox.hgrow="ALWAYS" spacing="16.0" styleClass="panel-card">
+                                                    <children>
+                                                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                                            <children>
+                                                                <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                                                    <children>
+                                                                        <Label text="USER LIST" styleClass="panel-title"/>
+                                                                    </children>
+                                                                </VBox>
+                                                                <Button fx:id="btnPromoteAdmin" mnemonicParsing="false" onAction="#handlePromoteToAdmin" text="PROMOTE ADMIN" styleClass="button success-button"/>
+                                                                <Button fx:id="btnDemoteAdmin" mnemonicParsing="false" onAction="#handleDemoteAdmin" text="DEMOTE ADMIN" styleClass="button ghost-button"/>
+                                                                <Button mnemonicParsing="false" onAction="#handleToggleStatus" text="LOCK / UNLOCK" styleClass="button primary-button"/>
+                                                                <Button mnemonicParsing="false" onAction="#handleRefreshUsers" text="REFRESH USERS" styleClass="button ghost-button"/>
+                                                            </children>
+                                                        </HBox>
+                                                        <TableView fx:id="tableUsers" prefHeight="280.0" VBox.vgrow="ALWAYS">
+                                                            <columns>
+                                                                <TableColumn fx:id="colId" prefWidth="70.0" text="ID"/>
+                                                                <TableColumn fx:id="colUsername" prefWidth="170.0" text="Username"/>
+                                                                <TableColumn fx:id="colFullName" prefWidth="200.0" text="Full Name"/>
+                                                                <TableColumn fx:id="colEmail" prefWidth="230.0" text="Email"/>
+                                                                <TableColumn fx:id="colRole" prefWidth="110.0" text="Role"/>
+                                                                <TableColumn fx:id="colStatus" prefWidth="120.0" text="Status"/>
+                                                            </columns>
+                                                        </TableView>
+                                                    </children>
+                                                </VBox>
+                                                <VBox prefWidth="340.0" spacing="16.0">
+                                                    <children>
+                                                        <VBox spacing="12.0" styleClass="panel-card">
+                                                            <children>
+                                                                <Label text="AUCTION OVERVIEW" styleClass="panel-title"/>
+                                                                <PieChart fx:id="auctionStatusChart" clockwise="true" labelsVisible="true" prefHeight="260.0"/>
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="12.0" styleClass="detail-card">
+                                                            <children>
+                                                                <Label text="QUICK INFO" styleClass="detail-kicker"/>
+                                                                <Label fx:id="lblUserSelectionSummary" text="Select a user to view a summary here." wrapText="true" styleClass="body-text"/>
+                                                                <Label fx:id="lblAuctionSelectionSummary" text="Select an auction to track its countdown and status here." wrapText="true" styleClass="body-text"/>
+                                                                <Button mnemonicParsing="false" onAction="#handleOpenHomepageManager" text="MANAGE HOMEPAGE" styleClass="button success-button"/>
+                                                                <Button mnemonicParsing="false" onAction="#handleChangePassword" text="CHANGE PASSWORD" styleClass="button ghost-button"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                        <VBox spacing="16.0" styleClass="panel-card">
+                                            <children>
+                                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                                    <children>
+                                                                <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                                                    <children>
+                                                                        <Label text="AUCTION OPERATIONS" styleClass="panel-title"/>
+                                                                    </children>
+                                                                </VBox>
+                                                        <Label text="Sort" styleClass="field-label"/>
+                                                        <ComboBox fx:id="cbAuctionSort" onAction="#handleApplyAuctionSort" prefWidth="190.0"/>
+                                                        <Button mnemonicParsing="false" onAction="#handleRefreshAuctions" text="REFRESH AUCTIONS" styleClass="button ghost-button"/>
+                                                        <Button mnemonicParsing="false" onAction="#handleStartEarlyCloseCountdown" text="START 3-COUNTDOWN" styleClass="button warning-button"/>
+                                                        <Button mnemonicParsing="false" onAction="#handleCancelEarlyCloseCountdown" text="CANCEL COUNTDOWN" styleClass="button ghost-button"/>
+                                                    </children>
+                                                </HBox>
+                                                <TableView fx:id="tableAuctions" prefHeight="340.0" VBox.vgrow="ALWAYS">
+                                                    <columns>
+                                                        <TableColumn fx:id="colAuctionId" prefWidth="70.0" text="ID"/>
+                                                        <TableColumn fx:id="colAuctionName" prefWidth="220.0" text="Product Name"/>
+                                                        <TableColumn fx:id="colAuctionSeller" prefWidth="220.0" text="Seller"/>
+                                                        <TableColumn fx:id="colAuctionCategory" prefWidth="140.0" text="Category"/>
+                                                        <TableColumn fx:id="colAuctionHighestBid" prefWidth="150.0" text="Highest Bid"/>
+                                                        <TableColumn fx:id="colAuctionStatus" prefWidth="110.0" text="Status"/>
+                                                        <TableColumn fx:id="colAuctionTimeLeft" prefWidth="150.0" text="Remaining"/>
+                                                        <TableColumn fx:id="colAuctionCountdown" prefWidth="130.0" text="Early Close"/>
+                                                    </columns>
+                                                </TableView>
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </children>
+</StackPane>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="12.0"
+      fx:controller="userauth.gui.fxml.HomeAnnouncementCardController"
+      styleClass="landing-feed-card"
+      stylesheets="@auth-theme.css"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <HBox spacing="12.0">
+            <children>
+                <StackPane minHeight="58.0" minWidth="58.0" prefHeight="58.0" prefWidth="58.0" styleClass="feature-badge">
+                    <children>
+                        <Label text="AD" styleClass="feature-badge-text"/>
+                    </children>
+                </StackPane>
+                <VBox spacing="6.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <HBox spacing="10.0">
+                            <children>
+                                <Label fx:id="lblTitle"
+                                       text="Announcement Title"
+                                       wrapText="true"
+                                       styleClass="feed-card-title"
+                                       HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="lblStatusChip"
+                                       text="ADMIN"
+                                       styleClass="status-chip"/>
+                            </children>
+                        </HBox>
+                        <Label fx:id="lblSchedule"
+                               text="Posted schedule: -"
+                               wrapText="true"
+                               styleClass="feed-card-meta"/>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+        <Label fx:id="lblSummary"
+               text="Announcement summary"
+               wrapText="true"
+               styleClass="feed-card-body"/>
+        <VBox fx:id="linkedAuctionBox"
+              spacing="4.0"
+              styleClass="linked-auction-box">
+            <children>
+                <Label fx:id="lblLinkedAuctionTitle"
+                       text="Linked item: -"
+                       wrapText="true"
+                       styleClass="feed-card-meta"/>
+                <Label fx:id="lblLinkedAuctionSchedule"
+                       text="Schedule: -"
+                       wrapText="true"
+                       styleClass="feed-card-foot"/>
+            </children>
+        </VBox>
+        <Label fx:id="lblDetails"
+               text="Additional details"
+               wrapText="true"
+               styleClass="feed-card-foot"/>
+        <Label fx:id="lblUpdatedAt"
+               text="Updated at: -"
+               wrapText="true"
+               styleClass="feed-card-foot"/>
+    </children>
+</VBox>

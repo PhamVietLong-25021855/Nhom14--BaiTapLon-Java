@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
+
+<StackPane maxHeight="Infinity" maxWidth="Infinity" prefHeight="760.0" prefWidth="1180.0" styleClass="page-root" stylesheets="@auth-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.LoginViewController">
+    <children>
+        <HBox maxHeight="Infinity" maxWidth="Infinity" spacing="22.0" styleClass="auth-shell">
+            <children>
+                <StackPane minWidth="420.0" prefWidth="620.0" styleClass="auth-illustration hero-card" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Circle fill="#7B8CFF" opacity="0.38" radius="122.0" stroke="TRANSPARENT" styleClass="accent-orb login-orb-primary" translateX="110.0" translateY="-62.0" />
+                        <Circle fill="#35C8A2" opacity="0.34" radius="90.0" stroke="TRANSPARENT" styleClass="accent-orb login-orb-secondary" translateX="-110.0" translateY="92.0" />
+                        <Circle fill="#FFB167" opacity="0.30" radius="64.0" stroke="TRANSPARENT" styleClass="accent-orb login-orb-accent" translateX="140.0" translateY="130.0" />
+                        <VBox maxWidth="460.0" spacing="20.0">
+                            <children>
+                                <Label styleClass="hero-badge" text="LIVE AUCTION EXPERIENCE" />
+                                <Label styleClass="hero-title" text="Sign in to the auction platform" wrapText="true" />
+                                <Label styleClass="hero-subtitle" text="Access bidder, seller, or admin workspaces from one account system." wrapText="true" />
+                                <HBox spacing="14.0">
+                                    <children>
+                                        <VBox spacing="6.0" styleClass="stat-card" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="stat-label" text="REALTIME" />
+                                                <Label styleClass="stat-value" text="1s" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="6.0" styleClass="stat-card" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="stat-label" text="SECURE" />
+                                                <Label styleClass="stat-value" text="24/7" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+                    </children>
+                </StackPane>
+                <VBox prefWidth="470.0" styleClass="card-wrapper" HBox.hgrow="ALWAYS">
+                    <children>
+                        <VBox fx:id="authCard" maxWidth="470.0" prefWidth="470.0" spacing="18.0" styleClass="auth-card">
+                            <children>
+                                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                    <children>
+                                        <Button mnemonicParsing="false" onAction="#handleShowHome" styleClass="button home-icon-button">
+                                            <graphic>
+                                                <SVGPath content="M 12 4 L 3 11 H 5 V 20 H 10 V 14 H 14 V 20 H 19 V 11 H 21 Z" styleClass="home-icon-shape" />
+                                            </graphic>
+                                        </Button>
+                                        <VBox spacing="2.0">
+                                            <children>
+                                                <Label styleClass="auth-form-title" text="ACCOUNT LOGIN" />
+                                                <Label styleClass="auth-form-copy" text="Use your existing username and password to enter the auction workspace." wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                                <VBox spacing="10.0">
+                                    <children>
+                                        <Label styleClass="field-label" text="Username" />
+                                        <TextField fx:id="txtUsername" promptText="Enter your username" />
+                                        <Label styleClass="field-label" text="Password" />
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                            <children>
+                                                <StackPane HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <PasswordField fx:id="txtPassword" maxWidth="Infinity" onAction="#handleLogin" promptText="Enter your password" />
+                                                        <TextField fx:id="txtVisiblePassword" maxWidth="Infinity" managed="false" visible="false" onAction="#handleLogin" promptText="Enter your password" />
+                                                    </children>
+                                                </StackPane>
+                                                <CheckBox fx:id="chkShowPassword" mnemonicParsing="false" styleClass="remember-box" text="Show password" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+                                        <CheckBox fx:id="chkRememberMe" mnemonicParsing="false" selected="true" styleClass="remember-box" text="Remember this login session" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <Button mnemonicParsing="false" onAction="#handleForgotPassword" styleClass="button auth-link-button" text="Forgot password?" />
+                                    </children>
+                                </HBox>
+                                <Label fx:id="lblStatus" managed="false" styleClass="error-text" text="Status" visible="false" wrapText="true" />
+                                <HBox spacing="10.0">
+                                    <children>
+                                        <Button mnemonicParsing="false" onAction="#handleLogin" prefWidth="170.0" styleClass="button primary-button" text="LOG IN" />
+                                        <Button mnemonicParsing="false" onAction="#handleShowRegister" styleClass="button ghost-button" text="CREATE NEW ACCOUNT" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </children>
+</StackPane>
