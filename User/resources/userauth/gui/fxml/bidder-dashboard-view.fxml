@@ -70,6 +70,7 @@
                                                 <MenuItem mnemonicParsing="false" onAction="#handleSwitchToVietnamese" text="Vietnamese" />
                                                 <SeparatorMenuItem />
                                                 <MenuItem mnemonicParsing="false" onAction="#handleLogout" text="LOG OUT" />
+                                    <MenuItem mnemonicParsing="false" onAction="#handleChangePassword" text="Change password" />
                                             </items>
                                         </MenuButton>
                                     </children>
@@ -141,12 +142,11 @@
                                                                         <FlowPane hgap="10.0" prefWrapLength="900.0" vgap="10.0">
                                                                             <children>
                                                                                 <Button minWidth="138.0" mnemonicParsing="false" onAction="#handleShowHistory" styleClass="button ghost-button" text="BID HISTORY" />
-                                                                                <Button minWidth="158.0" mnemonicParsing="false" onAction="#handleChangePassword" styleClass="button ghost-button" text="CHANGE PASSWORD" />
                                                                             </children>
                                                                         </FlowPane>
                                                                     </children>
                                                                 </VBox>
-                                                                <TableView fx:id="tableAuctions" prefHeight="430.0" VBox.vgrow="ALWAYS">
+                                                                <TableView fx:id="tableAuctions" prefHeight="430.0" stylesheets="@style.css" VBox.vgrow="ALWAYS">
                                                                     <columns>
                                                                         <TableColumn fx:id="colId" prefWidth="70.0" text="ID" />
                                                                         <TableColumn fx:id="colName" prefWidth="240.0" text="Item" />
@@ -183,7 +183,7 @@
                                                       <FlowPane hgap="10.0" prefWrapLength="900.0" vgap="10.0" />
                                                    </children>
                                                 </VBox>
-                                                <TableView fx:id="tableAutoBid" prefHeight="430.0" VBox.vgrow="ALWAYS">
+                                                <TableView fx:id="tableAutoBid" prefHeight="430.0" stylesheets="@style.css" VBox.vgrow="ALWAYS">
                                                    <columns>
                                                       <TableColumn fx:id="colIdAB" prefWidth="70.0" text="ID" />
                                                       <TableColumn fx:id="colItemAB" prefWidth="240.0" text="Item" />
@@ -253,6 +253,15 @@
                                                                 <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handlePlaceBid" styleClass="button primary-button" text="PLACE BID NOW" />
                                                             </children>
                                                         </VBox>
+                                          <VBox spacing="12.0" styleClass="panel-card chart-card">
+                                             <children>
+                                                <Label styleClass="panel-title" text="Auto Bidding (Current auction)" />
+                                                <TextField fx:id="idAutobid" promptText="Enter id (Leave blank if want to create autobid)" />
+                                                <TextField fx:id="maxPrice" promptText="Enter max price" />
+                                                <TextField fx:id="incrementAutobid" promptText="Enter increment (Leave blank if want to delete autobid)" />
+                                                <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleAutobid" prefHeight="42.0" prefWidth="645.0" styleClass="button primary-button" text="Update/Create autobid" />
+                                             </children>
+                                          </VBox>
                                                         <VBox spacing="12.0" styleClass="panel-card">
                                                             <children>
                                                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
@@ -265,15 +274,6 @@
                                                                 <VBox fx:id="bidsLiveContainer" spacing="10.0" />
                                                             </children>
                                                         </VBox>
-                                          <VBox spacing="12.0" styleClass="panel-card chart-card">
-                                             <children>
-                                                <Label styleClass="panel-title" text="Auto Bidding (Current auction)" />
-                                                <TextField fx:id="idAutobid" promptText="Enter id (Leave blank if want to create autobid)" />
-                                                <TextField fx:id="maxPrice" promptText="Enter max price" />
-                                                <TextField fx:id="incrementAutobid" promptText="Enter increment (Leave blank if want to delete autobid)" />
-                                                <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleAutobid" prefHeight="42.0" prefWidth="645.0" styleClass="button primary-button" text="Update/Create autobid" />
-                                             </children>
-                                          </VBox>
                                                     </children>
                                                 </VBox>
                                             </children>

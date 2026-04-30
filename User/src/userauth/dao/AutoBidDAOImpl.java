@@ -127,7 +127,6 @@ public class AutoBidDAOImpl implements AutoBidDAO{
              statement.setInt(1, bidderId);
              ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                System.out.println(resultSet);
                 autobids.add(mapAutobid(resultSet));
             }
         } catch (SQLException ex) {
