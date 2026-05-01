@@ -2,11 +2,9 @@ package userauth.controller;
 
 import userauth.exception.*;
 import userauth.model.*;
-import userauth.service.AuctionService;
 import userauth.service.AutobidService;
 
 import java.util.List;
-import java.util.Map;
 
 public class AutobidController {
     private final AutobidService autobidService;

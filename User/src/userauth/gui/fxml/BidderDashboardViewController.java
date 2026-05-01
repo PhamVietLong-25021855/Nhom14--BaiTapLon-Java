@@ -24,9 +24,7 @@ import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import userauth.controller.AuctionController;
 import userauth.controller.AutobidController;
-import userauth.dao.AutoBidDAO;
 import userauth.model.*;
-import userauth.service.AutobidService;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -180,7 +178,6 @@ public class BidderDashboardViewController {
     private int lastSelectedWinnerId = -1;
     private double lastSelectedHighestBid = -1;
     private long refreshTicket;
-    private boolean bidActionInProgress;
 
     @FXML
     private void initialize() {
@@ -343,7 +340,6 @@ public class BidderDashboardViewController {
             double maxAmount = Double.parseDouble(max);
             int auctionId = tableAuctions.getSelectionModel().getSelectedItem().getId();
             int bidderId = currentUser.getId();
-            //Create autobid
             if (id.isBlank()){
                 autobidController.createAutobid(bidderId,auctionId,maxAmount, Double.parseDouble(increment));
             }else {
@@ -357,7 +353,7 @@ public class BidderDashboardViewController {
         } catch (NumberFormatException ex) {
             NotificationUtil.error(ownerWindow(), "Error", "Invalid number.");
         }
-    };
+    }
 
     @FXML
     private void handleShowHistory() {
@@ -766,8 +762,6 @@ public class BidderDashboardViewController {
         tableAuctions.refresh();
     }
 
-    //tableAuctions
-    //tableAutoBid
     private AutobidSnapshot loadAutobidSnapshot() {
         int bidderId = currentUser.getId();
         List<AutoBid> allAutobid = autobidController.getAutobidByBidder(bidderId);
@@ -813,13 +807,11 @@ public class BidderDashboardViewController {
     ) {}
 
     private  void setBid (double amount, int auctionId, int bidderId){
-        bidActionInProgress = true;
         setBidControlsBusy(true);
         setBidStatus("Submitting your bid...", false);
         UiAsync.run(
                 () -> auctionController.placeBid(auctionId, bidderId, amount),
                 result -> {
-                    bidActionInProgress = false;
                     setBidControlsBusy(false);
                     if ("SUCCESS".equals(result)) {
                         txtBidAmount.clear();
@@ -833,7 +825,6 @@ public class BidderDashboardViewController {
                     NotificationUtil.error(ownerWindow(), "Error", result);
                 },
                 error -> {
-                    bidActionInProgress = false;
                     setBidControlsBusy(false);
                     setBidStatus("Unable to place a bid right now.", true);
                     NotificationUtil.error(ownerWindow(), "Error", "Unable to place a bid right now.");

@@ -1,6 +1,5 @@
 package userauth.dao;
 
-import userauth.model.AuctionItem;
 import userauth.model.AutoBid;
 
 import java.util.List;

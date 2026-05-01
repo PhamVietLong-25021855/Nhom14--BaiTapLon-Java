@@ -1,19 +1,10 @@
 package userauth.service;
 
-import userauth.dao.AuctionDAO;
 import userauth.dao.AutoBidDAO;
 import userauth.exception.*;
-import userauth.model.AuctionItem;
-import userauth.model.AuctionStatus;
 import userauth.model.AutoBid;
-import userauth.model.BidTransaction;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 public class AutobidService {
 
