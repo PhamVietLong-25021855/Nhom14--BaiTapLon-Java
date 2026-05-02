@@ -1,0 +1,18 @@
+.table-view .virtual-flow {
+    -fx-background-color: transparent;
+}
+
+.table-view .scroll-bar:horizontal,
+.table-view .scroll-bar:vertical {
+    -fx-opacity: 0.8; /* Keeps them active/visible */
+}
+.table-view {
+    -fx-padding: 10px;
+    -fx-fixed-cell-size: 50;
+}
+
+/* GOOD: Apply padding to the cells or the container instead */
+.table-view .table-cell {
+    -fx-alignment: CENTER-LEFT;
+    -fx-padding: 0 5 0 5;
+}
