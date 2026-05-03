@@ -1,6 +1,7 @@
 package userauth.service;
 
 import userauth.dao.AuctionDAO;
+import userauth.dao.AutoBidDAO;
 import userauth.exception.AuctionClosedException;
 import userauth.exception.InvalidBidException;
 import userauth.exception.ItemNotFoundException;
@@ -21,11 +22,15 @@ public class AuctionService {
     private static final int ADMIN_EARLY_CLOSE_COUNTS = 3;
 
     private final AuctionDAO auctionDAO;
+    private final AutoBidDAO autoBidDAO ;
+    private final WalletService walletService ;
     private final ConcurrentHashMap<Integer, ReentrantLock> auctionLocks;
     private final ConcurrentHashMap<Integer, AdminEarlyCloseState> adminEarlyCloseStates;
 
-    public AuctionService(AuctionDAO auctionDAO) {
+    public AuctionService(AuctionDAO auctionDAO, AutoBidDAO autoBidDAO, WalletService WalletService) {
         this.auctionDAO = auctionDAO;
+        this.autoBidDAO = autoBidDAO;
+        this.walletService = WalletService ;
         this.auctionLocks = new ConcurrentHashMap<>();
         this.adminEarlyCloseStates = new ConcurrentHashMap<>();
     }
@@ -155,14 +160,60 @@ public class AuctionService {
             if (amount <= item.getCurrentHighestBid()) {
                 throw new InvalidBidException("The amount must be higher than the current price (" + item.getCurrentHighestBid() + ").");
             }
+            // 1.Kiểm tra số dư ví người đặt giá thu công :
+            userauth.model.Wallet bidderWallet = walletService.getWallet(bidderId);
+            if(bidderWallet == null || bidderWallet.getBalance() < amount){
+                throw new InvalidBidException("Số dư trong ví (" + userauth.gui.fxml.AuctionViewFormatter.formatMoney(bidderWallet != null ? bidderWallet.getBalance() : 0) + ") không đủ để đặt mức giá này.");
+            }
 
+            // Lưu lenh bid :
             auctionDAO.saveBid(new BidTransaction(0, auctionId, bidderId, amount, now, "ACCEPTED"));
-
             item.setCurrentHighestBid(amount);
             item.setWinnerId(bidderId);
             item.setUpdatedAt(now);
             auctionDAO.updateAuction(item);
-            refreshEarlyCloseSnapshot(auctionId, item, now);
+
+            boolean autoBidTriggered;
+            do {
+                autoBidTriggered = false;
+                List<userauth.model.AutoBid> activeRobots = autoBidDAO.findAutoBidsByAuction(auctionId);
+                userauth.model.AutoBid nextAttacker = null;
+                double currentPrice = item.getCurrentHighestBid();
+
+                for (userauth.model.AutoBid robot : activeRobots) {
+                    if (robot.getBidderId() == item.getWinnerId()) continue;
+
+                    double requiredBid = currentPrice + robot.getIncrement();
+
+                    if (requiredBid <= robot.getMaxPrice()) {
+                        // THÊM KIỂM TRA VÍ CHO ROBOT: Robot chỉ được đánh nếu chủ nó còn tiền!
+                        userauth.model.Wallet robotWallet = walletService.getWallet(robot.getBidderId());
+                        if (robotWallet != null && robotWallet.getBalance() >= requiredBid) {
+                            if (nextAttacker == null) {
+                                nextAttacker = robot;
+                            } else if (robot.getMaxPrice() > nextAttacker.getMaxPrice()) {
+                                nextAttacker = robot;
+                            } else if (robot.getMaxPrice() == nextAttacker.getMaxPrice() && robot.getId() < nextAttacker.getId()) {
+                                nextAttacker = robot;
+                            }
+                        }
+                    }
+                }
+
+                if (nextAttacker != null) {
+                    double autoBidAmount = currentPrice + nextAttacker.getIncrement();
+                    long autoNow = System.currentTimeMillis();
+
+                    auctionDAO.saveBid(new BidTransaction(0, auctionId, nextAttacker.getBidderId(), autoBidAmount, autoNow, "AUTO_BID"));
+                    item.setCurrentHighestBid(autoBidAmount);
+                    item.setWinnerId(nextAttacker.getBidderId());
+                    item.setUpdatedAt(autoNow);
+                    auctionDAO.updateAuction(item);
+                    autoBidTriggered = true;
+                }
+            } while (autoBidTriggered);
+
+            refreshEarlyCloseSnapshot(auctionId, item, System.currentTimeMillis());
         } finally {
             lock.unlock();
         }
@@ -258,11 +309,7 @@ public class AuctionService {
 
             if ((currentStatus == AuctionStatus.OPEN || currentStatus == AuctionStatus.RUNNING) &&
                     now >= item.getEndTime()) {
-                item.setStatus(AuctionStatus.FINISHED);
-                item.setEndTime(now);
-                item.setUpdatedAt(now);
-                auctionDAO.updateAuction(item);
-                adminEarlyCloseStates.remove(item.getId());
+                processAuctionClosing(item, now);
             }
         }
 
@@ -299,11 +346,7 @@ public class AuctionService {
                 state.lastTickAt = now;
                 state.remainingCounts--;
                 if (state.remainingCounts <= 0) {
-                    item.setStatus(AuctionStatus.FINISHED);
-                    item.setEndTime(now);
-                    item.setUpdatedAt(now);
-                    auctionDAO.updateAuction(item);
-                    adminEarlyCloseStates.remove(auctionId);
+                    processAuctionClosing(item, now);
                 }
             } finally {
                 lock.unlock();
@@ -369,5 +412,23 @@ public class AuctionService {
             }
             return latestTimestamp;
         }
+    }
+
+    // ham xu li chot phien va tru tien :
+    private void processAuctionClosing(AuctionItem item, long now){
+        item.setStatus(AuctionStatus.FINISHED);
+        item.setEndTime(now);
+        // neu co nguoi thang, tru tien tu vi nguoi thang va chuyen sang trang thai da thanh toan :
+        if(item.getWinnerId() > 0){
+            try{
+                walletService.deductFromWallet(item.getWinnerId(), item.getCurrentHighestBid());
+                item.setStatus(AuctionStatus.PAID); // doi thanh da thanh toan
+            }catch (Exception e){
+                System.out.println("ERROR processing payment for auction " + item.getId() + ": " + e.getMessage());
+            }
+        }
+        item.setUpdatedAt(now);
+        auctionDAO.updateAuction(item);
+        adminEarlyCloseStates.remove(item.getId());
     }
 }

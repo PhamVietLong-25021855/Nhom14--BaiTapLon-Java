@@ -12,4 +12,5 @@ public interface AutoBidDAO {
     AutoBid findAutoBidById(int id);
     AutoBid findAutoBidByAuctionBidder(int auction_id, int bidder_id);
     List<AutoBid> findAllUserAutoBid(int bidderId);
+    List<AutoBid> findAutoBidsByAuction(int auctionId);
 }

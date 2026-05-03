@@ -37,6 +37,12 @@ public class AutoBidDAOImpl implements AutoBidDAO{
             WHERE bidder_id = ?
             ORDER BY id
             """;
+    private static final String FIND_AUTOBID_BY_AUCTION_SQL = """
+            SELECT id, bidder_id, auction_id, max_price, "increment"
+            FROM auto_bids
+            WHERE auction_id = ?
+            ORDER BY id
+            """;
     private static final String DELETE_AUTOBID_SQL = "DELETE FROM auto_bids WHERE id = ?";
     @Override
     public void saveAutoBid(AutoBid item) {
@@ -154,5 +160,20 @@ public class AutoBidDAOImpl implements AutoBidDAO{
                 resultSet.getDouble("max_price"),
                 resultSet.getDouble("increment")
         );
+    }
+    @Override
+    public List<AutoBid> findAutoBidsByAuction(int auctionId) {
+        List<AutoBid> autobids = new ArrayList<>();
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_AUTOBID_BY_AUCTION_SQL)) {
+            statement.setInt(1, auctionId);
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                autobids.add(mapAutobid(resultSet));
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to read auto bids by auction from PostgreSQL.", ex);
+        }
+        return autobids;
     }
 }

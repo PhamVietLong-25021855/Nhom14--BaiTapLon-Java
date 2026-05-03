@@ -22,20 +22,20 @@ public class Main extends Application {
         AuthService authService = new AuthService(userDAO);
         AuthController authController = new AuthController(authService);
 
-        AuctionDAO auctionDAO = new AuctionDAOImpl();
-        AuctionService auctionService = new AuctionService(auctionDAO);
-        AuctionController auctionController = new AuctionController(auctionService);
-
+        WalletDAO walletDAO = new WalletDAOImpl();
+        WalletService walletService = new WalletService(walletDAO);
+        WalletController walletController = new WalletController(walletService);
 
         AutoBidDAO autoBidDAO = new AutoBidDAOImpl();
         AutobidService autobidService = new AutobidService(autoBidDAO);
         AutobidController autobidController = new AutobidController(autobidService);
+
+        AuctionDAO auctionDAO = new AuctionDAOImpl();
+        AuctionService auctionService = new AuctionService(auctionDAO, autoBidDAO, walletService);
+        AuctionController auctionController = new AuctionController(auctionService);
+
         HomepageContentService homepageContentService = new HomepageContentService();
         HomepageController homepageController = new HomepageController(homepageContentService);
-
-        WalletDAO walletDAO = new WalletDAOImpl();
-        WalletService walletService = new WalletService(walletDAO);
-        WalletController walletController = new WalletController(walletService);
 
         if (isSchedulerEnabled()) {
             scheduler = new AuctionScheduler(auctionService);

@@ -12,34 +12,34 @@ import java.util.List;
 public class WalletDAOImpl implements WalletDAO {
 
     private static final String SAVE_WALLET_SQL =
-        "INSERT INTO wallets (user_id, balance, created_at, updated_at) VALUES (?, ?, ?, ?)";
+            "INSERT INTO wallets (user_id, balance, created_at, updated_at) VALUES (?, ?, ?, ?)";
 
     private static final String UPDATE_WALLET_SQL =
-        "UPDATE wallets SET balance = ?, updated_at = ? WHERE id = ?";
+            "UPDATE wallets SET balance = ?, updated_at = ? WHERE id = ?";
 
     private static final String FIND_WALLET_BY_USER_ID_SQL =
-        "SELECT id, user_id, balance, created_at, updated_at FROM wallets WHERE user_id = ?";
+            "SELECT id, user_id, balance, created_at, updated_at FROM wallets WHERE user_id = ?";
 
     private static final String DELETE_WALLET_SQL =
-        "DELETE FROM wallets WHERE id = ?";
+            "DELETE FROM wallets WHERE id = ?";
 
     private static final String SAVE_TOPUP_TRANSACTION_SQL =
-        "INSERT INTO topup_transactions (user_id, amount, method, status, reference_code, transaction_time, complete_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO topup_transactions (user_id, amount, method, status, reference_code, transaction_time, complete_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
     private static final String UPDATE_TOPUP_TRANSACTION_SQL =
-        "UPDATE topup_transactions SET status = ?, reference_code = ?, complete_at = ? WHERE id = ?";
+            "UPDATE topup_transactions SET status = ?, reference_code = ?, complete_at = ? WHERE id = ?";
 
     private static final String FIND_TOPUP_TRANSACTION_BY_ID_SQL =
-        "SELECT id, user_id, amount, method, status, reference_code, transaction_time, complete_at FROM topup_transactions WHERE id = ?";
+            "SELECT id, user_id, amount, method, status, reference_code, transaction_time, complete_at FROM topup_transactions WHERE id = ?";
 
     private static final String FIND_TOPUP_BY_USER_SQL =
-        "SELECT id, user_id, amount, method, status, reference_code, transaction_time, complete_at FROM topup_transactions WHERE user_id = ? ORDER BY transaction_time DESC";
+            "SELECT id, user_id, amount, method, status, reference_code, transaction_time, complete_at FROM topup_transactions WHERE user_id = ? ORDER BY transaction_time DESC";
 
     private static final String FIND_ALL_PENDING_TOPUP_SQL =
-        "SELECT id, user_id, amount, method, status, reference_code, transaction_time, complete_at FROM topup_transactions WHERE status = ?";
+            "SELECT id, user_id, amount, method, status, reference_code, transaction_time, complete_at FROM topup_transactions WHERE status = ?";
 
     private static final String DELETE_TOPUP_TRANSACTION_SQL =
-        "DELETE FROM topup_transactions WHERE id = ?";
+            "DELETE FROM topup_transactions WHERE id = ?";
 
     @Override
     public int saveWallet(Wallet wallet) {
@@ -53,10 +53,10 @@ public class WalletDAOImpl implements WalletDAO {
             try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) return rs.getInt(1);
             }
+            return -1;
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to save the wallet to PostgreSQL.", e);
         }
-        return -1;
     }
 
     @Override
@@ -68,7 +68,7 @@ public class WalletDAOImpl implements WalletDAO {
             stmt.setInt(3, wallet.getId());
             stmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to update the wallet in PostgreSQL.", e);
         }
     }
 
@@ -80,10 +80,10 @@ public class WalletDAOImpl implements WalletDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) return mapWallet(rs);
             }
+            return null;
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to find the wallet in PostgreSQL.", e);
         }
-        return null;
     }
 
     @Override
@@ -93,7 +93,7 @@ public class WalletDAOImpl implements WalletDAO {
             stmt.setInt(1, walledId);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to delete the wallet in PostgreSQL.", e);
         }
     }
 
@@ -112,10 +112,10 @@ public class WalletDAOImpl implements WalletDAO {
             try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) return rs.getInt(1);
             }
+            return -1;
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to save top-up transaction to PostgreSQL.", e);
         }
-        return -1;
     }
 
     @Override
@@ -128,7 +128,7 @@ public class WalletDAOImpl implements WalletDAO {
             stmt.setInt(4, transaction.getId());
             stmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to update top-up transaction in PostgreSQL.", e);
         }
     }
 
@@ -140,10 +140,10 @@ public class WalletDAOImpl implements WalletDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) return mapTopUpTransaction(rs);
             }
+            return null;
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to find top-up transaction in PostgreSQL.", e);
         }
-        return null;
     }
 
     @Override
@@ -158,7 +158,7 @@ public class WalletDAOImpl implements WalletDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to read top-up transactions from PostgreSQL.", e);
         }
         return transactions;
     }
@@ -175,7 +175,7 @@ public class WalletDAOImpl implements WalletDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to read pending top-up transactions from PostgreSQL.", e);
         }
         return transactions;
     }
@@ -187,7 +187,7 @@ public class WalletDAOImpl implements WalletDAO {
             stmt.setInt(1, transactionID);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to delete top-up transaction in PostgreSQL.", e);
         }
     }
 
@@ -214,4 +214,3 @@ public class WalletDAOImpl implements WalletDAO {
         return new TopUpTransaction(id, userId, amount, method, status, referenceCode, transactionTime, completeAt);
     }
 }
-
