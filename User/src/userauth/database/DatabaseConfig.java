@@ -8,6 +8,7 @@ import java.util.Properties;
 
 public final class DatabaseConfig {
     private static final String RESOURCE_PATH = "/userauth/database.properties";
+    private static final String LOCAL_OVERRIDE_RESOURCE_PATH = "/userauth/database.local.properties";
 
     private final String jdbcUrl;
     private final String adminJdbcUrl;
@@ -50,6 +51,7 @@ public final class DatabaseConfig {
                 throw new IllegalStateException("Database configuration file not found: " + RESOURCE_PATH);
             }
             properties.load(inputStream);
+            loadOptionalOverride(properties, LOCAL_OVERRIDE_RESOURCE_PATH);
             return new DatabaseConfig(properties);
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to read the database configuration file.", ex);
@@ -103,7 +105,6 @@ public final class DatabaseConfig {
     }
 
     private String buildJdbcUrl(String targetDatabase) {
-        System.out.println("jdbc:postgresql://" + host + ":" + port + "/" + targetDatabase + "?" + buildQueryString());
         return "jdbc:postgresql://" + host + ":" + port + "/" + targetDatabase + "?" + buildQueryString();
     }
 
@@ -171,5 +172,14 @@ public final class DatabaseConfig {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static void loadOptionalOverride(Properties properties, String resourcePath) throws IOException {
+        try (InputStream overrideStream = DatabaseConfig.class.getResourceAsStream(resourcePath)) {
+            if (overrideStream == null) {
+                return;
+            }
+            properties.load(overrideStream);
+        }
     }
 }

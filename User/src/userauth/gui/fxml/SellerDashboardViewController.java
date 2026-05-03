@@ -17,11 +17,19 @@ import userauth.model.AuctionStatus;
 import userauth.model.User;
 
 import java.io.File;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class SellerDashboardViewController {
     private static final long ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
+    private static final DateTimeFormatter TIME_INPUT_FORMAT = DateTimeFormatter.ofPattern("H:mm");
 
     @FXML
     private TableView<AuctionItem> tableAuctions;
@@ -66,7 +74,16 @@ public class SellerDashboardViewController {
     private TextField txtImageSource;
 
     @FXML
-    private Spinner<Integer> spinDuration;
+    private DatePicker dpStartDate;
+
+    @FXML
+    private TextField txtStartTime;
+
+    @FXML
+    private DatePicker dpEndDate;
+
+    @FXML
+    private TextField txtEndTime;
 
     @FXML
     private Button btnCreate;
@@ -126,11 +143,8 @@ public class SellerDashboardViewController {
 
     @FXML
     private void initialize() {
-        if (spinDuration.getValueFactory() == null) {
-            spinDuration.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 99999, 30));
-        }
-
         AuctionImageUtil.installRoundedClip(imgPreviewImage, 32, 32);
+        applyDefaultSchedule();
 
         colId.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
         colName.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getName()));
@@ -229,9 +243,8 @@ public class SellerDashboardViewController {
             String category = txtCategory.getText().trim();
             String imageSource = normalizeOptionalText(txtImageSource.getText());
             double price = Double.parseDouble(txtPrice.getText().trim());
-            int durationMinutes = spinDuration.getValue();
-            long start = System.currentTimeMillis();
-            long end = start + (long) durationMinutes * 60 * 1000;
+            long start = parseScheduleValue(dpStartDate, txtStartTime, "Start time");
+            long end = parseScheduleValue(dpEndDate, txtEndTime, "End time");
             int sellerId = currentUser.getId();
             int currentEditingId = editingId;
 
@@ -247,6 +260,8 @@ public class SellerDashboardViewController {
             );
         } catch (NumberFormatException ex) {
             NotificationUtil.error(ownerWindow(), "Error", "Invalid starting price.");
+        } catch (IllegalArgumentException ex) {
+            NotificationUtil.error(ownerWindow(), "Error", ex.getMessage());
         }
     }
 
@@ -286,10 +301,7 @@ public class SellerDashboardViewController {
         txtPrice.setText(String.valueOf(item.getStartPrice()));
         txtDesc.setText(item.getDescription());
         txtImageSource.setText(item.getImageSource());
-
-        long durationMs = item.getEndTime() - item.getStartTime();
-        int durationMin = (int) Math.max(1, durationMs / 60000);
-        spinDuration.getValueFactory().setValue(durationMin);
+        populateScheduleFields(item.getStartTime(), item.getEndTime());
         btnCreate.setText(UiText.text("SAVE CHANGES"));
         updatePreview();
     }
@@ -391,7 +403,10 @@ public class SellerDashboardViewController {
         txtCategory.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtImageSource.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtPrice.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
-        spinDuration.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        dpStartDate.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        txtStartTime.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        dpEndDate.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        txtEndTime.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
     }
 
     private void updatePreview() {
@@ -401,13 +416,12 @@ public class SellerDashboardViewController {
                 : txtDesc.getText().trim();
         String category = txtCategory.getText() == null || txtCategory.getText().isBlank() ? UiText.text("Category") : txtCategory.getText().trim();
         String price = parsePricePreview();
-        Integer duration = spinDuration.getValue();
 
         AuctionImageUtil.applyAuctionImage(imgPreviewImage, lblPreviewInitial, txtImageSource.getText(), name);
         lblPreviewName.setText(name);
         lblPreviewDescription.setText(description);
         lblPreviewCategory.setText(category);
-        lblPreviewDuration.setText((duration == null ? 30 : duration) + " " + UiText.text("minutes"));
+        lblPreviewDuration.setText(parseSchedulePreview());
         lblPreviewPrice.setText(price);
         lblPreviewMode.setText(editingId == -1
                 ? UiText.text("Creating a new auction")
@@ -474,9 +488,7 @@ public class SellerDashboardViewController {
         txtPrice.clear();
         txtCategory.clear();
         txtImageSource.clear();
-        if (spinDuration.getValueFactory() != null) {
-            spinDuration.getValueFactory().setValue(30);
-        }
+        applyDefaultSchedule();
         btnCreate.setText(UiText.text("CREATE NEW"));
         updatePreview();
     }
@@ -572,11 +584,74 @@ public class SellerDashboardViewController {
         if (txtImageSource != null) {
             txtImageSource.setDisable(busy);
         }
-        if (spinDuration != null) {
-            spinDuration.setDisable(busy);
+        if (dpStartDate != null) {
+            dpStartDate.setDisable(busy);
+        }
+        if (txtStartTime != null) {
+            txtStartTime.setDisable(busy);
+        }
+        if (dpEndDate != null) {
+            dpEndDate.setDisable(busy);
+        }
+        if (txtEndTime != null) {
+            txtEndTime.setDisable(busy);
         }
         if (btnCreate != null) {
             btnCreate.setDisable(busy);
+        }
+    }
+
+    private void applyDefaultSchedule() {
+        LocalDateTime start = LocalDateTime.now().plusMinutes(10).withSecond(0).withNano(0);
+        int remainder = start.getMinute() % 5;
+        if (remainder != 0) {
+            start = start.plusMinutes(5 - remainder);
+        }
+        LocalDateTime end = start.plusMinutes(30);
+        populateScheduleFields(start, end);
+    }
+
+    private void populateScheduleFields(long startTime, long endTime) {
+        populateScheduleFields(
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneId.systemDefault()),
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(endTime), ZoneId.systemDefault())
+        );
+    }
+
+    private void populateScheduleFields(LocalDateTime start, LocalDateTime end) {
+        dpStartDate.setValue(start.toLocalDate());
+        txtStartTime.setText(start.format(TIME_INPUT_FORMAT));
+        dpEndDate.setValue(end.toLocalDate());
+        txtEndTime.setText(end.format(TIME_INPUT_FORMAT));
+    }
+
+    private long parseScheduleValue(DatePicker datePicker, TextField timeField, String fieldLabel) {
+        LocalDate date = datePicker.getValue();
+        if (date == null) {
+            throw new IllegalArgumentException(fieldLabel + " date is required.");
+        }
+
+        String rawTime = timeField.getText() == null ? "" : timeField.getText().trim();
+        if (rawTime.isBlank()) {
+            throw new IllegalArgumentException(fieldLabel + " time is required.");
+        }
+
+        try {
+            LocalTime time = LocalTime.parse(rawTime, TIME_INPUT_FORMAT);
+            return date.atTime(time).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException(fieldLabel + " must use HH:mm format.");
+        }
+    }
+
+    private String parseSchedulePreview() {
+        try {
+            long start = parseScheduleValue(dpStartDate, txtStartTime, "Start time");
+            long end = parseScheduleValue(dpEndDate, txtEndTime, "End time");
+            long durationMinutes = Math.max(1, (end - start) / 60_000L);
+            return durationMinutes + " " + UiText.text("minutes");
+        } catch (IllegalArgumentException ex) {
+            return UiText.text("Invalid schedule");
         }
     }
     @FXML

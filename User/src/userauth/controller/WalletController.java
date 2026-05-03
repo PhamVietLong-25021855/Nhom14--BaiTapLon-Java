@@ -54,8 +54,7 @@ public class WalletController{
         try{
             return walletService.getWallet(userId);
         }catch (ItemNotFoundException e){
-            System.out.println("ERROR: " + e.getMessage());
-            return null ;
+            return null;
         }
     }
 
@@ -80,19 +79,13 @@ public class WalletController{
     public List<TopUpTransaction> getTopUpHistory(int userId){
         try{
             return walletService.getTopUpHistory(userId);
-        }catch (ItemNotFoundException | ValidationException e){
-            System.out.println("ERROR: " + e.getMessage());
-            return List.of() ;
+        }catch (ItemNotFoundException e){
+            return List.of();
         }
     }
 
     public List<TopUpTransaction> getAllPendingTrasactions(){
-        try{
-            return walletService.getAllPendingTransactions();
-        }catch (ValidationException | ItemNotFoundException e){
-            System.out.println("ERROR: " + e.getMessage() );
-            return List.of();
-        }
+        return walletService.getAllPendingTransactions();
     }
 
     public double getWalletBalance(int userId){

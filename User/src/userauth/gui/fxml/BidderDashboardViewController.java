@@ -23,9 +23,7 @@ import javafx.util.Duration;
 import userauth.controller.AuctionController;
 import userauth.controller.AutobidController;
 import userauth.controller.WalletController;
-import userauth.dao.AutoBidDAO;
 import userauth.model.*;
-import userauth.service.AutobidService;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -44,6 +42,7 @@ public class BidderDashboardViewController {
     private static final long ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
     private static final DateTimeFormatter LIVE_TIME =
             DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
+    private static final double MILLIS_PER_MINUTE = 60_000.0;
 
 
 
@@ -216,6 +215,8 @@ public class BidderDashboardViewController {
         tableAuctions.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) ->
                 renderSelectedAuction(newValue, false));
         tableAuctions.setRowFactory(this::createAuctionRow);
+        tableAutoBid.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) ->
+                populateAutobidForm(newValue));
 
         chartBidTrend.setAnimated(false);
         xAxisBidTrend.setAutoRanging(true);
@@ -308,7 +309,7 @@ public class BidderDashboardViewController {
     @FXML
     private void handlePlaceBid() {
         if (auctionController == null || currentUser == null) {
-            NotificationUtil.warning(ownerWindow(), "Notification", "AutoBid is not ready.");
+            NotificationUtil.warning(ownerWindow(), "Notification", "Bidding is not ready.");
             return;
         }
 
@@ -339,34 +340,64 @@ public class BidderDashboardViewController {
 
     @FXML
     private void handleAutobid(){
+        if (autobidController == null || currentUser == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Auto-bid is not ready.");
+            return;
+        }
+        AuctionItem selectedAuction = tableAuctions.getSelectionModel().getSelectedItem();
+        if (selectedAuction == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Please select an auction.");
+            return;
+        }
 
         String max = maxPrice.getText() == null ? "" : maxPrice.getText().trim();
         String increment = incrementAutobid.getText() == null ? "" : incrementAutobid.getText().trim();
         String id = idAutobid.getText() == null ? "" : idAutobid.getText().trim();
-        if (max.isBlank() || increment.isBlank()) {
-            NotificationUtil.warning(ownerWindow(), "Notification", "Please enter a bid amount and increment.");
-            return;
-        }
 
         try {
-            double maxAmount = Double.parseDouble(max);
-            int auctionId = tableAuctions.getSelectionModel().getSelectedItem().getId();
             int bidderId = currentUser.getId();
-            //Create autobid
-            if (id.isBlank()){
-                autobidController.createAutobid(bidderId,auctionId,maxAmount, Double.parseDouble(increment));
-            }else {
-                if (increment.isBlank()){
-                    autobidController.deleteAutoBid(bidderId, Integer.parseInt(id));
-                }else {
-                    autobidController.updateAutobid(bidderId, Integer.parseInt(id), maxAmount, Double.parseDouble(increment));
+            int auctionId = selectedAuction.getId();
+            String result;
+
+            if (id.isBlank()) {
+                if (max.isBlank() || increment.isBlank()) {
+                    NotificationUtil.warning(ownerWindow(), "Notification", "Enter max price and increment to create an auto-bid.");
+                    return;
                 }
+                result = autobidController.createAutobid(
+                        bidderId,
+                        auctionId,
+                        Double.parseDouble(max),
+                        Double.parseDouble(increment)
+                );
+            } else if (max.isBlank() && increment.isBlank()) {
+                result = autobidController.deleteAutoBid(bidderId, Integer.parseInt(id));
+            } else {
+                if (max.isBlank() || increment.isBlank()) {
+                    NotificationUtil.warning(ownerWindow(), "Notification", "Provide both max price and increment when updating an auto-bid.");
+                    return;
+                }
+                result = autobidController.updateAutobid(
+                        bidderId,
+                        Integer.parseInt(id),
+                        Double.parseDouble(max),
+                        Double.parseDouble(increment)
+                );
             }
-            refreshData();
+
+            if ("SUCCESS".equals(result)) {
+                clearAutobidForm();
+                tableAutoBid.getSelectionModel().clearSelection();
+                NotificationUtil.success(ownerWindow(), "Notification", "Auto-bid updated successfully.");
+                refreshData();
+                return;
+            }
+
+            NotificationUtil.error(ownerWindow(), "Error", result);
         } catch (NumberFormatException ex) {
             NotificationUtil.error(ownerWindow(), "Error", "Invalid number.");
         }
-    };
+    }
 
     @FXML
     private void handleShowHistory() {
@@ -667,6 +698,7 @@ public class BidderDashboardViewController {
     private void updateBidTrend(List<BidTransaction> bids) {
         chartBidTrend.getData().clear();
         if (bids == null || bids.isEmpty()) {
+            xAxisBidTrend.setLabel("Time since first bid (minutes)");
             return;
         }
 
@@ -675,9 +707,11 @@ public class BidderDashboardViewController {
                 .sorted(Comparator.comparingLong(BidTransaction::getTimestamp))
                 .toList();
 
-        int index = 1;
+        long firstTimestamp = orderedBids.get(0).getTimestamp();
+        xAxisBidTrend.setLabel("Time since first bid (minutes)");
         for (BidTransaction bid : orderedBids) {
-            series.getData().add(new XYChart.Data<>(index++, bid.getAmount()));
+            double elapsedMinutes = Math.max(0, (bid.getTimestamp() - firstTimestamp) / MILLIS_PER_MINUTE);
+            series.getData().add(new XYChart.Data<>(elapsedMinutes, bid.getAmount()));
         }
         chartBidTrend.getData().add(series);
     }
@@ -763,6 +797,21 @@ public class BidderDashboardViewController {
         if (tableAuctions != null) {
             tableAuctions.setDisable(busy);
         }
+    }
+
+    private void populateAutobidForm(AutoBid autoBid) {
+        if (autoBid == null) {
+            return;
+        }
+        idAutobid.setText(String.valueOf(autoBid.getId()));
+        maxPrice.setText(String.valueOf(autoBid.getMaxPrice()));
+        incrementAutobid.setText(String.valueOf(autoBid.getIncrement()));
+    }
+
+    private void clearAutobidForm() {
+        idAutobid.clear();
+        maxPrice.clear();
+        incrementAutobid.clear();
     }
 
     private BidderSnapshot loadBidderSnapshot(String keyword, String statusFilter) {

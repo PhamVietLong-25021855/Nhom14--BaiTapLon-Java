@@ -3,3 +3,8 @@ tmp/
 User/bin/
 User/sources.txt
 *.class
+target/
+*.iml
+.env
+User/resources/userauth/database.local.properties
+User/data/

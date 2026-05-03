@@ -168,10 +168,10 @@
                                                         <VBox spacing="12.0" styleClass="panel-card chart-card">
                                                             <children>
                                                                 <Label styleClass="panel-title" text="PRICE OVER TIME" />
-                                                                <LineChart fx:id="chartBidTrend" animated="true" createSymbols="true" legendVisible="false" prefHeight="260.0">
-                                                                    <xAxis>
-                                                                        <NumberAxis forceZeroInRange="false" label="Bid count" fx:id="xAxisBidTrend" />
-                                                                    </xAxis>
+                                                                 <LineChart fx:id="chartBidTrend" animated="true" createSymbols="true" legendVisible="false" prefHeight="260.0">
+                                                                     <xAxis>
+                                                                        <NumberAxis forceZeroInRange="false" label="Time since first bid (minutes)" fx:id="xAxisBidTrend" />
+                                                                     </xAxis>
                                                                     <yAxis>
                                                                         <NumberAxis fx:id="yAxisBidTrend" forceZeroInRange="false" label="Price" />
                                                                     </yAxis>
@@ -260,15 +260,15 @@
                                                                 <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handlePlaceBid" styleClass="button primary-button" text="PLACE BID NOW" />
                                                             </children>
                                                         </VBox>
-                                          <VBox spacing="12.0" styleClass="panel-card chart-card">
-                                             <children>
-                                                <Label styleClass="panel-title" text="Auto Bidding (Current auction)" />
-                                                <TextField fx:id="idAutobid" promptText="Enter id (Leave blank if want to create autobid)" />
-                                                <TextField fx:id="maxPrice" promptText="Enter max price" />
-                                                <TextField fx:id="incrementAutobid" promptText="Enter increment (Leave blank if want to delete autobid)" />
-                                                <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleAutobid" prefHeight="42.0" prefWidth="645.0" styleClass="button primary-button" text="Update/Create autobid" />
-                                             </children>
-                                          </VBox>
+                                           <VBox spacing="12.0" styleClass="panel-card chart-card">
+                                              <children>
+                                                 <Label styleClass="panel-title" text="Auto Bidding (Current auction)" />
+                                                 <TextField fx:id="idAutobid" promptText="Auto-bid ID. Leave blank to create a new rule." />
+                                                 <TextField fx:id="maxPrice" promptText="Enter max price" />
+                                                 <TextField fx:id="incrementAutobid" promptText="Enter increment. Leave both price and increment blank to delete by ID." />
+                                                 <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleAutobid" prefHeight="42.0" prefWidth="645.0" styleClass="button primary-button" text="SAVE / DELETE AUTO-BID" />
+                                              </children>
+                                           </VBox>
                                                         <VBox spacing="12.0" styleClass="panel-card">
                                                             <children>
                                                                 <HBox alignment="CENTER_LEFT" spacing="10.0">

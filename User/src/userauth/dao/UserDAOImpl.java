@@ -26,6 +26,11 @@ public class UserDAOImpl implements UserDAO {
             SET username = ?, password = ?, full_name = ?, email = ?, role = ?, status = ?, updated_at = ?
             WHERE id = ?
             """;
+    private static final String FIND_BY_ID_SQL = """
+            SELECT id, username, password, full_name, email, role, status, created_at, updated_at
+            FROM users
+            WHERE id = ?
+            """;
     private static final String FIND_BY_USERNAME_SQL = """
             SELECT id, username, password, full_name, email, role, status, created_at, updated_at
             FROM users
@@ -163,6 +168,26 @@ public class UserDAOImpl implements UserDAO {
             }
         } catch (SQLException ex) {
             throw new IllegalStateException("Unable to delete the user in PostgreSQL.", ex);
+        }
+    }
+
+    @Override
+    public User findById(int userId) {
+        if (userId <= 0) {
+            return null;
+        }
+
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_BY_ID_SQL)) {
+            statement.setInt(1, userId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return null;
+                }
+                return mapUser(resultSet);
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to find the user by id in PostgreSQL.", ex);
         }
     }
 

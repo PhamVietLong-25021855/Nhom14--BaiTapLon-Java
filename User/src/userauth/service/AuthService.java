@@ -113,7 +113,7 @@ public class AuthService {
     private void validateRegistrationInput(String username, String password, String fullName, String email, Role role)
             throws ValidationException {
         if (!UserValidator.isValidUsername(username)) {
-            throw new ValidationException("Invalid username. It must be 3 to 20 characters long and cannot be empty.");
+            throw new ValidationException("Invalid username. It must be 3 to 20 characters long and cannot be blank.");
         }
         if (!UserValidator.isValidPassword(password)) {
             throw new ValidationException("Invalid password. It must be at least 6 characters long and include letters and numbers.");
@@ -158,11 +158,6 @@ public class AuthService {
     }
 
     private User findUserById(int userId) {
-        for (User user : userDAO.findAll()) {
-            if (user.getId() == userId) {
-                return user;
-            }
-        }
-        return null;
+        return userDAO.findById(userId);
     }
 }

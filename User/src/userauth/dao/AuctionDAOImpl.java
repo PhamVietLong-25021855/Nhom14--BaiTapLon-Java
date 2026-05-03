@@ -42,9 +42,21 @@ public class AuctionDAOImpl implements AuctionDAO {
             FROM auctions
             ORDER BY id
             """;
+    private static final String FIND_AUCTIONS_BY_SELLER_SQL = """
+            SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
+                   category, image_source, created_at, updated_at, seller_id, winner_id, status
+            FROM auctions
+            WHERE seller_id = ?
+            ORDER BY id
+            """;
     private static final String INSERT_BID_SQL = """
-            INSERT INTO bids (auction_id, bidder_id, amount, bid_time, status)
-            VALUES (?, ?, ?, ?, ?)
+             INSERT INTO bids (auction_id, bidder_id, amount, bid_time, status)
+             VALUES (?, ?, ?, ?, ?)
+             """;
+    private static final String MARK_AUCTION_FINISHED_SQL = """
+            UPDATE auctions
+            SET status = 'FINISHED', end_time = ?, updated_at = ?
+            WHERE id = ? AND status IN ('OPEN', 'RUNNING')
             """;
     private static final String FIND_BIDS_BY_AUCTION_SQL = """
             SELECT id, auction_id, bidder_id, amount, bid_time, status
@@ -143,14 +155,29 @@ public class AuctionDAOImpl implements AuctionDAO {
     }
 
     @Override
+    public List<AuctionItem> findAuctionsBySeller(int sellerId) {
+        List<AuctionItem> auctions = new ArrayList<>();
+
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_AUCTIONS_BY_SELLER_SQL)) {
+            statement.setInt(1, sellerId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    auctions.add(mapAuction(resultSet));
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to read seller auctions from PostgreSQL.", ex);
+        }
+
+        return auctions;
+    }
+
+    @Override
     public void saveBid(BidTransaction bid) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(INSERT_BID_SQL, Statement.RETURN_GENERATED_KEYS)) {
-            statement.setInt(1, bid.getAuctionId());
-            statement.setInt(2, bid.getBidderId());
-            statement.setDouble(3, bid.getAmount());
-            statement.setLong(4, bid.getTimestamp());
-            statement.setString(5, bid.getStatus());
+            bindBid(statement, bid);
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
@@ -160,6 +187,49 @@ public class AuctionDAOImpl implements AuctionDAO {
             }
         } catch (SQLException ex) {
             throw new IllegalStateException("Unable to save the bid transaction to PostgreSQL.", ex);
+        }
+    }
+
+    @Override
+    public void saveBidAndUpdateAuction(BidTransaction bid, AuctionItem item) {
+        try (Connection connection = DatabaseConnection.openDatabaseConnection()) {
+            boolean originalAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try (PreparedStatement bidStatement = connection.prepareStatement(INSERT_BID_SQL, Statement.RETURN_GENERATED_KEYS);
+                 PreparedStatement auctionStatement = connection.prepareStatement(UPDATE_AUCTION_SQL)) {
+                bindBid(bidStatement, bid);
+                bidStatement.executeUpdate();
+
+                try (ResultSet generatedKeys = bidStatement.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        bid.setId(generatedKeys.getInt(1));
+                    }
+                }
+
+                bindAuctionForUpdate(auctionStatement, item);
+                auctionStatement.executeUpdate();
+                connection.commit();
+            } catch (SQLException ex) {
+                connection.rollback();
+                throw ex;
+            } finally {
+                connection.setAutoCommit(originalAutoCommit);
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to persist the bid and auction update in PostgreSQL.", ex);
+        }
+    }
+
+    @Override
+    public boolean markAuctionFinished(int auctionId, long endTime, long updatedAt) {
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(MARK_AUCTION_FINISHED_SQL)) {
+            statement.setLong(1, endTime);
+            statement.setLong(2, updatedAt);
+            statement.setInt(3, auctionId);
+            return statement.executeUpdate() == 1;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to transition the auction to FINISHED in PostgreSQL.", ex);
         }
     }
 
@@ -237,6 +307,14 @@ public class AuctionDAOImpl implements AuctionDAO {
         }
         statement.setString(12, item.getStatus().name());
         statement.setInt(13, item.getId());
+    }
+
+    private void bindBid(PreparedStatement statement, BidTransaction bid) throws SQLException {
+        statement.setInt(1, bid.getAuctionId());
+        statement.setInt(2, bid.getBidderId());
+        statement.setDouble(3, bid.getAmount());
+        statement.setLong(4, bid.getTimestamp());
+        statement.setString(5, bid.getStatus());
     }
 
     private AuctionItem mapAuction(ResultSet resultSet) throws SQLException {

@@ -64,7 +64,7 @@ public class WalletDAOImpl implements WalletDAO {
         try (Connection conn = DatabaseConnection.openDatabaseConnection();
              PreparedStatement stmt = conn.prepareStatement(UPDATE_WALLET_SQL)) {
             stmt.setDouble(1, wallet.getBalance());
-            stmt.setLong(2, System.currentTimeMillis());
+            stmt.setLong(2, wallet.getUpdatedAt());
             stmt.setInt(3, wallet.getId());
             stmt.executeUpdate();
         } catch (SQLException e) {

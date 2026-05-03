@@ -1,9 +1,13 @@
 package userauth.database;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+
+import userauth.util.PasswordUtil;
 
 public final class DatabaseInitializer {
     private static final String CREATE_USERS_TABLE = """
@@ -105,6 +109,37 @@ public final class DatabaseInitializer {
             CONSTRAINT fk_topup_transactions_user FOREIGN KEY (user_id) REFERENCES users(id)
         )
         """;
+    private static final String CREATE_AUCTIONS_LOOKUP_INDEX_SQL = """
+        CREATE INDEX IF NOT EXISTS idx_auctions_seller_status_end_time
+        ON auctions (seller_id, status, end_time)
+        """;
+    private static final String CREATE_BIDS_AUCTION_TIME_INDEX_SQL = """
+        CREATE INDEX IF NOT EXISTS idx_bids_auction_time
+        ON bids (auction_id, bid_time)
+        """;
+    private static final String CREATE_BIDS_BIDDER_INDEX_SQL = """
+        CREATE INDEX IF NOT EXISTS idx_bids_bidder
+        ON bids (bidder_id)
+        """;
+    private static final String CREATE_AUTOBIDS_AUCTION_INDEX_SQL = """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_auto_bids_auction_bidder
+        ON auto_bids (auction_id, bidder_id)
+        """;
+    private static final String CREATE_TOPUPS_USER_STATUS_INDEX_SQL = """
+        CREATE INDEX IF NOT EXISTS idx_topup_transactions_user_status
+        ON topup_transactions (user_id, status)
+        """;
+    private static final String FIND_ANY_ADMIN_SQL = """
+        SELECT id
+        FROM users
+        WHERE role = 'ADMIN'
+        LIMIT 1
+        """;
+    private static final String INSERT_DEFAULT_ADMIN_SQL = """
+        INSERT INTO users (username, password, full_name, email, role, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'ADMIN', 'ACTIVE', ?, ?)
+        """;
+
     private DatabaseInitializer() {
     }
 
@@ -115,11 +150,6 @@ public final class DatabaseInitializer {
                 createDatabaseIfMissing(config.getDatabase());
             }
             createTables();
-            System.out.println(
-                    "[Database] Connected to PostgreSQL successfully: " +
-                            config.getHost() + ":" + config.getPort() + "/" + config.getDatabase() +
-                            " (user: " + config.getUsername() + ")"
-            );
         } catch (SQLException ex) {
             throw new IllegalStateException("Unable to initialize the PostgreSQL connection.", ex);
         }
@@ -156,7 +186,12 @@ public final class DatabaseInitializer {
                 CREATE_HOMEPAGE_ANNOUNCEMENTS_TABLE,
                 CREATE_AUTO_BIDS_TABLE,
                 CREATE_WALLETS_TABLE,
-                CREATE_TOPUP_TRANSACTIONS_TABLE
+                CREATE_TOPUP_TRANSACTIONS_TABLE,
+                CREATE_AUCTIONS_LOOKUP_INDEX_SQL,
+                CREATE_BIDS_AUCTION_TIME_INDEX_SQL,
+                CREATE_BIDS_BIDDER_INDEX_SQL,
+                CREATE_AUTOBIDS_AUCTION_INDEX_SQL,
+                CREATE_TOPUPS_USER_STATUS_INDEX_SQL
         );
 
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
@@ -164,6 +199,41 @@ public final class DatabaseInitializer {
             for (String sql : statements) {
                 statement.executeUpdate(sql);
             }
+            ensureDefaultAdmin(connection);
         }
+    }
+
+    private static void ensureDefaultAdmin(Connection connection) throws SQLException {
+        try (PreparedStatement findAdmin = connection.prepareStatement(FIND_ANY_ADMIN_SQL);
+             ResultSet resultSet = findAdmin.executeQuery()) {
+            if (resultSet.next()) {
+                return;
+            }
+        }
+
+        String username = resolveSeedValue("APP_ADMIN_USERNAME", "admin");
+        String email = resolveSeedValue("APP_ADMIN_EMAIL", "admin@auction.local");
+        String fullName = resolveSeedValue("APP_ADMIN_FULL_NAME", "System Administrator");
+        String password = resolveSeedValue("APP_ADMIN_PASSWORD", "Admin123");
+        String hashedPassword = PasswordUtil.hashPassword(password);
+        long now = System.currentTimeMillis();
+
+        try (PreparedStatement insertAdmin = connection.prepareStatement(INSERT_DEFAULT_ADMIN_SQL)) {
+            insertAdmin.setString(1, username);
+            insertAdmin.setString(2, hashedPassword);
+            insertAdmin.setString(3, fullName);
+            insertAdmin.setString(4, email);
+            insertAdmin.setLong(5, now);
+            insertAdmin.setLong(6, now);
+            insertAdmin.executeUpdate();
+        }
+    }
+
+    private static String resolveSeedValue(String envKey, String defaultValue) {
+        String value = System.getenv(envKey);
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        return value.trim();
     }
 }

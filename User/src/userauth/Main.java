@@ -27,10 +27,9 @@ public class Main extends Application {
         WalletController walletController = new WalletController(walletService);
 
         AutoBidDAO autoBidDAO = new AutoBidDAOImpl();
-        AutobidService autobidService = new AutobidService(autoBidDAO);
-        AutobidController autobidController = new AutobidController(autobidService);
-
         AuctionDAO auctionDAO = new AuctionDAOImpl();
+        AutobidService autobidService = new AutobidService(autoBidDAO, auctionDAO);
+        AutobidController autobidController = new AutobidController(autobidService);
         AuctionService auctionService = new AuctionService(auctionDAO, autoBidDAO, walletService);
         AuctionController auctionController = new AuctionController(auctionService);
 

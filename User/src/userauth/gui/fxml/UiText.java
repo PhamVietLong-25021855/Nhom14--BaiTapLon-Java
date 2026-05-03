@@ -1,5 +1,6 @@
 package userauth.gui.fxml;
 
+import javafx.beans.property.Property;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.Axis;
@@ -129,13 +130,13 @@ final class UiText {
 
     private static void applyNode(Node node) {
         if (node instanceof Labeled labeled) {
-            labeled.setText(text(labeled.getText()));
+            setIfUnbound(labeled.textProperty(), text(labeled.getText()));
         }
         if (node instanceof TextInputControl input) {
-            input.setPromptText(text(input.getPromptText()));
+            setIfUnbound(input.promptTextProperty(), text(input.getPromptText()));
         }
         if (node instanceof ComboBoxBase<?> comboBoxBase) {
-            comboBoxBase.setPromptText(text(comboBoxBase.getPromptText()));
+            setIfUnbound(comboBoxBase.promptTextProperty(), text(comboBoxBase.getPromptText()));
         }
         if (node instanceof ComboBox<?> comboBox && comboBox.getValue() instanceof String) {
             @SuppressWarnings("unchecked")
@@ -143,10 +144,10 @@ final class UiText {
             refreshTranslatedComboBox(translatedCombo);
         }
         if (node instanceof Axis<?> axis) {
-            axis.setLabel(text(axis.getLabel()));
+            setIfUnbound(axis.labelProperty(), text(axis.getLabel()));
         }
         if (node instanceof MenuButton menuButton) {
-            menuButton.setText(text(menuButton.getText()));
+            setIfUnbound(menuButton.textProperty(), text(menuButton.getText()));
             for (MenuItem item : menuButton.getItems()) {
                 applyMenuItem(item);
             }
@@ -155,6 +156,9 @@ final class UiText {
             for (TableColumn<?, ?> column : tableView.getColumns()) {
                 applyTableColumn(column);
             }
+        }
+        if (shouldSkipChildTraversal(node)) {
+            return;
         }
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
@@ -167,7 +171,7 @@ final class UiText {
         if (column == null) {
             return;
         }
-        column.setText(text(column.getText()));
+        setIfUnbound(column.textProperty(), text(column.getText()));
         for (TableColumn<?, ?> child : column.getColumns()) {
             applyTableColumn(child);
         }
@@ -177,12 +181,26 @@ final class UiText {
         if (item == null) {
             return;
         }
-        item.setText(text(item.getText()));
+        setIfUnbound(item.textProperty(), text(item.getText()));
         if (item instanceof Menu menu) {
             for (MenuItem child : menu.getItems()) {
                 applyMenuItem(child);
             }
         }
+    }
+
+    private static void setIfUnbound(Property<String> property, String value) {
+        if (property == null || property.isBound()) {
+            return;
+        }
+        property.setValue(value);
+    }
+
+    private static boolean shouldSkipChildTraversal(Node node) {
+        return node instanceof ComboBoxBase<?>
+                || node instanceof MenuButton
+                || node instanceof TableView<?>
+                || node instanceof TextInputControl;
     }
 
     private static String translateStructured(String value,
