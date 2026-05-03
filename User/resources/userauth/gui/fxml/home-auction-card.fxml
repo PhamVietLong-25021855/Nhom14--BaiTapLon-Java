@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="14.0"
+      fx:controller="userauth.gui.fxml.HomeAuctionCardController"
+      styleClass="landing-feed-card"
+      stylesheets="@auth-theme.css"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <HBox spacing="14.0">
+            <children>
+                <StackPane minHeight="72.0" minWidth="72.0" prefHeight="72.0" prefWidth="72.0" styleClass="auction-image-panel">
+                    <children>
+                        <ImageView fx:id="imgAuction" fitHeight="72.0" fitWidth="72.0" pickOnBounds="true" preserveRatio="true" smooth="true" styleClass="auction-product-image"/>
+                        <Label fx:id="lblInitial" text="A" styleClass="auction-image-initial"/>
+                    </children>
+                </StackPane>
+                <VBox spacing="6.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <HBox spacing="10.0">
+                            <children>
+                                <Label fx:id="lblTitle"
+                                       text="Product Name"
+                                       wrapText="true"
+                                       styleClass="feed-card-title"
+                                       HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="lblStatusChip"
+                                       text="STATUS"
+                                       styleClass="status-chip"/>
+                            </children>
+                        </HBox>
+                        <Label fx:id="lblCategory"
+                               text="Category: -"
+                               wrapText="true"
+                               styleClass="feed-card-meta"/>
+                        <Label fx:id="lblSchedule"
+                               text="Schedule: -"
+                               wrapText="true"
+                               styleClass="feed-card-body"/>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+        <HBox spacing="12.0" styleClass="feed-grid">
+            <children>
+                <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Label text="CURRENT PRICE" styleClass="feed-card-meta"/>
+                        <Label fx:id="lblHighestBid"
+                               text="0"
+                               wrapText="true"
+                               styleClass="feed-price"/>
+                    </children>
+                </VBox>
+                <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Label text="BID COUNT" styleClass="feed-card-meta"/>
+                        <Label fx:id="lblBidCount"
+                               text="0"
+                               wrapText="true"
+                               styleClass="feed-card-body"/>
+                    </children>
+                </VBox>
+                <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Label text="COUNTDOWN" styleClass="feed-card-meta"/>
+                        <Label fx:id="lblTimeInfo"
+                               text="Remaining: -"
+                               wrapText="true"
+                               styleClass="feed-card-foot"/>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </children>
+</VBox>

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane maxHeight="Infinity" maxWidth="Infinity"
+           prefHeight="940.0" prefWidth="1440.0"
+           fx:controller="userauth.gui.fxml.AdminHomepageViewController"
+           styleClass="page-root dashboard-root"
+           stylesheets="@auth-theme.css"
+           xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <HBox maxHeight="Infinity" maxWidth="Infinity" spacing="20.0" styleClass="shell-frame">
+            <children>
+                <VBox HBox.hgrow="ALWAYS" spacing="18.0">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="topbar-surface">
+                            <children>
+                                <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label text="Homepage Content Manager" styleClass="topbar-title"/>
+                                        <Label text="Create and schedule homepage announcements from one screen." styleClass="topbar-subtitle"/>
+                                    </children>
+                                </VBox>
+                                <VBox spacing="2.0" styleClass="user-pill">
+                                    <children>
+                                        <Label fx:id="lblCmsAdminName" text="Admin" styleClass="user-name"/>
+                                        <Label text="Role: ADMIN" styleClass="user-role"/>
+                                    </children>
+                                </VBox>
+                                <MenuButton mnemonicParsing="false" styleClass="button settings-menu-button" text="SETTINGS">
+                                    <items>
+                                        <MenuItem mnemonicParsing="false" onAction="#handleSwitchToEnglish" text="English"/>
+                                        <MenuItem mnemonicParsing="false" onAction="#handleSwitchToVietnamese" text="Vietnamese"/>
+                                        <SeparatorMenuItem/>
+                                        <MenuItem mnemonicParsing="false" onAction="#handleLogout" text="LOG OUT"/>
+                                    </items>
+                                </MenuButton>
+                            </children>
+                        </HBox>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="dashboard-scroll" VBox.vgrow="ALWAYS">
+                            <content>
+                                <VBox spacing="18.0">
+                                    <children>
+                                        <HBox spacing="16.0">
+                                            <children>
+                                                <VBox HBox.hgrow="ALWAYS" spacing="12.0" styleClass="hero-banner hero-banner-dark">
+                                                    <children>
+                                                        <Label text="HOMEPAGE CMS" styleClass="dashboard-eyebrow"/>
+                                                        <Label text="Create and schedule homepage announcements."
+                                                               wrapText="true"
+                                                               styleClass="dashboard-title"/>
+                                                        <Label text="Edit content, preview it, and manage published announcements in one place."
+                                                               wrapText="true"
+                                                               styleClass="dashboard-copy"/>
+                                                    </children>
+                                                </VBox>
+                                                <HBox spacing="12.0">
+                                                    <children>
+                                                        <VBox spacing="8.0" prefWidth="170.0" styleClass="metric-card">
+                                                            <children>
+                                                                <Label text="TOTAL ANNOUNCEMENTS" styleClass="metric-label"/>
+                                                                <Label fx:id="lblAnnouncementCount" text="0" styleClass="metric-value"/>
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="8.0" prefWidth="170.0" styleClass="metric-card">
+                                                            <children>
+                                                                <Label text="LINKED AUCTIONS" styleClass="metric-label"/>
+                                                                <Label fx:id="lblLinkedCount" text="0" styleClass="metric-value"/>
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="8.0" prefWidth="170.0" styleClass="metric-card">
+                                                            <children>
+                                                                <Label text="VISIBLE AUCTIONS" styleClass="metric-label"/>
+                                                                <Label fx:id="lblUpcomingCount" text="0" styleClass="metric-value"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </HBox>
+                                        <HBox alignment="TOP_LEFT" spacing="18.0">
+                                            <children>
+                                                <VBox HBox.hgrow="ALWAYS" spacing="16.0">
+                                                    <children>
+                                                        <VBox spacing="14.0" styleClass="panel-card">
+                                                            <children>
+                                                                <Label text="CREATE / EDIT HOMEPAGE ANNOUNCEMENT" styleClass="panel-title"/>
+                                                                <TextField fx:id="txtAnnouncementTitle" promptText="Announcement Title"/>
+                                                                <TextField fx:id="txtAnnouncementSchedule" promptText="Auction schedule information shown on the homepage"/>
+                                                                <ComboBox fx:id="cbLinkedAuction" prefWidth="420.0"/>
+                                                                <TextArea fx:id="txtAnnouncementSummary" prefHeight="110.0" promptText="Short summary displayed on the homepage" wrapText="true"/>
+                                                                <TextArea fx:id="txtAnnouncementDetails" prefHeight="160.0" promptText="Additional details, notes, instructions..." wrapText="true"/>
+                                                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                                                    <children>
+                                                                        <Button fx:id="btnSaveAnnouncement" mnemonicParsing="false" onAction="#handleSaveAnnouncement" text="PUBLISH TO HOMEPAGE" styleClass="button primary-button"/>
+                                                                        <Button mnemonicParsing="false" onAction="#handleUseSelectedAuctionSchedule" text="USE SELECTED AUCTION SCHEDULE" styleClass="button success-button"/>
+                                                                        <Button mnemonicParsing="false" onAction="#handleClearForm" text="CLEAR FORM" styleClass="button ghost-button"/>
+                                                                    </children>
+                                                                </HBox>
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="14.0" styleClass="panel-card">
+                                                            <children>
+                                                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                                                    <children>
+                                                                        <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                                                            <children>
+                                                                                <Label text="CURRENT ANNOUNCEMENTS" styleClass="panel-title"/>
+                                                                            </children>
+                                                                        </VBox>
+                                                                        <Button mnemonicParsing="false" onAction="#handleRefreshData" text="REFRESH" styleClass="button ghost-button"/>
+                                                                        <Button mnemonicParsing="false" onAction="#handleEditSelectedAnnouncement" text="EDIT ANNOUNCEMENT" styleClass="button success-button"/>
+                                                                        <Button mnemonicParsing="false" onAction="#handleDeleteSelectedAnnouncement" text="DELETE ANNOUNCEMENT" styleClass="button danger-button"/>
+                                                                    </children>
+                                                                </HBox>
+                                                                <TableView fx:id="tableAnnouncements" prefHeight="320.0">
+                                                                    <columns>
+                                                                        <TableColumn fx:id="colAnnouncementId" prefWidth="70.0" text="ID"/>
+                                                                        <TableColumn fx:id="colAnnouncementTitle" prefWidth="250.0" text="Title"/>
+                                                                        <TableColumn fx:id="colAnnouncementAuction" prefWidth="190.0" text="Linked Auction"/>
+                                                                        <TableColumn fx:id="colAnnouncementSchedule" prefWidth="260.0" text="Display Schedule"/>
+                                                                        <TableColumn fx:id="colAnnouncementUpdatedAt" prefWidth="160.0" text="Updated"/>
+                                                                    </columns>
+                                                                </TableView>
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </VBox>
+                                                <VBox prefWidth="390.0" spacing="16.0">
+                                                    <children>
+                                                        <VBox spacing="12.0" styleClass="preview-card">
+                                                            <children>
+                                                                <Label text="LIVE PREVIEW" styleClass="detail-kicker"/>
+                                                                <Label fx:id="lblPreviewTitle" text="Announcement Title" wrapText="true" styleClass="preview-name"/>
+                                                                <Label fx:id="lblPreviewSummary" text="A short summary will appear here." wrapText="true" styleClass="preview-copy"/>
+                                                                <VBox spacing="4.0" styleClass="detail-meta-box">
+                                                                    <children>
+                                                                        <Label text="DISPLAY SCHEDULE" styleClass="detail-meta-label"/>
+                                                                        <Label fx:id="lblPreviewSchedule" text="-" wrapText="true" styleClass="detail-meta-value"/>
+                                                                    </children>
+                                                                </VBox>
+                                                                <VBox spacing="4.0" styleClass="detail-meta-box">
+                                                                    <children>
+                                                                        <Label text="LINKED AUCTION" styleClass="detail-meta-label"/>
+                                                                        <Label fx:id="lblPreviewLinkedAuction" text="Not linked" wrapText="true" styleClass="detail-meta-value"/>
+                                                                    </children>
+                                                                </VBox>
+                                                                <VBox spacing="4.0" styleClass="detail-meta-box">
+                                                                    <children>
+                                                                        <Label text="DETAILS" styleClass="detail-meta-label"/>
+                                                                        <Label fx:id="lblPreviewDetails" text="Additional details and instructions will appear here." wrapText="true" styleClass="detail-meta-value"/>
+                                                                    </children>
+                                                                </VBox>
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="14.0" styleClass="panel-card">
+                                                            <children>
+                                                                <Label text="AUCTIONS READY FOR HOMEPAGE" styleClass="panel-title"/>
+                                                                <TableView fx:id="tableUpcomingAuctions" prefHeight="320.0">
+                                                                    <columns>
+                                                                        <TableColumn fx:id="colUpcomingId" prefWidth="70.0" text="ID"/>
+                                                                        <TableColumn fx:id="colUpcomingName" prefWidth="170.0" text="Product Name"/>
+                                                                        <TableColumn fx:id="colUpcomingSchedule" prefWidth="220.0" text="Time Window"/>
+                                                                        <TableColumn fx:id="colUpcomingStatus" prefWidth="110.0" text="Status"/>
+                                                                    </columns>
+                                                                </TableView>
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="12.0" styleClass="panel-card">
+                                                            <children>
+                                                                <Label text="NAVIGATION" styleClass="panel-title"/>
+                                                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                                                    <children>
+                                                                        <Button mnemonicParsing="false" onAction="#handleBackToDashboard" text="BACK TO ADMIN DASHBOARD" styleClass="button success-button"/>
+                                                                        <Button mnemonicParsing="false" onAction="#handleChangePassword" text="CHANGE PASSWORD" styleClass="button ghost-button"/>
+                                                                    </children>
+                                                                </HBox>
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </children>
+</StackPane>
