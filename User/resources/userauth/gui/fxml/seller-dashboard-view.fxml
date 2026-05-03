@@ -20,6 +20,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
 <StackPane maxHeight="Infinity" maxWidth="Infinity" prefHeight="920.0" prefWidth="1440.0" styleClass="page-root dashboard-root" stylesheets="@auth-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.SellerDashboardViewController">
     <children>
@@ -36,9 +37,13 @@
                             <children>
                                 <Label styleClass="sidebar-nav-title" text="MODULES" />
                                 <Label maxWidth="Infinity" styleClass="sidebar-nav-item sidebar-nav-item-active" text="Auction Studio" />
-                                <Label maxWidth="Infinity" styleClass="sidebar-nav-item" text="My Auctions" />
                             </children>
                         </VBox>
+                  <Button mnemonicParsing="false" onAction="#handleScrollToMyAuctions" prefHeight="41.0" prefWidth="229.0" text="My Auctions" textFill="#3d15d0">
+                     <font>
+                        <Font name="System Bold" size="20.0" />
+                     </font>
+                  </Button>
                         <Region VBox.vgrow="ALWAYS" />
                         <VBox spacing="6.0">
                             <children>
@@ -78,7 +83,7 @@
                                 </HBox>
                             </children>
                         </VBox>
-                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="dashboard-scroll" VBox.vgrow="ALWAYS">
+                        <ScrollPane fx:id="mainScrollPane" fitToWidth="true" hbarPolicy="NEVER" styleClass="dashboard-scroll" VBox.vgrow="ALWAYS">
                             <content>
                                 <VBox spacing="20.0">
                                     <children>

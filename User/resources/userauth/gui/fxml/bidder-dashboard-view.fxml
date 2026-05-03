@@ -18,6 +18,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
 <StackPane maxHeight="Infinity" maxWidth="Infinity" prefHeight="960.0" prefWidth="1480.0" styleClass="page-root dashboard-root" stylesheets="@auth-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.BidderDashboardViewController">
     <children>
@@ -34,9 +35,13 @@
                             <children>
                                 <Label styleClass="sidebar-nav-title" text="MODULES" />
                                 <Label maxWidth="Infinity" styleClass="sidebar-nav-item sidebar-nav-item-active" text="Live Auctions" />
-                                <Label maxWidth="Infinity" styleClass="sidebar-nav-item" text="Bid History" />
                             </children>
                         </VBox>
+                  <Button mnemonicParsing="false" onAction="#handleShowHistory" prefHeight="41.0" prefWidth="221.0" text="Bid History" textFill="#e4133d">
+                     <font>
+                        <Font name="System Bold" size="18.0" />
+                     </font>
+                  </Button>
                         <Region VBox.vgrow="ALWAYS" />
                         <VBox spacing="6.0">
                             <children>

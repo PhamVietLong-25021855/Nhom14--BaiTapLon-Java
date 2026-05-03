@@ -7,15 +7,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.SpinnerValueFactory;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
@@ -120,6 +112,9 @@ public class SellerDashboardViewController {
 
     @FXML
     private Label lblPreviewMode;
+
+    @FXML
+    private ScrollPane mainScrollPane ;
 
     private AuthFrame frame;
     private AuctionController auctionController;
@@ -582,6 +577,12 @@ public class SellerDashboardViewController {
         }
         if (btnCreate != null) {
             btnCreate.setDisable(busy);
+        }
+    }
+    @FXML
+    private void handleScrollToMyAuctions(){
+        if(mainScrollPane != null){
+            mainScrollPane.setVvalue(1.0);
         }
     }
 }
