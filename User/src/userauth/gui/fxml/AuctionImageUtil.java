@@ -6,8 +6,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.shape.Rectangle;
 
 import java.io.File;
+import java.net.URLDecoder;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -41,7 +43,7 @@ public final class AuctionImageUtil {
         }
 
         String normalizedSource = normalizeImageSource(imageSource);
-        Image image = loadImage(normalizedSource);
+        Image image = loadImage(normalizedSource, imageView);
         boolean hasImage = image != null;
 
         if (imageView != null) {
@@ -64,18 +66,26 @@ public final class AuctionImageUtil {
     }
 
     private static Image loadImage(String normalizedSource) {
+        return loadImage(normalizedSource, null);
+    }
+
+    private static Image loadImage(String normalizedSource, ImageView imageView) {
         if (normalizedSource == null) {
             return null;
         }
 
-        Image cachedImage = IMAGE_CACHE.get(normalizedSource);
+        String cacheKey = buildCacheKey(normalizedSource, imageView);
+        Image cachedImage = IMAGE_CACHE.get(cacheKey);
         if (cachedImage != null) {
             return cachedImage.isError() ? null : cachedImage;
         }
 
         try {
-            Image image = new Image(normalizedSource, true);
-            IMAGE_CACHE.put(normalizedSource, image);
+            Image image = createImage(normalizedSource, imageView);
+            if (image == null || image.isError() || image.getWidth() <= 0 || image.getHeight() <= 0) {
+                return null;
+            }
+            IMAGE_CACHE.put(cacheKey, image);
             return image;
         } catch (IllegalArgumentException ex) {
             return null;
@@ -93,6 +103,13 @@ public final class AuctionImageUtil {
         }
 
         if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("file:/")) {
+            if (trimmed.startsWith("file:/")) {
+                String decoded = decodeFileUri(trimmed);
+                File fromUri = new File(decoded);
+                if (fromUri.exists()) {
+                    return fromUri.toURI().toString();
+                }
+            }
             return trimmed;
         }
 
@@ -101,11 +118,45 @@ public final class AuctionImageUtil {
             return localFile.toURI().toString();
         }
 
+        File decodedFile = new File(URLDecoder.decode(trimmed, StandardCharsets.UTF_8));
+        if (decodedFile.exists()) {
+            return decodedFile.toURI().toString();
+        }
+
+        var resourceUrl = AuctionImageUtil.class.getResource(trimmed.startsWith("/") ? trimmed : "/" + trimmed);
+        if (resourceUrl != null) {
+            return resourceUrl.toExternalForm();
+        }
+
         try {
             URI uri = new URI(trimmed);
             return uri.getScheme() == null ? null : trimmed;
         } catch (URISyntaxException ex) {
             return null;
+        }
+    }
+
+    private static Image createImage(String normalizedSource, ImageView imageView) {
+        double requestedWidth = resolveRequestedSize(imageView == null ? 0 : imageView.getFitWidth());
+        double requestedHeight = resolveRequestedSize(imageView == null ? 0 : imageView.getFitHeight());
+        return new Image(normalizedSource, requestedWidth, requestedHeight, true, true, false);
+    }
+
+    private static String buildCacheKey(String normalizedSource, ImageView imageView) {
+        int width = (int) Math.round(resolveRequestedSize(imageView == null ? 0 : imageView.getFitWidth()));
+        int height = (int) Math.round(resolveRequestedSize(imageView == null ? 0 : imageView.getFitHeight()));
+        return normalizedSource + "#" + width + "x" + height;
+    }
+
+    private static double resolveRequestedSize(double size) {
+        return size > 0 ? size : 0;
+    }
+
+    private static String decodeFileUri(String source) {
+        try {
+            return new File(URI.create(source)).getAbsolutePath();
+        } catch (IllegalArgumentException ex) {
+            return source;
         }
     }
 }
