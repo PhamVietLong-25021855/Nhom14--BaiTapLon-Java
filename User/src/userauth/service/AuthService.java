@@ -46,6 +46,7 @@ public class AuthService {
         if ("BLOCKED".equals(user.getStatus())) {
             throw new UnauthorizedException("Your account has been locked.");
         }
+        upgradePasswordHashIfNeeded(user, password);
 
         return user;
     }
@@ -159,5 +160,15 @@ public class AuthService {
 
     private User findUserById(int userId) {
         return userDAO.findById(userId);
+    }
+
+    private void upgradePasswordHashIfNeeded(User user, String rawPassword) {
+        if (!PasswordUtil.needsRehash(user.getPassword())) {
+            return;
+        }
+
+        user.setPassword(PasswordUtil.hashPassword(rawPassword));
+        user.setUpdatedAt(System.currentTimeMillis());
+        userDAO.update(user);
     }
 }

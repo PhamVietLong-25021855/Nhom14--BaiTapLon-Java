@@ -238,6 +238,22 @@
                                                                                 <Button minWidth="150.0" mnemonicParsing="false" onAction="#handleCloseAuction" styleClass="button success-button" text="CLOSE EARLY" />
                                                                             </children>
                                                                         </FlowPane>
+                                                                        <VBox spacing="10.0">
+                                                                            <children>
+                                                                                <Label styleClass="field-label" text="MY ACTIONS" />
+                                                                                <HBox alignment="BOTTOM_LEFT" spacing="10.0">
+                                                                                    <children>
+                                                                                        <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                                                                            <children>
+                                                                                                <Label styleClass="field-label" text="Add Extra Time (minutes)" />
+                                                                                                <TextField fx:id="txtExtendMinutes" promptText="Example: 15" />
+                                                                                            </children>
+                                                                                        </VBox>
+                                                                                        <Button fx:id="btnExtendTime" minWidth="140.0" mnemonicParsing="false" onAction="#handleExtendSelectedAuction" styleClass="button ghost-button" text="ADD TIME" />
+                                                                                    </children>
+                                                                                </HBox>
+                                                                            </children>
+                                                                        </VBox>
                                                                     </children>
                                                                 </VBox>
                                                                 <TableView fx:id="tableAuctions" prefHeight="420.0" VBox.vgrow="ALWAYS">
@@ -279,6 +295,12 @@
                                                                     <children>
                                                                         <Label styleClass="detail-meta-label" text="STARTING PRICE" />
                                                                         <Label fx:id="lblPreviewPrice" styleClass="detail-meta-value" text="0" />
+                                                                    </children>
+                                                                </VBox>
+                                                                <VBox spacing="4.0" styleClass="detail-meta-box">
+                                                                    <children>
+                                                                        <Label styleClass="detail-meta-label" text="TIME ADJUSTMENT" />
+                                                                        <Label fx:id="lblPreviewExtension" styleClass="detail-meta-value" text="Adjust later in My Actions." wrapText="true" />
                                                                     </children>
                                                                 </VBox>
                                                                 <VBox spacing="4.0" styleClass="detail-meta-box">

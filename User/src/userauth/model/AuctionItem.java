@@ -1,9 +1,53 @@
 package userauth.model;
 
 public class AuctionItem extends Item {
+    public static final int DEFAULT_EXTENSION_THRESHOLD_SECONDS = 30;
+    public static final int DEFAULT_EXTENSION_DURATION_SECONDS = 60;
+    public static final int DEFAULT_MAX_EXTENSION_COUNT = 5;
+
     private int sellerId;
     private int winnerId;
     private AuctionStatus status;
+    private long originalEndTime;
+    private int extensionCount;
+    private int maxExtensionCount;
+    private boolean antiSnipingEnabled;
+    private int extensionThresholdSeconds;
+    private int extensionDurationSeconds;
+
+    public AuctionItem(
+            int id,
+            String name,
+            String description,
+            double startPrice,
+            double currentHighestBid,
+            long startTime,
+            long endTime,
+            long originalEndTime,
+            int extensionCount,
+            int maxExtensionCount,
+            boolean antiSnipingEnabled,
+            int extensionThresholdSeconds,
+            int extensionDurationSeconds,
+            String category,
+            String imageSource,
+            long createdAt,
+            long updatedAt,
+            int sellerId,
+            int winnerId,
+            AuctionStatus status
+    ) {
+        super(id, name, description, startPrice, currentHighestBid, startTime, endTime, category, imageSource, createdAt, updatedAt);
+        this.originalEndTime = originalEndTime;
+        this.extensionCount = extensionCount;
+        this.maxExtensionCount = maxExtensionCount;
+        this.antiSnipingEnabled = antiSnipingEnabled;
+        this.extensionThresholdSeconds = extensionThresholdSeconds;
+        this.extensionDurationSeconds = extensionDurationSeconds;
+        this.sellerId = sellerId;
+        this.winnerId = winnerId;
+        this.status = status;
+    }
 
     public AuctionItem(
             int id,
@@ -21,10 +65,28 @@ public class AuctionItem extends Item {
             int winnerId,
             AuctionStatus status
     ) {
-        super(id, name, description, startPrice, currentHighestBid, startTime, endTime, category, imageSource, createdAt, updatedAt);
-        this.sellerId = sellerId;
-        this.winnerId = winnerId;
-        this.status = status;
+        this(
+                id,
+                name,
+                description,
+                startPrice,
+                currentHighestBid,
+                startTime,
+                endTime,
+                endTime,
+                0,
+                DEFAULT_MAX_EXTENSION_COUNT,
+                true,
+                DEFAULT_EXTENSION_THRESHOLD_SECONDS,
+                DEFAULT_EXTENSION_DURATION_SECONDS,
+                category,
+                imageSource,
+                createdAt,
+                updatedAt,
+                sellerId,
+                winnerId,
+                status
+        );
     }
 
     public AuctionItem(
@@ -102,8 +164,60 @@ public class AuctionItem extends Item {
         this.status = status;
     }
 
+    public long getOriginalEndTime() {
+        return originalEndTime;
+    }
+
+    public void setOriginalEndTime(long originalEndTime) {
+        this.originalEndTime = originalEndTime;
+    }
+
+    public int getExtensionCount() {
+        return extensionCount;
+    }
+
+    public void setExtensionCount(int extensionCount) {
+        this.extensionCount = extensionCount;
+    }
+
+    public int getMaxExtensionCount() {
+        return maxExtensionCount;
+    }
+
+    public void setMaxExtensionCount(int maxExtensionCount) {
+        this.maxExtensionCount = maxExtensionCount;
+    }
+
+    public boolean isAntiSnipingEnabled() {
+        return antiSnipingEnabled;
+    }
+
+    public void setAntiSnipingEnabled(boolean antiSnipingEnabled) {
+        this.antiSnipingEnabled = antiSnipingEnabled;
+    }
+
+    public int getExtensionThresholdSeconds() {
+        return extensionThresholdSeconds;
+    }
+
+    public void setExtensionThresholdSeconds(int extensionThresholdSeconds) {
+        this.extensionThresholdSeconds = extensionThresholdSeconds;
+    }
+
+    public int getExtensionDurationSeconds() {
+        return extensionDurationSeconds;
+    }
+
+    public void setExtensionDurationSeconds(int extensionDurationSeconds) {
+        this.extensionDurationSeconds = extensionDurationSeconds;
+    }
+
     @Override
     public String toString() {
-        return id + "," + name + "," + description + "," + startPrice + "," + currentHighestBid + "," + startTime + "," + endTime + "," + category + "," + imageSource + "," + createdAt + "," + updatedAt + "," + sellerId + "," + winnerId + "," + status.name();
+        return id + "," + name + "," + description + "," + startPrice + "," + currentHighestBid + "," + startTime + ","
+                + endTime + "," + originalEndTime + "," + extensionCount + "," + maxExtensionCount + ","
+                + antiSnipingEnabled + "," + extensionThresholdSeconds + "," + extensionDurationSeconds + ","
+                + category + "," + imageSource + "," + createdAt + "," + updatedAt + "," + sellerId + ","
+                + winnerId + "," + status.name();
     }
 }

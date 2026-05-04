@@ -1,6 +1,16 @@
 param(
-    [string]$ServerHost = "127.0.0.1",
-    [int]$ServerPort = 9999
+    [int]$Port = 9999,
+    [string]$DbUrl,
+    [string]$DbAdminUrl,
+    [string]$DbHost,
+    [int]$DbPort,
+    [string]$DbName,
+    [string]$DbUser,
+    [string]$DbPassword,
+    [string]$DbSslMode,
+    [string]$DbSchema,
+    [switch]$DisableDbInit,
+    [switch]$DisableScheduler
 )
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -9,7 +19,7 @@ $projectPostgresJar = Join-Path $root "lib\postgresql-42.7.5.jar"
 $postgresRepo = Join-Path $env:USERPROFILE ".m2\repository\org\postgresql\postgresql"
 $sourceRoot = Join-Path $root "User\src"
 $resourceRoot = Join-Path $root "User\resources"
-$outputDir = Join-Path $root "out\javafx-client"
+$outputDir = Join-Path $root "out\auction-server"
 
 if (-not (Test-Path $javafxLib)) {
     Write-Error "Khong tim thay JavaFX SDK tai $javafxLib"
@@ -54,11 +64,44 @@ $javaArgs = @(
     "--module-path", $javafxLib,
     "--add-modules", "javafx.controls,javafx.fxml",
     "--enable-native-access=javafx.graphics",
-    "-Dapp.server.host=$ServerHost",
-    "-Dapp.server.port=$ServerPort",
-    "-cp", "$outputDir;$postgresJar",
-    "userauth.Main"
+    "-Dapp.server.port=$Port"
 )
+
+if ($DbUrl) {
+    $javaArgs += "-Ddb.url=$DbUrl"
+}
+if ($DbAdminUrl) {
+    $javaArgs += "-Ddb.adminUrl=$DbAdminUrl"
+}
+if ($DbHost) {
+    $javaArgs += "-Ddb.host=$DbHost"
+}
+if ($DbPort) {
+    $javaArgs += "-Ddb.port=$DbPort"
+}
+if ($DbName) {
+    $javaArgs += "-Ddb.name=$DbName"
+}
+if ($DbUser) {
+    $javaArgs += "-Ddb.username=$DbUser"
+}
+if ($DbPassword) {
+    $javaArgs += "-Ddb.password=$DbPassword"
+}
+if ($DbSslMode) {
+    $javaArgs += "-Ddb.sslMode=$DbSslMode"
+}
+if ($DbSchema) {
+    $javaArgs += "-Ddb.schema=$DbSchema"
+}
+if ($DisableDbInit) {
+    $javaArgs += "-Dapp.db.init.enabled=false"
+}
+if ($DisableScheduler) {
+    $javaArgs += "-Dapp.scheduler.enabled=false"
+}
+
+$javaArgs += @("-cp", "$outputDir;$postgresJar", "userauth.server.ServerMain")
 
 & java @javaArgs
 exit $LASTEXITCODE

@@ -33,6 +33,12 @@ public final class DatabaseInitializer {
                 current_highest_bid DECIMAL(15, 2) NOT NULL,
                 start_time BIGINT NOT NULL,
                 end_time BIGINT NOT NULL,
+                original_end_time BIGINT NOT NULL,
+                extension_count INT NOT NULL DEFAULT 0,
+                max_extension_count INT NOT NULL DEFAULT 5,
+                anti_sniping_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+                extension_threshold_seconds INT NOT NULL DEFAULT 30,
+                extension_duration_seconds INT NOT NULL DEFAULT 60,
                 category VARCHAR(100),
                 image_source TEXT NULL,
                 created_at BIGINT NOT NULL,
@@ -83,6 +89,35 @@ public final class DatabaseInitializer {
             CONSTRAINT fk_auto_bids_auction FOREIGN KEY (auction_id) REFERENCES auctions(id),
             CONSTRAINT fk_auto_bids_bidder FOREIGN KEY (bidder_id) REFERENCES users(id)
         )
+        """;
+    private static final String ALTER_AUCTIONS_ADD_ORIGINAL_END_TIME_SQL = """
+        ALTER TABLE auctions
+        ADD COLUMN IF NOT EXISTS original_end_time BIGINT DEFAULT 0
+        """;
+    private static final String ALTER_AUCTIONS_ADD_EXTENSION_COUNT_SQL = """
+        ALTER TABLE auctions
+        ADD COLUMN IF NOT EXISTS extension_count INT NOT NULL DEFAULT 0
+        """;
+    private static final String ALTER_AUCTIONS_ADD_MAX_EXTENSION_COUNT_SQL = """
+        ALTER TABLE auctions
+        ADD COLUMN IF NOT EXISTS max_extension_count INT NOT NULL DEFAULT 5
+        """;
+    private static final String ALTER_AUCTIONS_ADD_ANTI_SNIPING_ENABLED_SQL = """
+        ALTER TABLE auctions
+        ADD COLUMN IF NOT EXISTS anti_sniping_enabled BOOLEAN NOT NULL DEFAULT TRUE
+        """;
+    private static final String ALTER_AUCTIONS_ADD_EXTENSION_THRESHOLD_SQL = """
+        ALTER TABLE auctions
+        ADD COLUMN IF NOT EXISTS extension_threshold_seconds INT NOT NULL DEFAULT 30
+        """;
+    private static final String ALTER_AUCTIONS_ADD_EXTENSION_DURATION_SQL = """
+        ALTER TABLE auctions
+        ADD COLUMN IF NOT EXISTS extension_duration_seconds INT NOT NULL DEFAULT 60
+        """;
+    private static final String BACKFILL_ORIGINAL_END_TIME_SQL = """
+        UPDATE auctions
+        SET original_end_time = end_time
+        WHERE original_end_time = 0
         """;
 
     private static final String CREATE_WALLETS_TABLE = """
@@ -182,6 +217,13 @@ public final class DatabaseInitializer {
         List<String> statements = List.of(
                 CREATE_USERS_TABLE,
                 CREATE_AUCTIONS_TABLE,
+                ALTER_AUCTIONS_ADD_ORIGINAL_END_TIME_SQL,
+                ALTER_AUCTIONS_ADD_EXTENSION_COUNT_SQL,
+                ALTER_AUCTIONS_ADD_MAX_EXTENSION_COUNT_SQL,
+                ALTER_AUCTIONS_ADD_ANTI_SNIPING_ENABLED_SQL,
+                ALTER_AUCTIONS_ADD_EXTENSION_THRESHOLD_SQL,
+                ALTER_AUCTIONS_ADD_EXTENSION_DURATION_SQL,
+                BACKFILL_ORIGINAL_END_TIME_SQL,
                 CREATE_BIDS_TABLE,
                 CREATE_HOMEPAGE_ANNOUNCEMENTS_TABLE,
                 CREATE_AUTO_BIDS_TABLE,

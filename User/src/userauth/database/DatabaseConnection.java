@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public final class DatabaseConnection {
     private static final DatabaseConfig CONFIG = DatabaseConfig.load();
-    private static final int MAX_POOLED_CONNECTIONS = Math.max(2, Math.min(6, Runtime.getRuntime().availableProcessors()));
+    private static final int MAX_POOLED_CONNECTIONS = CONFIG.getMaxPoolConnections();
     private static final long POOL_WAIT_TIMEOUT_MS = 5_000;
     private static final BlockingQueue<Connection> IDLE_CONNECTIONS = new ArrayBlockingQueue<>(MAX_POOLED_CONNECTIONS);
     private static final AtomicInteger CREATED_CONNECTIONS = new AtomicInteger();

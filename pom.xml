@@ -49,6 +49,9 @@
         <resources>
             <resource>
                 <directory>User/resources</directory>
+                <excludes>
+                    <exclude>**/database.local.properties</exclude>
+                </excludes>
             </resource>
         </resources>
         <plugins>

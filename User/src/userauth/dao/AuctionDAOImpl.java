@@ -18,33 +18,43 @@ public class AuctionDAOImpl implements AuctionDAO {
     private static final String INSERT_AUCTION_SQL = """
             INSERT INTO auctions (
                 name, description, start_price, current_highest_bid, start_time, end_time,
-                category, image_source, created_at, updated_at, seller_id, winner_id, status
+                original_end_time, extension_count, max_extension_count, anti_sniping_enabled,
+                extension_threshold_seconds, extension_duration_seconds, category, image_source,
+                created_at, updated_at, seller_id, winner_id, status
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
     private static final String UPDATE_AUCTION_SQL = """
             UPDATE auctions
             SET name = ?, description = ?, start_price = ?, current_highest_bid = ?, start_time = ?, end_time = ?,
-                category = ?, image_source = ?, updated_at = ?, seller_id = ?, winner_id = ?, status = ?
+                original_end_time = ?, extension_count = ?, max_extension_count = ?, anti_sniping_enabled = ?,
+                extension_threshold_seconds = ?, extension_duration_seconds = ?, category = ?, image_source = ?,
+                updated_at = ?, seller_id = ?, winner_id = ?, status = ?
             WHERE id = ?
             """;
     private static final String DELETE_BIDS_BY_AUCTION_SQL = "DELETE FROM bids WHERE auction_id = ?";
     private static final String DELETE_AUCTION_SQL = "DELETE FROM auctions WHERE id = ?";
     private static final String FIND_AUCTION_BY_ID_SQL = """
             SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
-                   category, image_source, created_at, updated_at, seller_id, winner_id, status
+                   original_end_time, extension_count, max_extension_count, anti_sniping_enabled,
+                   extension_threshold_seconds, extension_duration_seconds, category, image_source,
+                   created_at, updated_at, seller_id, winner_id, status
             FROM auctions
             WHERE id = ?
             """;
     private static final String FIND_ALL_AUCTIONS_SQL = """
             SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
-                   category, image_source, created_at, updated_at, seller_id, winner_id, status
+                   original_end_time, extension_count, max_extension_count, anti_sniping_enabled,
+                   extension_threshold_seconds, extension_duration_seconds, category, image_source,
+                   created_at, updated_at, seller_id, winner_id, status
             FROM auctions
             ORDER BY id
             """;
     private static final String FIND_AUCTIONS_BY_SELLER_SQL = """
             SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
-                   category, image_source, created_at, updated_at, seller_id, winner_id, status
+                   original_end_time, extension_count, max_extension_count, anti_sniping_enabled,
+                   extension_threshold_seconds, extension_duration_seconds, category, image_source,
+                   created_at, updated_at, seller_id, winner_id, status
             FROM auctions
             WHERE seller_id = ?
             ORDER BY id
@@ -276,17 +286,23 @@ public class AuctionDAOImpl implements AuctionDAO {
         statement.setDouble(4, item.getCurrentHighestBid());
         statement.setLong(5, item.getStartTime());
         statement.setLong(6, item.getEndTime());
-        statement.setString(7, item.getCategory());
-        statement.setString(8, item.getImageSource());
-        statement.setLong(9, item.getCreatedAt());
-        statement.setLong(10, item.getUpdatedAt());
-        statement.setInt(11, item.getSellerId());
+        statement.setLong(7, item.getOriginalEndTime());
+        statement.setInt(8, item.getExtensionCount());
+        statement.setInt(9, item.getMaxExtensionCount());
+        statement.setBoolean(10, item.isAntiSnipingEnabled());
+        statement.setInt(11, item.getExtensionThresholdSeconds());
+        statement.setInt(12, item.getExtensionDurationSeconds());
+        statement.setString(13, item.getCategory());
+        statement.setString(14, item.getImageSource());
+        statement.setLong(15, item.getCreatedAt());
+        statement.setLong(16, item.getUpdatedAt());
+        statement.setInt(17, item.getSellerId());
         if (item.getWinnerId() <= 0) {
-            statement.setNull(12, Types.INTEGER);
+            statement.setNull(18, Types.INTEGER);
         } else {
-            statement.setInt(12, item.getWinnerId());
+            statement.setInt(18, item.getWinnerId());
         }
-        statement.setString(13, item.getStatus().name());
+        statement.setString(19, item.getStatus().name());
     }
 
     private void bindAuctionForUpdate(PreparedStatement statement, AuctionItem item) throws SQLException {
@@ -296,17 +312,23 @@ public class AuctionDAOImpl implements AuctionDAO {
         statement.setDouble(4, item.getCurrentHighestBid());
         statement.setLong(5, item.getStartTime());
         statement.setLong(6, item.getEndTime());
-        statement.setString(7, item.getCategory());
-        statement.setString(8, item.getImageSource());
-        statement.setLong(9, item.getUpdatedAt());
-        statement.setInt(10, item.getSellerId());
+        statement.setLong(7, item.getOriginalEndTime());
+        statement.setInt(8, item.getExtensionCount());
+        statement.setInt(9, item.getMaxExtensionCount());
+        statement.setBoolean(10, item.isAntiSnipingEnabled());
+        statement.setInt(11, item.getExtensionThresholdSeconds());
+        statement.setInt(12, item.getExtensionDurationSeconds());
+        statement.setString(13, item.getCategory());
+        statement.setString(14, item.getImageSource());
+        statement.setLong(15, item.getUpdatedAt());
+        statement.setInt(16, item.getSellerId());
         if (item.getWinnerId() <= 0) {
-            statement.setNull(11, Types.INTEGER);
+            statement.setNull(17, Types.INTEGER);
         } else {
-            statement.setInt(11, item.getWinnerId());
+            statement.setInt(17, item.getWinnerId());
         }
-        statement.setString(12, item.getStatus().name());
-        statement.setInt(13, item.getId());
+        statement.setString(18, item.getStatus().name());
+        statement.setInt(19, item.getId());
     }
 
     private void bindBid(PreparedStatement statement, BidTransaction bid) throws SQLException {
@@ -329,6 +351,12 @@ public class AuctionDAOImpl implements AuctionDAO {
                 resultSet.getDouble("current_highest_bid"),
                 resultSet.getLong("start_time"),
                 resultSet.getLong("end_time"),
+                resultSet.getLong("original_end_time"),
+                resultSet.getInt("extension_count"),
+                resultSet.getInt("max_extension_count"),
+                resultSet.getBoolean("anti_sniping_enabled"),
+                resultSet.getInt("extension_threshold_seconds"),
+                resultSet.getInt("extension_duration_seconds"),
                 resultSet.getString("category"),
                 resultSet.getString("image_source"),
                 resultSet.getLong("created_at"),

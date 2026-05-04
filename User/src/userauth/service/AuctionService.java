@@ -11,8 +11,14 @@ import userauth.gui.fxml.AuctionViewFormatter;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 import userauth.model.AutoBid;
+import userauth.model.BidRequest;
+import userauth.model.BidResult;
 import userauth.model.BidTransaction;
 import userauth.model.Wallet;
+import userauth.realtime.AuctionEventPublisher;
+import userauth.realtime.AuctionEventType;
+import userauth.realtime.AuctionUpdateEvent;
+import userauth.realtime.NoOpAuctionEventPublisher;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,27 +30,80 @@ public class AuctionService {
     private static final int ADMIN_EARLY_CLOSE_COUNTS = 3;
     private static final long EARLY_CLOSE_TICK_INTERVAL_MS = 1_000L;
     private static final long NO_BID_TIMESTAMP = -1L;
-    private static final long ANTI_SNIPING_THRESHOLD_MS = 30_000L;
-    private static final long ANTI_SNIPING_EXTENSION_MS = 60_000L;
 
     private final AuctionDAO auctionDAO;
     private final AutoBidDAO autoBidDAO;
     private final WalletService walletService;
-    private final ConcurrentHashMap<Integer, ReentrantLock> auctionLocks;
+    private final AuctionLockManager auctionLockManager;
+    private final AntiSnipingService antiSnipingService;
+    private final AuctionEventPublisher auctionEventPublisher;
     private final ConcurrentHashMap<Integer, AdminEarlyCloseState> adminEarlyCloseStates;
 
     public AuctionService(AuctionDAO auctionDAO, AutoBidDAO autoBidDAO, WalletService walletService) {
+        this(
+                auctionDAO,
+                autoBidDAO,
+                walletService,
+                new AuctionLockManager(),
+                new AntiSnipingService(),
+                new NoOpAuctionEventPublisher()
+        );
+    }
+
+    public AuctionService(AuctionDAO auctionDAO, AutoBidDAO autoBidDAO, WalletService walletService,
+                          AuctionLockManager auctionLockManager) {
+        this(
+                auctionDAO,
+                autoBidDAO,
+                walletService,
+                auctionLockManager,
+                new AntiSnipingService(),
+                new NoOpAuctionEventPublisher()
+        );
+    }
+
+    public AuctionService(AuctionDAO auctionDAO, AutoBidDAO autoBidDAO, WalletService walletService,
+                          AuctionLockManager auctionLockManager, AntiSnipingService antiSnipingService,
+                          AuctionEventPublisher auctionEventPublisher) {
         this.auctionDAO = auctionDAO;
         this.autoBidDAO = autoBidDAO;
         this.walletService = walletService;
-        this.auctionLocks = new ConcurrentHashMap<>();
+        this.auctionLockManager = auctionLockManager;
+        this.antiSnipingService = antiSnipingService;
+        this.auctionEventPublisher = auctionEventPublisher;
         this.adminEarlyCloseStates = new ConcurrentHashMap<>();
     }
 
     public void createAuction(String name, String desc, double startPrice, long startTime, long endTime,
                               String category, String imageSource, int sellerId) throws ValidationException {
+        createAuction(
+                name,
+                desc,
+                startPrice,
+                startTime,
+                endTime,
+                category,
+                imageSource,
+                sellerId,
+                true,
+                AuctionItem.DEFAULT_EXTENSION_THRESHOLD_SECONDS,
+                AuctionItem.DEFAULT_EXTENSION_DURATION_SECONDS,
+                AuctionItem.DEFAULT_MAX_EXTENSION_COUNT
+        );
+    }
+
+    public void createAuction(String name, String desc, double startPrice, long startTime, long endTime,
+                              String category, String imageSource, int sellerId, boolean antiSnipingEnabled,
+                              int extensionThresholdSeconds, int extensionDurationSeconds, int maxExtensionCount)
+            throws ValidationException {
         String normalizedName = normalizeRequiredText(name, "Product name cannot be empty.");
         validateAuctionWindow(startPrice, startTime, endTime, true);
+        validateAntiSnipingConfiguration(
+                antiSnipingEnabled,
+                extensionThresholdSeconds,
+                extensionDurationSeconds,
+                maxExtensionCount
+        );
 
         AuctionItem item = new AuctionItem(
                 0,
@@ -57,12 +116,40 @@ public class AuctionService {
                 normalizeOptionalText(imageSource),
                 sellerId
         );
+        item.setOriginalEndTime(endTime);
+        item.setExtensionCount(0);
+        item.setAntiSnipingEnabled(antiSnipingEnabled);
+        item.setExtensionThresholdSeconds(extensionThresholdSeconds);
+        item.setExtensionDurationSeconds(extensionDurationSeconds);
+        item.setMaxExtensionCount(maxExtensionCount);
         item.setStatus(resolveStatusForWindow(startTime, endTime, System.currentTimeMillis()));
         auctionDAO.saveAuction(item);
     }
 
     public void updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice,
                               long startTime, long endTime, String category, String imageSource)
+            throws ItemNotFoundException, UnauthorizedException, ValidationException {
+        updateAuction(
+                auctionId,
+                sellerId,
+                name,
+                desc,
+                startPrice,
+                startTime,
+                endTime,
+                category,
+                imageSource,
+                true,
+                AuctionItem.DEFAULT_EXTENSION_THRESHOLD_SECONDS,
+                AuctionItem.DEFAULT_EXTENSION_DURATION_SECONDS,
+                AuctionItem.DEFAULT_MAX_EXTENSION_COUNT
+        );
+    }
+
+    public void updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice,
+                              long startTime, long endTime, String category, String imageSource,
+                              boolean antiSnipingEnabled, int extensionThresholdSeconds,
+                              int extensionDurationSeconds, int maxExtensionCount)
             throws ItemNotFoundException, UnauthorizedException, ValidationException {
         ReentrantLock lock = getLockForAuction(auctionId);
         lock.lock();
@@ -73,6 +160,12 @@ public class AuctionService {
 
             String normalizedName = normalizeRequiredText(name, "Product name cannot be empty.");
             validateAuctionWindow(startPrice, startTime, endTime, false);
+            validateAntiSnipingConfiguration(
+                    antiSnipingEnabled,
+                    extensionThresholdSeconds,
+                    extensionDurationSeconds,
+                    maxExtensionCount
+            );
 
             item.setName(normalizedName);
             item.setDescription(desc);
@@ -80,6 +173,12 @@ public class AuctionService {
             item.setCurrentHighestBid(startPrice);
             item.setStartTime(startTime);
             item.setEndTime(endTime);
+            item.setOriginalEndTime(endTime);
+            item.setExtensionCount(0);
+            item.setAntiSnipingEnabled(antiSnipingEnabled);
+            item.setExtensionThresholdSeconds(extensionThresholdSeconds);
+            item.setExtensionDurationSeconds(extensionDurationSeconds);
+            item.setMaxExtensionCount(maxExtensionCount);
             item.setCategory(category);
             item.setImageSource(normalizeOptionalText(imageSource));
             item.setStatus(resolveStatusForWindow(startTime, endTime, System.currentTimeMillis()));
@@ -129,28 +228,37 @@ public class AuctionService {
 
     public void placeBid(int auctionId, int bidderId, double amount)
             throws ItemNotFoundException, AuctionClosedException, InvalidBidException {
-        ReentrantLock lock = getLockForAuction(auctionId);
+        placeBid(new BidRequest(auctionId, bidderId, amount));
+    }
+
+    public BidResult placeBid(BidRequest request)
+            throws ItemNotFoundException, AuctionClosedException, InvalidBidException {
+        ReentrantLock lock = getLockForAuction(request.getAuctionId());
         lock.lock();
         try {
-            AuctionItem item = requireAuctionForBidding(auctionId);
-            ensureBidderCanBid(item, bidderId);
-            validateBidAmount(item, amount);
+            AuctionItem item = requireAuctionForBidding(request.getAuctionId());
+            ensureBidderCanBid(item, request.getBidderId());
+            validateBidAmount(item, request.getAmount());
 
             Map<Integer, Double> walletBalances = new HashMap<>();
-            ensureSufficientBalance(bidderId, amount, walletBalances);
+            ensureSufficientBalance(request.getBidderId(), request.getAmount(), walletBalances);
 
             long now = System.currentTimeMillis();
-            persistBid(item, bidderId, amount, now, "ACCEPTED");
+            long previousEndTime = item.getEndTime();
+            boolean auctionExtended = antiSnipingService.extendAuction(item, now);
+            BidTransaction acceptedBid = persistBid(item, request.getBidderId(), request.getAmount(), now, "ACCEPTED");
 
             AutoBid nextAttacker;
-            while ((nextAttacker = selectNextAutoBidder(auctionId, item, walletBalances)) != null) {
+            while ((nextAttacker = selectNextAutoBidder(request.getAuctionId(), item, walletBalances)) != null) {
                 double autoBidAmount = item.getCurrentHighestBid() + nextAttacker.getIncrement();
                 long autoBidTime = System.currentTimeMillis();
                 persistBid(item, nextAttacker.getBidderId(), autoBidAmount, autoBidTime, "AUTO_BID");
             }
 
-            applyAntiSnipingIfNeeded(item, now);
-            refreshEarlyCloseSnapshot(auctionId, item, System.currentTimeMillis());
+            refreshEarlyCloseSnapshot(request.getAuctionId(), item, System.currentTimeMillis());
+            BidResult result = buildBidResult(item, acceptedBid, previousEndTime, auctionExtended);
+            publishBidEvents(result);
+            return result;
         } finally {
             lock.unlock();
         }
@@ -170,6 +278,37 @@ public class AuctionService {
             }
 
             processAuctionClosing(item.getId(), System.currentTimeMillis());
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void extendAuctionTime(int auctionId, int sellerId, int additionalMinutes)
+            throws ItemNotFoundException, UnauthorizedException, ValidationException {
+        ReentrantLock lock = getLockForAuction(auctionId);
+        lock.lock();
+        try {
+            AuctionItem item = requireAuctionItem(auctionId);
+            ensureSellerOwnsAuction(item, sellerId, "extend");
+
+            if (additionalMinutes <= 0) {
+                throw new ValidationException("Additional minutes must be greater than 0.");
+            }
+
+            long now = System.currentTimeMillis();
+            if (item.getStatus() == AuctionStatus.FINISHED
+                    || item.getStatus() == AuctionStatus.CANCELED
+                    || item.getStatus() == AuctionStatus.PAID
+                    || now >= item.getEndTime()) {
+                throw new ValidationException("This auction can only be extended while it is OPEN or RUNNING.");
+            }
+
+            long additionalMillis = additionalMinutes * 60_000L;
+            item.setEndTime(item.getEndTime() + additionalMillis);
+            item.setStatus(resolveStatusForWindow(item.getStartTime(), item.getEndTime(), now));
+            item.setUpdatedAt(now);
+            auctionDAO.updateAuction(item);
+            adminEarlyCloseStates.remove(auctionId);
         } finally {
             lock.unlock();
         }
@@ -257,7 +396,7 @@ public class AuctionService {
     }
 
     private ReentrantLock getLockForAuction(int auctionId) {
-        return auctionLocks.computeIfAbsent(auctionId, ignored -> new ReentrantLock());
+        return auctionLockManager.getLock(auctionId);
     }
 
     private void tickAdminEarlyCloseCountdowns(long now) {
@@ -368,6 +507,26 @@ public class AuctionService {
         }
     }
 
+    private void validateAntiSnipingConfiguration(boolean antiSnipingEnabled, int extensionThresholdSeconds,
+                                                  int extensionDurationSeconds, int maxExtensionCount)
+            throws ValidationException {
+        if (extensionThresholdSeconds <= 0) {
+            throw new ValidationException("Extension threshold must be greater than 0 seconds.");
+        }
+        if (extensionDurationSeconds <= 0) {
+            throw new ValidationException("Extension duration must be greater than 0 seconds.");
+        }
+        if (maxExtensionCount <= 0) {
+            throw new ValidationException("Maximum extension count must be greater than 0.");
+        }
+        if (!antiSnipingEnabled) {
+            return;
+        }
+        if (extensionDurationSeconds < extensionThresholdSeconds) {
+            throw new ValidationException("Extension duration should be greater than or equal to the threshold window.");
+        }
+    }
+
     private String normalizeRequiredText(String value, String errorMessage) throws ValidationException {
         String normalized = normalizeOptionalText(value);
         if (normalized == null) {
@@ -459,12 +618,69 @@ public class AuctionService {
         }
     }
 
-    private void persistBid(AuctionItem item, int bidderId, double amount, long bidTime, String status) {
+    private BidTransaction persistBid(AuctionItem item, int bidderId, double amount, long bidTime, String status) {
         BidTransaction bid = new BidTransaction(0, item.getId(), bidderId, amount, bidTime, status);
         item.setCurrentHighestBid(amount);
         item.setWinnerId(bidderId);
         item.setUpdatedAt(bidTime);
         auctionDAO.saveBidAndUpdateAuction(bid, item);
+        return bid;
+    }
+
+    private BidResult buildBidResult(AuctionItem item, BidTransaction acceptedBid, long previousEndTime,
+                                     boolean auctionExtended) {
+        boolean bidderIsLeading = item.getWinnerId() == acceptedBid.getBidderId();
+        String message = bidderIsLeading
+                ? "Bid accepted and this bidder is currently leading."
+                : "Bid accepted, but a higher automatic bid is currently leading.";
+        if (auctionExtended) {
+            message += " Auction end time has been extended.";
+        }
+        return new BidResult(
+                true,
+                acceptedBid.getId(),
+                item.getId(),
+                acceptedBid.getBidderId(),
+                acceptedBid.getAmount(),
+                item.getCurrentHighestBid(),
+                item.getWinnerId(),
+                previousEndTime,
+                item.getEndTime(),
+                auctionExtended,
+                item.getExtensionCount(),
+                item.getStatus(),
+                message
+        );
+    }
+
+    private void publishBidEvents(BidResult result) {
+        AuctionUpdateEvent bidAcceptedEvent = new AuctionUpdateEvent(
+                AuctionEventType.BID_ACCEPTED,
+                result.getAuctionId(),
+                result.getBidId(),
+                result.getCurrentHighestBid(),
+                result.getCurrentWinnerId(),
+                result.getPreviousEndTime(),
+                result.getAuctionEndTime(),
+                result.getExtensionCount()
+        );
+        auctionEventPublisher.publish(bidAcceptedEvent);
+
+        if (!result.isAuctionExtended()) {
+            return;
+        }
+
+        AuctionUpdateEvent auctionExtendedEvent = new AuctionUpdateEvent(
+                AuctionEventType.AUCTION_EXTENDED,
+                result.getAuctionId(),
+                result.getBidId(),
+                result.getCurrentHighestBid(),
+                result.getCurrentWinnerId(),
+                result.getPreviousEndTime(),
+                result.getAuctionEndTime(),
+                result.getExtensionCount()
+        );
+        auctionEventPublisher.publish(auctionExtendedEvent);
     }
 
     private static long findLatestBidTimestamp(List<BidTransaction> bids) {
@@ -483,17 +699,6 @@ public class AuctionService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private void applyAntiSnipingIfNeeded(AuctionItem item, long bidTime) {
-        long remaining = item.getEndTime() - bidTime;
-        if (remaining > ANTI_SNIPING_THRESHOLD_MS) {
-            return;
-        }
-
-        item.setEndTime(item.getEndTime() + ANTI_SNIPING_EXTENSION_MS);
-        item.setUpdatedAt(Math.max(item.getUpdatedAt(), bidTime));
-        auctionDAO.updateAuction(item);
     }
 
     private AuctionStatus resolveStatusForWindow(long startTime, long endTime, long now) {

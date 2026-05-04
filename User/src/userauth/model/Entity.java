@@ -1,6 +1,12 @@
 package userauth.model;
 
-public abstract class Entity {
+import java.io.Serial;
+import java.io.Serializable;
+
+public abstract class Entity implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     protected int id;
 
     public Entity(int id) {

@@ -89,6 +89,12 @@ public class SellerDashboardViewController {
     private Button btnCreate;
 
     @FXML
+    private TextField txtExtendMinutes;
+
+    @FXML
+    private Button btnExtendTime;
+
+    @FXML
     private Label lblSellerSidebar;
 
     @FXML
@@ -128,6 +134,9 @@ public class SellerDashboardViewController {
     private Label lblPreviewPrice;
 
     @FXML
+    private Label lblPreviewExtension;
+
+    @FXML
     private Label lblPreviewMode;
 
     @FXML
@@ -144,6 +153,8 @@ public class SellerDashboardViewController {
     @FXML
     private void initialize() {
         AuctionImageUtil.installRoundedClip(imgPreviewImage, 32, 32);
+        installTimeInputMask(txtStartTime);
+        installTimeInputMask(txtEndTime);
         applyDefaultSchedule();
 
         colId.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
@@ -250,8 +261,35 @@ public class SellerDashboardViewController {
 
             runActionAsync(
                     currentEditingId == -1
-                            ? () -> auctionController.createAuction(name, desc, price, start, end, category, imageSource, sellerId)
-                            : () -> auctionController.updateAuction(currentEditingId, sellerId, name, desc, price, start, end, category, imageSource),
+                            ? () -> auctionController.createAuction(
+                            name,
+                            desc,
+                            price,
+                            start,
+                            end,
+                            category,
+                            imageSource,
+                            sellerId,
+                            false,
+                            AuctionItem.DEFAULT_EXTENSION_THRESHOLD_SECONDS,
+                            AuctionItem.DEFAULT_EXTENSION_DURATION_SECONDS,
+                            AuctionItem.DEFAULT_MAX_EXTENSION_COUNT
+                    )
+                            : () -> auctionController.updateAuction(
+                            currentEditingId,
+                            sellerId,
+                            name,
+                            desc,
+                            price,
+                            start,
+                            end,
+                            category,
+                            imageSource,
+                            false,
+                            AuctionItem.DEFAULT_EXTENSION_THRESHOLD_SECONDS,
+                            AuctionItem.DEFAULT_EXTENSION_DURATION_SECONDS,
+                            AuctionItem.DEFAULT_MAX_EXTENSION_COUNT
+                    ),
                     "Auction saved successfully.",
                     () -> {
                         resetForm();
@@ -362,6 +400,43 @@ public class SellerDashboardViewController {
     }
 
     @FXML
+    private void handleExtendSelectedAuction() {
+        if (auctionController == null || currentUser == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Auction time adjustment is not ready.");
+            return;
+        }
+        if (actionInProgress) {
+            return;
+        }
+
+        AuctionItem item = tableAuctions.getSelectionModel().getSelectedItem();
+        if (item == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Please select an auction.");
+            return;
+        }
+
+        try {
+            int additionalMinutes = parsePositiveInteger(
+                    txtExtendMinutes,
+                    "Additional minutes must be a positive integer."
+            );
+            int auctionId = item.getId();
+            int sellerId = currentUser.getId();
+
+            runActionAsync(
+                    () -> auctionController.extendAuctionTime(auctionId, sellerId, additionalMinutes),
+                    "Auction time extended successfully.",
+                    () -> {
+                        txtExtendMinutes.clear();
+                        refreshData();
+                    }
+            );
+        } catch (IllegalArgumentException ex) {
+            NotificationUtil.error(ownerWindow(), "Error", ex.getMessage());
+        }
+    }
+
+    @FXML
     private void handleSwitchToEnglish() {
         switchLanguage(AppLanguage.ENGLISH);
     }
@@ -423,6 +498,7 @@ public class SellerDashboardViewController {
         lblPreviewCategory.setText(category);
         lblPreviewDuration.setText(parseSchedulePreview());
         lblPreviewPrice.setText(price);
+        lblPreviewExtension.setText(UiText.text("Adjust later in My Actions."));
         lblPreviewMode.setText(editingId == -1
                 ? UiText.text("Creating a new auction")
                 : UiText.text("Editing auction") + " #" + editingId);
@@ -596,8 +672,14 @@ public class SellerDashboardViewController {
         if (txtEndTime != null) {
             txtEndTime.setDisable(busy);
         }
+        if (txtExtendMinutes != null) {
+            txtExtendMinutes.setDisable(busy);
+        }
         if (btnCreate != null) {
             btnCreate.setDisable(busy);
+        }
+        if (btnExtendTime != null) {
+            btnExtendTime.setDisable(busy);
         }
     }
 
@@ -637,7 +719,11 @@ public class SellerDashboardViewController {
         }
 
         try {
-            LocalTime time = LocalTime.parse(rawTime, TIME_INPUT_FORMAT);
+            String formattedTime = formatTimeInput(rawTime);
+            if (!formattedTime.matches("\\d{1,2}:\\d{2}")) {
+                throw new DateTimeParseException("Incomplete time input.", formattedTime, 0);
+            }
+            LocalTime time = LocalTime.parse(formattedTime, TIME_INPUT_FORMAT);
             return date.atTime(time).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         } catch (DateTimeParseException ex) {
             throw new IllegalArgumentException(fieldLabel + " must use HH:mm format.");
@@ -654,9 +740,64 @@ public class SellerDashboardViewController {
             return UiText.text("Invalid schedule");
         }
     }
+
+    private int parsePositiveInteger(TextField field, String errorMessage) {
+        String rawValue = field.getText() == null ? "" : field.getText().trim();
+        if (rawValue.isBlank()) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+
+        int value;
+        try {
+            value = Integer.parseInt(rawValue);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+
+        if (value <= 0) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+        return value;
+    }
+
+    private void installTimeInputMask(TextField field) {
+        if (field == null) {
+            return;
+        }
+        field.textProperty().addListener((observable, oldValue, newValue) -> {
+            String formatted = formatTimeInput(newValue);
+            if (!formatted.equals(newValue)) {
+                field.setText(formatted);
+            }
+        });
+    }
+
+    private String formatTimeInput(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+
+        String digitsOnly = value.replaceAll("\\D", "");
+        if (digitsOnly.length() > 4) {
+            digitsOnly = digitsOnly.substring(0, 4);
+        }
+
+        if (digitsOnly.length() <= 2) {
+            return digitsOnly;
+        }
+        if (digitsOnly.length() == 3) {
+            int firstTwoDigits = Integer.parseInt(digitsOnly.substring(0, 2));
+            if (firstTwoDigits <= 23) {
+                return digitsOnly.substring(0, 2) + ":" + digitsOnly.substring(2);
+            }
+            return digitsOnly.substring(0, 1) + ":" + digitsOnly.substring(1);
+        }
+        return digitsOnly.substring(0, 2) + ":" + digitsOnly.substring(2);
+    }
+
     @FXML
-    private void handleScrollToMyAuctions(){
-        if(mainScrollPane != null){
+    private void handleScrollToMyAuctions() {
+        if (mainScrollPane != null) {
             mainScrollPane.setVvalue(1.0);
         }
     }

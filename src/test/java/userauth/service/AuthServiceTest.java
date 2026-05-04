@@ -9,6 +9,9 @@ import userauth.model.Role;
 import userauth.model.User;
 import userauth.util.PasswordUtil;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -27,6 +30,7 @@ class AuthServiceTest {
         User saved = userDAO.findByUsername("abc");
         assertNotNull(saved);
         assertNotEquals("Pass123", saved.getPassword());
+        assertTrue(saved.getPassword().startsWith("pbkdf2_sha256$"));
         assertTrue(saved.checkPassword("Pass123"));
     }
 
@@ -48,6 +52,70 @@ class AuthServiceTest {
 
         UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> service.login("blocked", "Pass123"));
         assertEquals("Your account has been locked.", ex.getMessage());
+    }
+
+    @Test
+    void loginUpgradesLegacySha256HashWithoutBreakingExistingAccount() throws UnauthorizedException {
+        InMemoryUserDAO userDAO = new InMemoryUserDAO();
+        long now = System.currentTimeMillis();
+        userDAO.save(new Bidder(
+                0,
+                "legacyUser",
+                legacySha256("Pass123"),
+                "Legacy User",
+                "legacy@example.com",
+                "ACTIVE",
+                now,
+                now
+        ));
+        AuthService service = new AuthService(userDAO);
+
+        User loggedIn = service.login("legacyUser", "Pass123");
+
+        assertNotNull(loggedIn);
+        User saved = userDAO.findByUsername("legacyUser");
+        assertNotNull(saved);
+        assertTrue(saved.getPassword().startsWith("pbkdf2_sha256$"));
+        assertTrue(saved.checkPassword("Pass123"));
+    }
+
+    @Test
+    void changePasswordUpgradesLegacyAccountToModernHash() throws ValidationException, UnauthorizedException {
+        InMemoryUserDAO userDAO = new InMemoryUserDAO();
+        long now = System.currentTimeMillis();
+        userDAO.save(new Bidder(
+                0,
+                "legacyChange",
+                legacySha256("Pass123"),
+                "Legacy Change",
+                "legacy-change@example.com",
+                "ACTIVE",
+                now,
+                now
+        ));
+        AuthService service = new AuthService(userDAO);
+
+        service.changePassword("legacyChange", "Pass123", "NewPass123");
+
+        User saved = userDAO.findByUsername("legacyChange");
+        assertNotNull(saved);
+        assertTrue(saved.getPassword().startsWith("pbkdf2_sha256$"));
+        assertTrue(saved.checkPassword("NewPass123"));
+        assertFalse(saved.checkPassword("Pass123"));
+    }
+
+    private static String legacySha256(String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hashed = md.digest(password.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hashed) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
     private static final class InMemoryUserDAO implements UserDAO {

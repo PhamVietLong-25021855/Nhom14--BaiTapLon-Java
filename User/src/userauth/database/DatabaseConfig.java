@@ -4,11 +4,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public final class DatabaseConfig {
     private static final String RESOURCE_PATH = "/userauth/database.properties";
-    private static final String LOCAL_OVERRIDE_RESOURCE_PATH = "/userauth/database.local.properties";
+    private static final String LOCAL_OVERRIDE_PROPERTY = "db.localOverridePath";
+    private static final String LOCAL_OVERRIDE_ENV = "DB_LOCAL_OVERRIDE_PATH";
+    private static final String DEFAULT_LOCAL_OVERRIDE_PATH = "User/resources/userauth/database.local.properties";
 
     private final String jdbcUrl;
     private final String adminJdbcUrl;
@@ -20,6 +25,11 @@ public final class DatabaseConfig {
     private final String sslMode;
     private final String schema;
     private final boolean createDatabaseIfMissing;
+    private final int connectTimeoutSeconds;
+    private final int socketTimeoutSeconds;
+    private final boolean tcpKeepAlive;
+    private final String applicationName;
+    private final int maxPoolConnections;
 
     private DatabaseConfig(Properties properties) {
         this.jdbcUrl = resolveString(properties, "db.url", "DB_URL", null);
@@ -42,6 +52,34 @@ public final class DatabaseConfig {
                 "DB_CREATE_DATABASE_IF_MISSING",
                 false
         );
+        this.connectTimeoutSeconds = resolveInt(
+                properties,
+                "db.connectTimeoutSeconds",
+                "DB_CONNECT_TIMEOUT_SECONDS",
+                10
+        );
+        this.socketTimeoutSeconds = resolveInt(
+                properties,
+                "db.socketTimeoutSeconds",
+                "DB_SOCKET_TIMEOUT_SECONDS",
+                30
+        );
+        this.tcpKeepAlive = resolveBoolean(
+                properties,
+                "db.tcpKeepAlive",
+                "DB_TCP_KEEP_ALIVE",
+                true
+        );
+        this.applicationName = resolveString(
+                properties,
+                "db.applicationName",
+                "DB_APPLICATION_NAME",
+                "online-auction-client"
+        );
+        this.maxPoolConnections = Math.max(
+                1,
+                resolveInt(properties, "db.maxPoolConnections", "DB_MAX_POOL_CONNECTIONS", 2)
+        );
     }
 
     public static DatabaseConfig load() {
@@ -51,7 +89,7 @@ public final class DatabaseConfig {
                 throw new IllegalStateException("Database configuration file not found: " + RESOURCE_PATH);
             }
             properties.load(inputStream);
-            loadOptionalOverride(properties, LOCAL_OVERRIDE_RESOURCE_PATH);
+            loadOptionalOverride(properties);
             return new DatabaseConfig(properties);
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to read the database configuration file.", ex);
@@ -104,13 +142,37 @@ public final class DatabaseConfig {
         return createDatabaseIfMissing;
     }
 
+    public int getConnectTimeoutSeconds() {
+        return connectTimeoutSeconds;
+    }
+
+    public int getSocketTimeoutSeconds() {
+        return socketTimeoutSeconds;
+    }
+
+    public boolean isTcpKeepAlive() {
+        return tcpKeepAlive;
+    }
+
+    public String getApplicationName() {
+        return applicationName;
+    }
+
+    public int getMaxPoolConnections() {
+        return maxPoolConnections;
+    }
+
     private String buildJdbcUrl(String targetDatabase) {
         return "jdbc:postgresql://" + host + ":" + port + "/" + targetDatabase + "?" + buildQueryString();
     }
 
     private String buildQueryString() {
         return "sslmode=" + encode(sslMode) +
-                "&currentSchema=" + encode(schema);
+                "&currentSchema=" + encode(schema) +
+                "&connectTimeout=" + connectTimeoutSeconds +
+                "&socketTimeout=" + socketTimeoutSeconds +
+                "&tcpKeepAlive=" + tcpKeepAlive +
+                "&ApplicationName=" + encode(applicationName);
     }
 
     private String encode(String value) {
@@ -174,11 +236,21 @@ public final class DatabaseConfig {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private static void loadOptionalOverride(Properties properties, String resourcePath) throws IOException {
-        try (InputStream overrideStream = DatabaseConfig.class.getResourceAsStream(resourcePath)) {
-            if (overrideStream == null) {
-                return;
-            }
+    private static void loadOptionalOverride(Properties properties) throws IOException {
+        String overridePathValue = normalize(System.getProperty(LOCAL_OVERRIDE_PROPERTY));
+        if (overridePathValue == null) {
+            overridePathValue = normalize(System.getenv(LOCAL_OVERRIDE_ENV));
+        }
+        if (overridePathValue == null) {
+            overridePathValue = DEFAULT_LOCAL_OVERRIDE_PATH;
+        }
+
+        Path overridePath = Paths.get(overridePathValue).normalize();
+        if (!Files.isRegularFile(overridePath)) {
+            return;
+        }
+
+        try (InputStream overrideStream = Files.newInputStream(overridePath)) {
             properties.load(overrideStream);
         }
     }

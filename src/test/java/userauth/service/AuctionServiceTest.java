@@ -12,19 +12,155 @@ import userauth.exception.ValidationException;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 import userauth.model.AutoBid;
+import userauth.model.BidRequest;
+import userauth.model.BidResult;
 import userauth.model.BidTransaction;
 import userauth.model.TopUpTransaction;
 import userauth.model.Wallet;
+import userauth.realtime.AuctionEventType;
+import userauth.realtime.AuctionEventPublisher;
+import userauth.realtime.AuctionUpdateEvent;
+import userauth.realtime.NoOpAuctionEventPublisher;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class AuctionServiceTest {
+
+    @Test
+    void createAuctionStoresSellerAntiSnipingConfiguration() throws ValidationException {
+        InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
+        WalletService walletService = new WalletService(new InMemoryWalletDAO());
+        AuctionService service = new AuctionService(auctionDAO, new InMemoryAutoBidDAO(), walletService);
+
+        long now = System.currentTimeMillis();
+        long startTime = now + 60_000;
+        long endTime = startTime + 1_800_000;
+
+        service.createAuction(
+                "Camera",
+                "Mirrorless camera",
+                2_000_000,
+                startTime,
+                endTime,
+                "Electronics",
+                null,
+                77,
+                true,
+                45,
+                90,
+                4
+        );
+
+        AuctionItem created = auctionDAO.findAllAuctions().getFirst();
+        assertTrue(created.isAntiSnipingEnabled());
+        assertEquals(45, created.getExtensionThresholdSeconds());
+        assertEquals(90, created.getExtensionDurationSeconds());
+        assertEquals(4, created.getMaxExtensionCount());
+        assertEquals(endTime, created.getOriginalEndTime());
+    }
+
+    @Test
+    void updateAuctionStoresSellerAntiSnipingConfiguration()
+            throws ValidationException, ItemNotFoundException, UnauthorizedException {
+        InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
+        WalletService walletService = new WalletService(new InMemoryWalletDAO());
+        AuctionService service = new AuctionService(auctionDAO, new InMemoryAutoBidDAO(), walletService);
+
+        long now = System.currentTimeMillis();
+        AuctionItem auction = scheduledAuction(1, 80, now + 120_000, now + 3_600_000, 500_000);
+        auctionDAO.saveAuction(auction);
+
+        service.updateAuction(
+                auction.getId(),
+                80,
+                "Updated Camera",
+                "Updated description",
+                600_000,
+                now + 180_000,
+                now + 4_200_000,
+                "Electronics",
+                null,
+                false,
+                20,
+                40,
+                2
+        );
+
+        AuctionItem updated = auctionDAO.findAuctionById(auction.getId());
+        assertFalse(updated.isAntiSnipingEnabled());
+        assertEquals(20, updated.getExtensionThresholdSeconds());
+        assertEquals(40, updated.getExtensionDurationSeconds());
+        assertEquals(2, updated.getMaxExtensionCount());
+        assertEquals(updated.getEndTime(), updated.getOriginalEndTime());
+        assertEquals(0, updated.getExtensionCount());
+    }
+
+    @Test
+    void sellerCanManuallyExtendAuctionTime()
+            throws ValidationException, ItemNotFoundException, UnauthorizedException {
+        InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
+        WalletService walletService = new WalletService(new InMemoryWalletDAO());
+        AuctionService service = new AuctionService(auctionDAO, new InMemoryAutoBidDAO(), walletService);
+
+        long now = System.currentTimeMillis();
+        long originalEndTime = now + 120_000;
+        AuctionItem auction = runningAuction(1, 88, now - 60_000, originalEndTime, 500_000);
+        auctionDAO.saveAuction(auction);
+
+        service.extendAuctionTime(auction.getId(), 88, 15);
+
+        AuctionItem updated = auctionDAO.findAuctionById(auction.getId());
+        assertEquals(originalEndTime + 15 * 60_000L, updated.getEndTime());
+        assertEquals(originalEndTime, updated.getOriginalEndTime());
+        assertEquals(0, updated.getExtensionCount());
+        assertEquals(AuctionStatus.RUNNING, updated.getStatus());
+    }
+
+    @Test
+    void sellerCannotManuallyExtendFinishedAuction() {
+        InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
+        WalletService walletService = new WalletService(new InMemoryWalletDAO());
+        AuctionService service = new AuctionService(auctionDAO, new InMemoryAutoBidDAO(), walletService);
+
+        long now = System.currentTimeMillis();
+        AuctionItem auction = new AuctionItem(
+                1,
+                "Old Item",
+                "Already finished",
+                400_000,
+                400_000,
+                now - 3_600_000,
+                now - 1_000,
+                "Electronics",
+                null,
+                now - 3_600_000,
+                now - 1_000,
+                55,
+                -1,
+                AuctionStatus.FINISHED
+        );
+        auctionDAO.saveAuction(auction);
+
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> service.extendAuctionTime(auction.getId(), 55, 10)
+        );
+
+        assertEquals("This auction can only be extended while it is OPEN or RUNNING.", ex.getMessage());
+    }
 
     @Test
     void sellerCannotBidOnOwnAuction() {
@@ -71,6 +207,105 @@ class AuctionServiceTest {
     }
 
     @Test
+    void bidOutsideThresholdDoesNotExtendAuctionAndPublishesBidAcceptedOnly()
+            throws ItemNotFoundException, AuctionClosedException, InvalidBidException {
+        InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
+        InMemoryWalletDAO walletDAO = new InMemoryWalletDAO();
+        RecordingAuctionEventPublisher eventPublisher = new RecordingAuctionEventPublisher();
+        WalletService walletService = new WalletService(walletDAO);
+        AuctionService service = new AuctionService(
+                auctionDAO,
+                new InMemoryAutoBidDAO(),
+                walletService,
+                new AuctionLockManager(),
+                new AntiSnipingService(),
+                eventPublisher
+        );
+
+        long now = System.currentTimeMillis();
+        long originalEndTime = now + 120_000;
+        AuctionItem auction = runningAuction(1, 61, now - 30_000, originalEndTime, 100_000);
+        configureAntiSniping(auction, true, 30, 60, 5);
+        auctionDAO.saveAuction(auction);
+        walletDAO.putWallet(31, 500_000);
+
+        BidResult result = service.placeBid(new BidRequest(auction.getId(), 31, 120_000));
+        AuctionItem updated = auctionDAO.findAuctionById(auction.getId());
+
+        assertFalse(result.isAuctionExtended());
+        assertEquals(originalEndTime, updated.getEndTime());
+        assertEquals(1, eventPublisher.events.size());
+        assertEquals(AuctionEventType.BID_ACCEPTED, eventPublisher.events.getFirst().getEventType());
+    }
+
+    @Test
+    void invalidBidDoesNotExtendAuctionAndDoesNotPublishEvent() {
+        InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
+        InMemoryWalletDAO walletDAO = new InMemoryWalletDAO();
+        RecordingAuctionEventPublisher eventPublisher = new RecordingAuctionEventPublisher();
+        WalletService walletService = new WalletService(walletDAO);
+        AuctionService service = new AuctionService(
+                auctionDAO,
+                new InMemoryAutoBidDAO(),
+                walletService,
+                new AuctionLockManager(),
+                new AntiSnipingService(),
+                eventPublisher
+        );
+
+        long now = System.currentTimeMillis();
+        long originalEndTime = now + 10_000;
+        AuctionItem auction = runningAuction(1, 62, now - 30_000, originalEndTime, 100_000);
+        configureAntiSniping(auction, true, 30, 60, 5);
+        auctionDAO.saveAuction(auction);
+        walletDAO.putWallet(32, 500_000);
+
+        InvalidBidException ex = assertThrows(
+                InvalidBidException.class,
+                () -> service.placeBid(new BidRequest(auction.getId(), 32, 100_000))
+        );
+
+        AuctionItem updated = auctionDAO.findAuctionById(auction.getId());
+        assertEquals("The amount must be higher than the starting price (100000.0).", ex.getMessage());
+        assertEquals(originalEndTime, updated.getEndTime());
+        assertTrue(eventPublisher.events.isEmpty());
+    }
+
+    @Test
+    void maxExtensionCountPreventsFurtherExtension()
+            throws ItemNotFoundException, AuctionClosedException, InvalidBidException {
+        InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
+        InMemoryWalletDAO walletDAO = new InMemoryWalletDAO();
+        RecordingAuctionEventPublisher eventPublisher = new RecordingAuctionEventPublisher();
+        WalletService walletService = new WalletService(walletDAO);
+        AuctionService service = new AuctionService(
+                auctionDAO,
+                new InMemoryAutoBidDAO(),
+                walletService,
+                new AuctionLockManager(),
+                new AntiSnipingService(),
+                eventPublisher
+        );
+
+        long now = System.currentTimeMillis();
+        long originalEndTime = now + 10_000;
+        AuctionItem auction = runningAuction(1, 63, now - 30_000, originalEndTime, 100_000);
+        configureAntiSniping(auction, true, 30, 60, 1);
+        auction.setExtensionCount(1);
+        auctionDAO.saveAuction(auction);
+        walletDAO.putWallet(33, 500_000);
+
+        BidResult result = service.placeBid(new BidRequest(auction.getId(), 33, 120_000));
+        AuctionItem updated = auctionDAO.findAuctionById(auction.getId());
+
+        assertFalse(result.isAuctionExtended());
+        assertEquals(originalEndTime, updated.getEndTime());
+        assertEquals(1, updated.getExtensionCount());
+        assertEquals(1, eventPublisher.events.size());
+        assertEquals(AuctionEventType.BID_ACCEPTED, eventPublisher.events.getFirst().getEventType());
+    }
+
+    @Test
     void manualCloseMarksAuctionPaidAndDeductsWinnerWallet()
             throws ItemNotFoundException, AuctionClosedException, InvalidBidException, UnauthorizedException {
         InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
@@ -92,6 +327,144 @@ class AuctionServiceTest {
         assertEquals(350_000, winnerWallet.getBalance());
     }
 
+    @Test
+    void concurrentSameAmountBidsOnlyAcceptOneWinner() throws Exception {
+        InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
+        InMemoryWalletDAO walletDAO = new InMemoryWalletDAO();
+        WalletService walletService = new WalletService(walletDAO);
+        AuctionService service = new AuctionService(
+                auctionDAO,
+                new InMemoryAutoBidDAO(),
+                walletService,
+                new AuctionLockManager()
+        );
+
+        long now = System.currentTimeMillis();
+        AuctionItem auction = runningAuction(1, 50, now - 5_000, now + 120_000, 100_000);
+        auctionDAO.saveAuction(auction);
+
+        int threadCount = 20;
+        double sameBidAmount = 110_000;
+        for (int i = 0; i < threadCount; i++) {
+            walletDAO.putWallet(100 + i, 500_000);
+        }
+
+        AtomicInteger acceptedCount = new AtomicInteger();
+        List<String> rejectedMessages = new CopyOnWriteArrayList<>();
+        runConcurrentBidScenario(threadCount, bidderIndex -> {
+            int bidderId = 100 + bidderIndex;
+            try {
+                BidResult result = service.placeBid(new BidRequest(auction.getId(), bidderId, sameBidAmount));
+                if (result.isAccepted()) {
+                    acceptedCount.incrementAndGet();
+                }
+            } catch (InvalidBidException ex) {
+                rejectedMessages.add(ex.getMessage());
+            }
+        });
+
+        AuctionItem updated = auctionDAO.findAuctionById(auction.getId());
+        List<BidTransaction> history = auctionDAO.findBidsByAuction(auction.getId());
+
+        assertEquals(1, acceptedCount.get());
+        assertEquals(threadCount - 1, rejectedMessages.size());
+        assertEquals(sameBidAmount, updated.getCurrentHighestBid());
+        assertEquals(1, history.size());
+        assertEquals(updated.getWinnerId(), history.getFirst().getBidderId());
+    }
+
+    @Test
+    void concurrentIncreasingBidsPreserveHighestBidAndHistory() throws Exception {
+        InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
+        InMemoryWalletDAO walletDAO = new InMemoryWalletDAO();
+        WalletService walletService = new WalletService(walletDAO);
+        AuctionService service = new AuctionService(
+                auctionDAO,
+                new InMemoryAutoBidDAO(),
+                walletService,
+                new AuctionLockManager()
+        );
+
+        long now = System.currentTimeMillis();
+        AuctionItem auction = runningAuction(1, 51, now - 5_000, now + 120_000, 100_000);
+        auctionDAO.saveAuction(auction);
+
+        int threadCount = 25;
+        double baseBidAmount = 110_000;
+        double bidStep = 5_000;
+        AtomicInteger acceptedCount = new AtomicInteger();
+        List<Throwable> unexpectedFailures = new CopyOnWriteArrayList<>();
+
+        for (int i = 0; i < threadCount; i++) {
+            walletDAO.putWallet(200 + i, 1_000_000);
+        }
+
+        runConcurrentBidScenario(threadCount, bidderIndex -> {
+            int bidderId = 200 + bidderIndex;
+            double amount = baseBidAmount + (bidderIndex * bidStep);
+            try {
+                BidResult result = service.placeBid(new BidRequest(auction.getId(), bidderId, amount));
+                if (result.isAccepted()) {
+                    acceptedCount.incrementAndGet();
+                }
+            } catch (InvalidBidException ignored) {
+                // Lower bids can legitimately lose the race against a higher accepted bid.
+            } catch (ItemNotFoundException | AuctionClosedException ex) {
+                unexpectedFailures.add(ex);
+            }
+        });
+
+        AuctionItem updated = auctionDAO.findAuctionById(auction.getId());
+        List<BidTransaction> history = auctionDAO.findBidsByAuction(auction.getId());
+        double expectedHighest = baseBidAmount + ((threadCount - 1) * bidStep);
+        int expectedWinnerId = 200 + (threadCount - 1);
+
+        assertTrue(unexpectedFailures.isEmpty());
+        assertEquals(expectedHighest, updated.getCurrentHighestBid());
+        assertEquals(expectedWinnerId, updated.getWinnerId());
+        assertEquals(acceptedCount.get(), history.size());
+        assertEquals(
+                expectedHighest,
+                history.stream().mapToDouble(BidTransaction::getAmount).max().orElseThrow()
+        );
+        assertEquals(
+                history.size(),
+                history.stream().map(BidTransaction::getId).distinct().count()
+        );
+    }
+
+    private static void runConcurrentBidScenario(int threadCount, ConcurrentBidAction action) throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch ready = new CountDownLatch(threadCount);
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(threadCount);
+        List<Throwable> taskFailures = new CopyOnWriteArrayList<>();
+
+        try {
+            for (int i = 0; i < threadCount; i++) {
+                int bidderIndex = i;
+                executor.submit(() -> {
+                    ready.countDown();
+                    try {
+                        assertTrue(start.await(5, TimeUnit.SECONDS));
+                        action.run(bidderIndex);
+                    } catch (Throwable ex) {
+                        taskFailures.add(ex);
+                    } finally {
+                        done.countDown();
+                    }
+                });
+            }
+
+            assertTrue(ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+            assertTrue(done.await(10, TimeUnit.SECONDS));
+            assertTrue(taskFailures.isEmpty(), "Concurrent task failures: " + taskFailures);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     private static AuctionItem runningAuction(int id, int sellerId, long startTime, long endTime, double startPrice) {
         return new AuctionItem(
                 id,
@@ -111,16 +484,45 @@ class AuctionServiceTest {
         );
     }
 
+    private static AuctionItem scheduledAuction(int id, int sellerId, long startTime, long endTime, double startPrice) {
+        return new AuctionItem(
+                id,
+                "Draft Item",
+                "Scheduled draft",
+                startPrice,
+                startPrice,
+                startTime,
+                endTime,
+                "Electronics",
+                null,
+                System.currentTimeMillis(),
+                System.currentTimeMillis(),
+                sellerId,
+                -1,
+                AuctionStatus.OPEN
+        );
+    }
+
+    private static void configureAntiSniping(AuctionItem auction, boolean enabled, int thresholdSeconds,
+                                             int durationSeconds, int maxExtensionCount) {
+        auction.setAntiSnipingEnabled(enabled);
+        auction.setOriginalEndTime(auction.getEndTime());
+        auction.setExtensionThresholdSeconds(thresholdSeconds);
+        auction.setExtensionDurationSeconds(durationSeconds);
+        auction.setMaxExtensionCount(maxExtensionCount);
+        auction.setExtensionCount(0);
+    }
+
     private static final class InMemoryAuctionDAO implements AuctionDAO {
-        private final Map<Integer, AuctionItem> auctions = new HashMap<>();
-        private final List<BidTransaction> bids = new ArrayList<>();
-        private int nextAuctionId = 1;
-        private int nextBidId = 1;
+        private final Map<Integer, AuctionItem> auctions = new ConcurrentHashMap<>();
+        private final List<BidTransaction> bids = Collections.synchronizedList(new ArrayList<>());
+        private final AtomicInteger nextAuctionId = new AtomicInteger(1);
+        private final AtomicInteger nextBidId = new AtomicInteger(1);
 
         @Override
         public void saveAuction(AuctionItem item) {
             if (item.getId() <= 0) {
-                item.setId(nextAuctionId++);
+                item.setId(nextAuctionId.getAndIncrement());
             }
             auctions.put(item.getId(), copyAuction(item));
         }
@@ -162,7 +564,7 @@ class AuctionServiceTest {
         @Override
         public void saveBid(BidTransaction bid) {
             if (bid.getId() <= 0) {
-                bid.setId(nextBidId++);
+                bid.setId(nextBidId.getAndIncrement());
             }
             bids.add(copyBid(bid));
         }
@@ -203,7 +605,7 @@ class AuctionServiceTest {
         }
 
         private static AuctionItem copyAuction(AuctionItem item) {
-            return new AuctionItem(
+            AuctionItem copy = new AuctionItem(
                     item.getId(),
                     item.getName(),
                     item.getDescription(),
@@ -211,6 +613,12 @@ class AuctionServiceTest {
                     item.getCurrentHighestBid(),
                     item.getStartTime(),
                     item.getEndTime(),
+                    item.getOriginalEndTime(),
+                    item.getExtensionCount(),
+                    item.getMaxExtensionCount(),
+                    item.isAntiSnipingEnabled(),
+                    item.getExtensionThresholdSeconds(),
+                    item.getExtensionDurationSeconds(),
                     item.getCategory(),
                     item.getImageSource(),
                     item.getCreatedAt(),
@@ -219,6 +627,7 @@ class AuctionServiceTest {
                     item.getWinnerId(),
                     item.getStatus()
             );
+            return copy;
         }
 
         private static BidTransaction copyBid(BidTransaction bid) {
@@ -268,18 +677,24 @@ class AuctionServiceTest {
     }
 
     private static final class InMemoryWalletDAO implements WalletDAO {
-        private final Map<Integer, Wallet> wallets = new HashMap<>();
-        private int nextWalletId = 1;
+        private final Map<Integer, Wallet> wallets = new ConcurrentHashMap<>();
+        private final AtomicInteger nextWalletId = new AtomicInteger(1);
 
         void putWallet(int userId, double balance) {
-            Wallet wallet = new Wallet(nextWalletId++, userId, balance, System.currentTimeMillis(), System.currentTimeMillis());
+            Wallet wallet = new Wallet(
+                    nextWalletId.getAndIncrement(),
+                    userId,
+                    balance,
+                    System.currentTimeMillis(),
+                    System.currentTimeMillis()
+            );
             wallets.put(userId, copyWallet(wallet));
         }
 
         @Override
         public int saveWallet(Wallet wallet) {
             if (wallet.getId() <= 0) {
-                wallet.setId(nextWalletId++);
+                wallet.setId(nextWalletId.getAndIncrement());
             }
             wallets.put(wallet.getUserID(), copyWallet(wallet));
             return wallet.getId();
@@ -339,5 +754,19 @@ class AuctionServiceTest {
             copy.setId(wallet.getId());
             return copy;
         }
+    }
+
+    private static final class RecordingAuctionEventPublisher implements AuctionEventPublisher {
+        private final List<AuctionUpdateEvent> events = new CopyOnWriteArrayList<>();
+
+        @Override
+        public void publish(AuctionUpdateEvent event) {
+            events.add(event);
+        }
+    }
+
+    @FunctionalInterface
+    private interface ConcurrentBidAction {
+        void run(int bidderIndex) throws Exception;
     }
 }
