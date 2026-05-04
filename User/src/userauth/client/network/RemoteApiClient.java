@@ -10,6 +10,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 
 public final class RemoteApiClient {
+    private static final String CONNECTION_FAILURE_PREFIX = "Unable to connect to auction server at ";
     private static final String HOST_PROPERTY = "app.server.host";
     private static final String HOST_ENV = "APP_SERVER_HOST";
     private static final String PORT_PROPERTY = "app.server.port";
@@ -52,9 +53,18 @@ public final class RemoteApiClient {
             }
         } catch (Exception ex) {
             throw new IllegalStateException(
-                    "Unable to connect to auction server at " + host + ":" + port + ".",
+                    CONNECTION_FAILURE_PREFIX + host + ":" + port + ".",
                     ex
             );
+        }
+    }
+
+    public boolean ping() {
+        try {
+            RemoteResponse response = send(RemoteAction.SYSTEM_PING);
+            return response.isSuccess() && "PONG".equals(response.payloadAsString());
+        } catch (RuntimeException ex) {
+            return false;
         }
     }
 
@@ -64,6 +74,25 @@ public final class RemoteApiClient {
 
     public int getPort() {
         return port;
+    }
+
+    public String getEndpoint() {
+        return host + ":" + port;
+    }
+
+    public static boolean isConnectionFailure(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (isConnectionFailureMessage(current.getMessage())) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    public static boolean isConnectionFailureMessage(String message) {
+        return message != null && message.startsWith(CONNECTION_FAILURE_PREFIX);
     }
 
     private static int resolvePort() {

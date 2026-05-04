@@ -11,7 +11,7 @@ import userauth.service.AuthService;
 
 import java.util.List;
 
-public class AuthController {
+public class AuthController extends RemoteControllerSupport {
     private final AuthService authService;
     private final RemoteApiClient remoteApiClient;
 
@@ -53,16 +53,7 @@ public class AuthController {
     @SuppressWarnings("unchecked")
     public List<User> getAllUsersList() {
         if (remoteApiClient != null) {
-            try {
-                RemoteResponse response = remoteApiClient.send(RemoteAction.AUTH_GET_ALL_USERS);
-                if (!response.isSuccess()) {
-                    return List.of();
-                }
-                Object payload = response.getPayload();
-                return payload instanceof List<?> users ? (List<User>) users : List.of();
-            } catch (RuntimeException ex) {
-                return List.of();
-            }
+            return requestList(remoteApiClient, RemoteAction.AUTH_GET_ALL_USERS);
         }
 
         return authService.getAllUsers();
@@ -108,15 +99,6 @@ public class AuthController {
     }
 
     private String requestString(RemoteAction action, Object... arguments) {
-        try {
-            RemoteResponse response = remoteApiClient.send(action, arguments);
-            if (!response.isSuccess()) {
-                return response.getMessage();
-            }
-            String payload = response.payloadAsString();
-            return payload == null || payload.isBlank() ? "SUCCESS" : payload;
-        } catch (RuntimeException ex) {
-            return ex.getMessage();
-        }
+        return requestString(remoteApiClient, action, arguments);
     }
 }

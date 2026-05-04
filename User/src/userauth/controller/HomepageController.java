@@ -11,7 +11,7 @@ import userauth.service.HomepageContentService;
 
 import java.util.List;
 
-public class HomepageController {
+public class HomepageController extends RemoteControllerSupport {
     private final HomepageContentService homepageContentService;
     private final RemoteApiClient remoteApiClient;
 
@@ -28,18 +28,7 @@ public class HomepageController {
     @SuppressWarnings("unchecked")
     public List<HomepageAnnouncement> getAllAnnouncements() {
         if (remoteApiClient != null) {
-            try {
-                RemoteResponse response = remoteApiClient.send(RemoteAction.HOMEPAGE_GET_ALL);
-                if (!response.isSuccess()) {
-                    return List.of();
-                }
-                Object payload = response.getPayload();
-                return payload instanceof List<?> announcements
-                        ? (List<HomepageAnnouncement>) announcements
-                        : List.of();
-            } catch (RuntimeException ex) {
-                return List.of();
-            }
+            return requestList(remoteApiClient, RemoteAction.HOMEPAGE_GET_ALL);
         }
 
         return homepageContentService.getAllAnnouncements();
@@ -96,15 +85,6 @@ public class HomepageController {
     }
 
     private String requestString(RemoteAction action, Object... arguments) {
-        try {
-            RemoteResponse response = remoteApiClient.send(action, arguments);
-            if (!response.isSuccess()) {
-                return response.getMessage();
-            }
-            String payload = response.payloadAsString();
-            return payload == null || payload.isBlank() ? "SUCCESS" : payload;
-        } catch (RuntimeException ex) {
-            return ex.getMessage();
-        }
+        return requestString(remoteApiClient, action, arguments);
     }
 }

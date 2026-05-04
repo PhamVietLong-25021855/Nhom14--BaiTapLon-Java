@@ -4,6 +4,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import userauth.client.network.RemoteApiClient;
 import userauth.controller.AuctionController;
 import userauth.controller.AuthController;
 import userauth.controller.AutobidController;
@@ -21,6 +22,7 @@ public class AuthFrame {
     private static final boolean OPEN_FULLSCREEN = true;
 
     private final Stage stage;
+    private final RemoteApiClient remoteApiClient;
     private final AuthController authController;
     private final AuctionController auctionController;
     private final HomepageController homepageController;
@@ -32,13 +34,21 @@ public class AuthFrame {
     private final LoadedView<HomeViewController> homeView;
     private final LoadedView<LoginViewController> loginView;
     private final LoadedView<RegisterViewController> registerView;
+    private final LoadedView<ServerOfflineViewController> serverOfflineView;
     private final LoadedView<AdminDashboardViewController> adminView;
     private final LoadedView<AdminHomepageViewController> adminHomepageView;
     private final LoadedView<SellerDashboardViewController> sellerView;
     private final LoadedView<BidderDashboardViewController> bidderView;
 
-    public AuthFrame(Stage stage, AuthController authController, AuctionController auctionController, HomepageController homepageController, AutobidController autobidController, WalletController walletController) {
+    public AuthFrame(Stage stage,
+                     RemoteApiClient remoteApiClient,
+                     AuthController authController,
+                     AuctionController auctionController,
+                     HomepageController homepageController,
+                     AutobidController autobidController,
+                     WalletController walletController) {
         this.stage = stage;
+        this.remoteApiClient = remoteApiClient;
         this.authController = authController;
         this.auctionController = auctionController;
         this.homepageController = homepageController;
@@ -60,6 +70,7 @@ public class AuthFrame {
         homeView = FxmlRuntime.loadView(AuthFrame.class, "home-view.fxml", "view");
         loginView = FxmlRuntime.loadView(AuthFrame.class, "login-view.fxml", "view");
         registerView = FxmlRuntime.loadView(AuthFrame.class, "register-view.fxml", "view");
+        serverOfflineView = FxmlRuntime.loadView(AuthFrame.class, "server-offline-view.fxml", "view");
         adminView = FxmlRuntime.loadView(AuthFrame.class, "admin-dashboard-view.fxml", "view");
         adminHomepageView = FxmlRuntime.loadView(AuthFrame.class, "admin-homepage-view.fxml", "view");
         sellerView = FxmlRuntime.loadView(AuthFrame.class, "seller-dashboard-view.fxml", "view");
@@ -77,6 +88,14 @@ public class AuthFrame {
         if (!OPEN_FULLSCREEN) {
             stage.centerOnScreen();
         }
+    }
+
+    public void showInitialScreen() {
+        if (remoteApiClient != null && !remoteApiClient.ping()) {
+            showServerOffline(buildOfflineMessage());
+            return;
+        }
+        showHome();
     }
 
     public Window getWindow() {
@@ -162,6 +181,17 @@ public class AuthFrame {
         dialog.showAndWait();
     }
 
+    public void showServerOffline() {
+        showServerOffline(buildOfflineMessage());
+    }
+
+    public void showServerOffline(String detailMessage) {
+        deactivateLiveViews();
+        serverOfflineView.controller().setServerEndpoint(remoteApiClient == null ? null : remoteApiClient.getEndpoint());
+        serverOfflineView.controller().showOfflineState(detailMessage);
+        switchView(serverOfflineView.root());
+    }
+
     private void wireControllers() {
         homeView.controller().setShowLoginHandler(this::showLogin);
         homeView.controller().setShowRegisterHandler(this::showRegister);
@@ -174,6 +204,7 @@ public class AuthFrame {
         loginView.controller().setLoginSuccessHandler(this::showRoleDashboard);
         loginView.controller().setInfoHandler(message -> NotificationUtil.info(stage, "NOTIFICATION", message));
         loginView.controller().setErrorHandler(message -> NotificationUtil.error(stage, "LOGIN FAILED", message));
+        loginView.controller().setServerOfflineHandler(this::showServerOffline);
 
         registerView.controller().setAuthController(authController);
         registerView.controller().setShowHomeHandler(this::showHome);
@@ -181,6 +212,11 @@ public class AuthFrame {
         registerView.controller().setSuccessHandler(message -> NotificationUtil.success(stage, "SUCCESS", message));
         registerView.controller().setWarningHandler(message -> NotificationUtil.warning(stage, "NOTIFICATION", message));
         registerView.controller().setErrorHandler(message -> NotificationUtil.error(stage, "ERROR", message));
+        registerView.controller().setServerOfflineHandler(this::showServerOffline);
+
+        serverOfflineView.controller().setRetryHandler(this::retryServerConnection);
+        serverOfflineView.controller().setCloseHandler(stage::close);
+        serverOfflineView.controller().setServerEndpoint(remoteApiClient == null ? null : remoteApiClient.getEndpoint());
 
         adminView.controller().setFrame(this);
         adminView.controller().setAuthController(authController);
@@ -223,5 +259,33 @@ public class AuthFrame {
 
     private void applyLanguage(Parent root) {
         UiText.apply(root);
+    }
+
+    private void retryServerConnection() {
+        if (remoteApiClient == null) {
+            showServerOffline("The client has no remote server configuration.");
+            return;
+        }
+
+        serverOfflineView.controller().showCheckingState();
+        UiAsync.run(
+                remoteApiClient::ping,
+                available -> {
+                    if (!available) {
+                        showServerOffline(buildOfflineMessage());
+                        return;
+                    }
+                    NotificationUtil.success(stage, "SERVER ONLINE", "Connection to the auction server has been restored.");
+                    showHome();
+                },
+                error -> showServerOffline(buildOfflineMessage())
+        );
+    }
+
+    private String buildOfflineMessage() {
+        if (remoteApiClient == null) {
+            return "The auction server is offline or unreachable.";
+        }
+        return "The auction server at " + remoteApiClient.getEndpoint() + " is offline or unreachable.";
     }
 }

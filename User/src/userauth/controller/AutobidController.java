@@ -11,7 +11,7 @@ import userauth.service.AutobidService;
 
 import java.util.List;
 
-public class AutobidController {
+public class AutobidController extends RemoteControllerSupport {
     private final AutobidService autobidService;
     private final RemoteApiClient remoteApiClient;
 
@@ -67,16 +67,7 @@ public class AutobidController {
     @SuppressWarnings("unchecked")
     public List<AutoBid> getAutobidByBidder(int bidderId) {
         if (remoteApiClient != null) {
-            try {
-                RemoteResponse response = remoteApiClient.send(RemoteAction.AUTOBID_GET_BY_BIDDER, bidderId);
-                if (!response.isSuccess()) {
-                    return List.of();
-                }
-                Object payload = response.getPayload();
-                return payload instanceof List<?> items ? (List<AutoBid>) items : List.of();
-            } catch (RuntimeException ex) {
-                return List.of();
-            }
+            return requestList(remoteApiClient, RemoteAction.AUTOBID_GET_BY_BIDDER, bidderId);
         }
 
         return autobidService.getAutobidByBidder(bidderId);
@@ -84,27 +75,13 @@ public class AutobidController {
 
     public AutoBid getAutobidById(int id) {
         if (remoteApiClient != null) {
-            try {
-                RemoteResponse response = remoteApiClient.send(RemoteAction.AUTOBID_GET_BY_ID, id);
-                return response.isSuccess() ? response.payloadAs(AutoBid.class) : null;
-            } catch (RuntimeException ex) {
-                return null;
-            }
+            return requestPayload(remoteApiClient, AutoBid.class, RemoteAction.AUTOBID_GET_BY_ID, id);
         }
 
         return autobidService.getAutobid(id);
     }
 
     private String requestString(RemoteAction action, Object... arguments) {
-        try {
-            RemoteResponse response = remoteApiClient.send(action, arguments);
-            if (!response.isSuccess()) {
-                return response.getMessage();
-            }
-            String payload = response.payloadAsString();
-            return payload == null || payload.isBlank() ? "SUCCESS" : payload;
-        } catch (RuntimeException ex) {
-            return ex.getMessage();
-        }
+        return requestString(remoteApiClient, action, arguments);
     }
 }

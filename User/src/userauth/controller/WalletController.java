@@ -12,7 +12,7 @@ import userauth.service.WalletService;
 
 import java.util.List;
 
-public class WalletController {
+public class WalletController extends RemoteControllerSupport {
     private final WalletService walletService;
     private final RemoteApiClient remoteApiClient;
 
@@ -80,12 +80,7 @@ public class WalletController {
 
     public Wallet getWallet(int userId) {
         if (remoteApiClient != null) {
-            try {
-                RemoteResponse response = remoteApiClient.send(RemoteAction.WALLET_GET_WALLET, userId);
-                return response.isSuccess() ? response.payloadAs(Wallet.class) : null;
-            } catch (RuntimeException ex) {
-                return null;
-            }
+            return requestPayload(remoteApiClient, Wallet.class, RemoteAction.WALLET_GET_WALLET, userId);
         }
 
         try {
@@ -124,16 +119,7 @@ public class WalletController {
     @SuppressWarnings("unchecked")
     public List<TopUpTransaction> getTopUpHistory(int userId) {
         if (remoteApiClient != null) {
-            try {
-                RemoteResponse response = remoteApiClient.send(RemoteAction.WALLET_GET_TOPUP_HISTORY, userId);
-                if (!response.isSuccess()) {
-                    return List.of();
-                }
-                Object payload = response.getPayload();
-                return payload instanceof List<?> items ? (List<TopUpTransaction>) items : List.of();
-            } catch (RuntimeException ex) {
-                return List.of();
-            }
+            return requestList(remoteApiClient, RemoteAction.WALLET_GET_TOPUP_HISTORY, userId);
         }
 
         try {
@@ -146,16 +132,7 @@ public class WalletController {
     @SuppressWarnings("unchecked")
     public List<TopUpTransaction> getAllPendingTrasactions() {
         if (remoteApiClient != null) {
-            try {
-                RemoteResponse response = remoteApiClient.send(RemoteAction.WALLET_GET_ALL_PENDING);
-                if (!response.isSuccess()) {
-                    return List.of();
-                }
-                Object payload = response.getPayload();
-                return payload instanceof List<?> items ? (List<TopUpTransaction>) items : List.of();
-            } catch (RuntimeException ex) {
-                return List.of();
-            }
+            return requestList(remoteApiClient, RemoteAction.WALLET_GET_ALL_PENDING);
         }
 
         return walletService.getAllPendingTransactions();
@@ -163,16 +140,7 @@ public class WalletController {
 
     public double getWalletBalance(int userId) {
         if (remoteApiClient != null) {
-            try {
-                RemoteResponse response = remoteApiClient.send(RemoteAction.WALLET_GET_BALANCE, userId);
-                if (!response.isSuccess()) {
-                    return 0.0;
-                }
-                Object payload = response.getPayload();
-                return payload instanceof Double value ? value : 0.0;
-            } catch (RuntimeException ex) {
-                return 0.0;
-            }
+            return requestDouble(remoteApiClient, RemoteAction.WALLET_GET_BALANCE, userId);
         }
 
         Wallet wallet = getWallet(userId);
@@ -180,15 +148,7 @@ public class WalletController {
     }
 
     private String requestString(RemoteAction action, Object... arguments) {
-        try {
-            RemoteResponse response = remoteApiClient.send(action, arguments);
-            if (!response.isSuccess()) {
-                return response.getMessage();
-            }
-            String payload = response.payloadAsString();
-            return payload == null || payload.isBlank() ? "SUCCESS" : payload;
-        } catch (RuntimeException ex) {
-            return "ERROR: " + ex.getMessage();
-        }
+        String result = requestString(remoteApiClient, action, arguments);
+        return result == null ? "ERROR: Request failed." : result;
     }
 }

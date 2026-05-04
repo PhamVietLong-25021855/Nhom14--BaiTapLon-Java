@@ -8,6 +8,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import userauth.client.network.RemoteApiClient;
 import userauth.controller.AuthController;
 import userauth.model.Role;
 import userauth.validation.UserValidator;
@@ -53,6 +54,7 @@ public class RegisterViewController {
     private AuthController authController;
     private Runnable showHomeHandler = () -> {};
     private Runnable backToLoginHandler = () -> {};
+    private Runnable serverOfflineHandler = () -> {};
     private Consumer<String> successHandler = message -> NotificationUtil.success(null, "Notification", message);
     private Consumer<String> warningHandler = message -> NotificationUtil.warning(null, "Notification", message);
     private Consumer<String> errorHandler = message -> NotificationUtil.error(null, "Error", message);
@@ -108,6 +110,12 @@ public class RegisterViewController {
                 result -> {
                     registerInProgress = false;
                     setBusy(false);
+                    if (RemoteApiClient.isConnectionFailureMessage(result)) {
+                        showInlineError(result);
+                        warningHandler.accept(result);
+                        serverOfflineHandler.run();
+                        return;
+                    }
                     if ("SUCCESS".equals(result) || result.toLowerCase(Locale.ROOT).contains("success")) {
                         clearInputs();
                         successHandler.accept("Registration completed successfully. Please log in.");
@@ -145,6 +153,10 @@ public class RegisterViewController {
 
     public void setBackToLoginHandler(Runnable backToLoginHandler) {
         this.backToLoginHandler = Objects.requireNonNullElse(backToLoginHandler, () -> {});
+    }
+
+    public void setServerOfflineHandler(Runnable serverOfflineHandler) {
+        this.serverOfflineHandler = Objects.requireNonNullElse(serverOfflineHandler, () -> {});
     }
 
     public void setSuccessHandler(Consumer<String> successHandler) {

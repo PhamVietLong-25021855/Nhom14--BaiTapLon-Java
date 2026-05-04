@@ -8,6 +8,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import userauth.client.network.RemoteApiClient;
 import userauth.controller.AuthController;
 import userauth.exception.UnauthorizedException;
 import userauth.model.User;
@@ -36,6 +37,7 @@ public class LoginViewController {
     private AuthController authController;
     private Runnable showHomeHandler = () -> {};
     private Runnable showRegisterHandler = () -> {};
+    private Runnable serverOfflineHandler = () -> {};
     private Consumer<User> loginSuccessHandler = user -> {};
     private Consumer<String> infoHandler = message -> NotificationUtil.info(null, "Notification", message);
     private Consumer<String> errorHandler = message -> NotificationUtil.error(null, "Login failed", message);
@@ -101,6 +103,9 @@ public class LoginViewController {
                     applyErrorState(txtUsername, txtPassword);
                     showErrorState(message);
                     errorHandler.accept(message);
+                    if (RemoteApiClient.isConnectionFailure(error)) {
+                        serverOfflineHandler.run();
+                    }
                 }
         );
     }
@@ -131,6 +136,10 @@ public class LoginViewController {
 
     public void setShowRegisterHandler(Runnable showRegisterHandler) {
         this.showRegisterHandler = Objects.requireNonNullElse(showRegisterHandler, () -> {});
+    }
+
+    public void setServerOfflineHandler(Runnable serverOfflineHandler) {
+        this.serverOfflineHandler = Objects.requireNonNullElse(serverOfflineHandler, () -> {});
     }
 
     public void setLoginSuccessHandler(Consumer<User> loginSuccessHandler) {

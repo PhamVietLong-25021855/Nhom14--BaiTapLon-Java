@@ -20,9 +20,17 @@ public class Main extends Application {
         AuctionController auctionController = new AuctionController(remoteApiClient);
         HomepageController homepageController = new HomepageController(remoteApiClient);
 
-        AuthFrame frame = new AuthFrame(stage, authController, auctionController, homepageController, autobidController, walletController);
+        AuthFrame frame = new AuthFrame(
+                stage,
+                remoteApiClient,
+                authController,
+                auctionController,
+                homepageController,
+                autobidController,
+                walletController
+        );
         frame.show();
-        frame.showHome();
+        frame.showInitialScreen();
     }
 
     public static void main(String[] args) {

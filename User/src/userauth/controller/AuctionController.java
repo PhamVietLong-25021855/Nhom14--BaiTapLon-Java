@@ -19,7 +19,7 @@ import userauth.service.AuctionService;
 import java.util.List;
 import java.util.Map;
 
-public class AuctionController {
+public class AuctionController extends RemoteControllerSupport {
     private final AuctionService auctionService;
     private final RemoteApiClient remoteApiClient;
 
@@ -172,28 +172,28 @@ public class AuctionController {
 
     public List<AuctionItem> getAuctionsBySeller(int sellerId) {
         if (remoteApiClient != null) {
-            return requestList(RemoteAction.AUCTION_GET_BY_SELLER, AuctionItem.class, sellerId);
+            return requestList(remoteApiClient, RemoteAction.AUCTION_GET_BY_SELLER, sellerId);
         }
         return auctionService.getAuctionsBySeller(sellerId);
     }
 
     public List<AuctionItem> getAllAuctions() {
         if (remoteApiClient != null) {
-            return requestList(RemoteAction.AUCTION_GET_ALL, AuctionItem.class);
+            return requestList(remoteApiClient, RemoteAction.AUCTION_GET_ALL);
         }
         return auctionService.getAllAuctions();
     }
 
     public List<BidTransaction> getBidsForAuction(int auctionId) {
         if (remoteApiClient != null) {
-            return requestList(RemoteAction.AUCTION_GET_BIDS_FOR_AUCTION, BidTransaction.class, auctionId);
+            return requestList(remoteApiClient, RemoteAction.AUCTION_GET_BIDS_FOR_AUCTION, auctionId);
         }
         return auctionService.getBidsForAuction(auctionId);
     }
 
     public List<BidTransaction> getAllBids() {
         if (remoteApiClient != null) {
-            return requestList(RemoteAction.AUCTION_GET_ALL_BIDS, BidTransaction.class);
+            return requestList(remoteApiClient, RemoteAction.AUCTION_GET_ALL_BIDS);
         }
         return auctionService.getAllBids();
     }
@@ -285,49 +285,14 @@ public class AuctionController {
     @SuppressWarnings("unchecked")
     public Map<Integer, Integer> getAdminEarlyCloseCountdowns() {
         if (remoteApiClient != null) {
-            try {
-                RemoteResponse response = remoteApiClient.send(RemoteAction.AUCTION_GET_ADMIN_EARLY_CLOSE_COUNTDOWNS);
-                if (!response.isSuccess()) {
-                    return Map.of();
-                }
-                Object payload = response.getPayload();
-                return payload instanceof Map<?, ?> map ? (Map<Integer, Integer>) map : Map.of();
-            } catch (RuntimeException ex) {
-                return Map.of();
-            }
+            return requestMap(remoteApiClient, RemoteAction.AUCTION_GET_ADMIN_EARLY_CLOSE_COUNTDOWNS);
         }
 
         return auctionService.getAdminEarlyCloseCountdowns();
     }
 
     private String requestString(RemoteAction action, Object... arguments) {
-        try {
-            RemoteResponse response = remoteApiClient.send(action, arguments);
-            if (!response.isSuccess()) {
-                return response.getMessage();
-            }
-            String payload = response.payloadAsString();
-            return payload == null || payload.isBlank() ? "SUCCESS" : payload;
-        } catch (RuntimeException ex) {
-            return ex.getMessage();
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> List<T> requestList(RemoteAction action, Class<T> type, Object... arguments) {
-        try {
-            RemoteResponse response = remoteApiClient.send(action, arguments);
-            if (!response.isSuccess()) {
-                return List.of();
-            }
-            Object payload = response.getPayload();
-            if (!(payload instanceof List<?> values)) {
-                return List.of();
-            }
-            return (List<T>) values;
-        } catch (RuntimeException ex) {
-            return List.of();
-        }
+        return requestString(remoteApiClient, action, arguments);
     }
 
     private void throwMappedBidException(RemoteResponse response)
