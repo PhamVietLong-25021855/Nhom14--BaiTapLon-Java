@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
+
+<StackPane maxHeight="Infinity" maxWidth="Infinity" prefHeight="820.0" prefWidth="1240.0" styleClass="page-root" stylesheets="@auth-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.RegisterViewController">
+    <children>
+        <HBox maxHeight="Infinity" maxWidth="Infinity" spacing="22.0" styleClass="auth-shell">
+            <children>
+                <StackPane minWidth="420.0" prefWidth="600.0" styleClass="auth-illustration hero-card" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Circle fill="#72A8FF" opacity="0.36" radius="132.0" stroke="TRANSPARENT" styleClass="accent-orb register-orb-primary" translateX="106.0" translateY="-72.0" />
+                        <Circle fill="#40D1AF" opacity="0.32" radius="94.0" stroke="TRANSPARENT" styleClass="accent-orb register-orb-secondary" translateX="-122.0" translateY="84.0" />
+                        <Circle fill="#FFB86D" opacity="0.30" radius="70.0" stroke="TRANSPARENT" styleClass="accent-orb register-orb-accent" translateX="146.0" translateY="126.0" />
+                        <VBox maxWidth="470.0" spacing="20.0">
+                            <children>
+                                <Label styleClass="hero-badge" text="AUCTION HOUSE STUDIO" />
+                                <Label styleClass="hero-title" text="Create a new auction account" wrapText="true" />
+                                <Label styleClass="hero-subtitle" text="Register once, then sign in as a bidder or seller." wrapText="true" />
+                                <VBox spacing="12.0">
+                                    <children>
+                                        <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="feature-card">
+                                            <children>
+                                                <StackPane minHeight="42.0" minWidth="42.0" prefHeight="42.0" prefWidth="42.0" styleClass="feature-badge">
+                                                    <children>
+                                                        <Label styleClass="feature-badge-text" text="01" />
+                                                    </children>
+                                                </StackPane>
+                                                <VBox spacing="4.0">
+                                                    <children>
+                                                        <Label styleClass="feature-title" text="Live Validation" />
+                                                        <Label styleClass="feature-copy" text="Email, password, and password confirmation are validated while you type." wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </VBox>
+                    </children>
+                </StackPane>
+                <VBox prefWidth="520.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <VBox fx:id="registerCard" maxWidth="520.0" prefWidth="520.0" spacing="16.0" styleClass="auth-card">
+                            <children>
+                                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                    <children>
+                                        <Button mnemonicParsing="false" onAction="#handleShowHome" styleClass="button home-icon-button">
+                                            <graphic>
+                                                <SVGPath content="M 12 4 L 3 11 H 5 V 20 H 10 V 14 H 14 V 20 H 19 V 11 H 21 Z" styleClass="home-icon-shape" />
+                                            </graphic>
+                                        </Button>
+                                        <VBox spacing="2.0">
+                                            <children>
+                                                <Label styleClass="auth-form-title" text="ACCOUNT REGISTRATION" />
+                                                <Label styleClass="auth-form-copy" text="Complete all required information to join the online auction system." wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                                <Button mnemonicParsing="false" onAction="#handleBackToLogin" styleClass="button ghost-button" text="BACK TO LOGIN" />
+                                <VBox fx:id="fieldContainer" spacing="10.0">
+                                    <children>
+                                        <Label styleClass="field-label" text="Username" />
+                                        <TextField fx:id="txtUsername" promptText="Enter username" />
+                                        <Label styleClass="field-label" text="Full Name" />
+                                        <TextField fx:id="txtFullName" promptText="Enter your full name" />
+                                        <Label styleClass="field-label" text="Email" />
+                                        <TextField fx:id="txtEmail" promptText="Enter email address" />
+                                        <Label styleClass="field-label" text="Password" />
+                                        <PasswordField fx:id="txtPassword" promptText="Password must be at least 6 characters and include letters and numbers" />
+                                        <Label styleClass="field-label" text="Confirm Password" />
+                                        <PasswordField fx:id="txtConfirmPassword" onAction="#handleRegister" promptText="Confirm your password" />
+                                        <Label styleClass="field-label" text="Role" />
+                                        <ComboBox fx:id="cbRole" prefWidth="476.0" value="BIDDER">
+                                            <items>
+                                                <FXCollections fx:factory="observableArrayList">
+                                                    <String fx:value="BIDDER" />
+                                                    <String fx:value="SELLER" />
+                                                </FXCollections>
+                                            </items>
+                                        </ComboBox>
+                                    </children>
+                                </VBox>
+                                <Label fx:id="lblStatus" managed="false" styleClass="error-text" text="Status" visible="false" wrapText="true" />
+                                <Label fx:id="lblValidationHint" styleClass="hint-text" text="A valid password must have at least 6 characters and include both letters and numbers." wrapText="true" />
+                                <Button mnemonicParsing="false" onAction="#handleRegister" prefWidth="180.0" styleClass="button success-button" text="COMPLETE REGISTRATION" />
+                            </children>
+                        </VBox>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </children>
+</StackPane>

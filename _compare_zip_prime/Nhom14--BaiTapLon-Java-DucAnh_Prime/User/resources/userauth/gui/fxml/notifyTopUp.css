@@ -1,0 +1,28 @@
+/* Khung chứa thông báo thành công */
+.toast-success {
+    -fx-background-color: linear-gradient(to right, #2ecc71, #27ae60);
+    -fx-background-radius: 12;
+    -fx-padding: 15 25;
+    -fx-spacing: 15;
+    -fx-alignment: center-left;
+    -fx-effect: dropshadow(three-pass-box, rgba(46, 204, 113, 0.4), 15, 0.3, 0, 5);
+}
+
+/* Chữ tiêu đề thông báo */
+.toast-title {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
+
+/* Chữ nội dung chi tiết */
+.toast-message {
+    -fx-text-fill: #e8f8f5;
+    -fx-font-size: 13px;
+}
+
+/* Icon tích xanh (nếu bạn dùng font icon) */
+.toast-icon {
+    -fx-fill: white;
+    -fx-font-size: 24px;
+}

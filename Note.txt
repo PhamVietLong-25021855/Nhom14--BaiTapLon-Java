@@ -1,0 +1,232 @@
+So sanh 2 project: Long vs Nguyen Duc Anh
+
+1. Ket luan nhanh
+
+- Hai ban rat gan nhau. Phan lon code giong nhau.
+- Khac biet thuc su chi tap trung o 9 file:
+  - data/auctions.txt
+  - data/bids.txt
+  - data/homepage-announcements.txt
+  - data/users.txt
+  - resources/userauth/gui/fxml/style.css
+  - resources/userauth/gui/fxml/bidder-dashboard-view.fxml
+  - src/userauth/dao/AuctionDAOImpl.java
+  - src/userauth/dao/AutoBidDAOImpl.java
+  - src/userauth/database/DatabaseInitializer.java
+- Diem khac nhau quan trong nhat:
+  - Ban Long co auto bid "thuc thi that" bang trigger/function trong PostgreSQL.
+  - Ban Duc Anh chi co auto bid o muc luu cau hinh + UI + CRUD, chua co co che tu dong bid khi gia thay doi.
+
+2. Khac nhau ve code
+
+2.1. DatabaseInitializer.java
+
+Ban Long:
+- Tao bang auto_bids.
+- Tao function handle_auto_bidding().
+- Tao trigger trigger_auto_bid tren bang auctions.
+- Sau khi current_highest_bid thay doi, DB se tiep tuc xet cac auto bid va tu dong chen them bid vao bang bids.
+
+Ban Duc Anh:
+- Chi tao bang auto_bids.
+- Khong co function handle_auto_bidding().
+- Khong co trigger trigger_auto_bid.
+- Khong co synchronizeDatabaseObjects().
+
+Y nghia:
+- Long da di den muc "engine" cho auto bid.
+- Duc Anh moi dung o tang luu du lieu, chua co tang thuc thi.
+
+2.2. bidder-dashboard-view.fxml
+
+Ban Long:
+- Co man hinh quan ly auto bid.
+- Nut "Change Password" nam rieng trong khu AUCTION LIST.
+- Khong gan them style.css rieng cho TableView.
+- Khu "LIVE BID FEED" dung truoc khu "Auto Bidding".
+
+Ban Duc Anh:
+- Them MenuItem "Change password" vao SETTINGS menu.
+- Bo nut "CHANGE PASSWORD" rieng trong panel chinh.
+- Gan stylesheets="@style.css" cho tableAuctions va tableAutoBid.
+- Di chuyen panel "Auto Bidding (Current auction)" len tren panel "LIVE BID FEED".
+- Them file style.css de chinh padding/cell/scrollbar cho table.
+
+Y nghia:
+- Duc Anh co chinh sua UI ro hon, dac biet o khu bidder dashboard.
+- Long nghieng ve tinh nang, Duc Anh nghieng ve trinh bay va thao tac UI.
+
+2.3. style.css
+
+Chi co o ban Duc Anh:
+- Chinh padding cho table.
+- Chinh fixed-cell-size.
+- Chinh can le table-cell.
+- Giu scrollbar hien thi ro hon.
+
+Y nghia:
+- Day la phan UI polish.
+- It anh huong business logic, co the nhap rieng de lam giao dien de nhin hon.
+
+2.4. AuctionDAOImpl.java
+
+Ban Long:
+- Khi update auction loi, thong diep exception co them SQLState va detail.
+
+Ban Duc Anh:
+- Chi nem loi tong quat "Unable to update the auction in PostgreSQL."
+
+Y nghia:
+- Ban Long de debug tot hon.
+- Ban Duc Anh gon hon nhung kho truy vet loi hon.
+
+2.5. AutoBidDAOImpl.java
+
+Ban Long:
+- Con dong System.out.println(resultSet) trong findAllUserAutoBid().
+
+Ban Duc Anh:
+- Da bo dong debug print do.
+
+Y nghia:
+- Ban Duc Anh sach hon, tranh log rac.
+
+2.6. Cac file data/*.txt
+
+Chi co o ban Duc Anh:
+- data/auctions.txt
+- data/bids.txt
+- data/homepage-announcements.txt
+- data/users.txt
+
+Y nghia:
+- Day co ve la du lieu mau hoac dau vet tu co che luu file cu.
+- Neu project dang chay theo PostgreSQL la chinh, cac file nay khong phai phan merge quan trong.
+
+3. Khac nhau ve cach thuc thi
+
+3.1. Ban Long
+
+Cach thuc thi auto bid:
+- User tao cau hinh auto bid.
+- Cau hinh duoc luu vao bang auto_bids.
+- Khi gia auction thay doi, trigger o DB duoc kich hoat.
+- Function handle_auto_bidding() tu tim auto bid hop le, tinh next bid, chen bid moi, cap nhat winner va current_highest_bid.
+
+Dac diem:
+- Auto bid chay o tang database.
+- Co tinh "tu dong thuc su".
+- It phu thuoc vao UI.
+- Manh hon cho logic dong thoi.
+
+Rui ro:
+- Kho debug hon vi logic nam trong PostgreSQL.
+- Can quan ly schema/trigger can than.
+
+3.2. Ban Duc Anh
+
+Cach thuc thi auto bid:
+- User tao/sua/xoa auto bid tren UI.
+- Du lieu duoc luu vao bang auto_bids.
+- Khi dat bid thuong, khong thay co co che nao tiep tuc kich auto bid cua nguoi khac.
+
+Dac diem:
+- De hieu hon o muc code Java va UI.
+- Co giao dien quan ly auto bid gon hon.
+- Nhung chua du de goi la auto bidding hoan chinh.
+
+Rui ro:
+- User nghi rang da co auto bid, nhung thuc te he thong chi luu cau hinh.
+- Tinh nang de gay hieu nham neu dem vao ban final.
+
+4. Suggestion: nen giu phan nao cua moi ben
+
+4.1. Nen giu tu ban Long
+
+Bat buoc nen giu:
+- src/userauth/database/DatabaseInitializer.java
+  Ly do: day la phan duy nhat co co che thuc thi auto bid that su.
+
+Nen giu:
+- Huong xu ly auto bid bang trigger/function trong DB.
+- Thong diep loi chi tiet hon trong src/userauth/dao/AuctionDAOImpl.java.
+
+Can sua them neu lay tu Long:
+- Bo dong System.out.println(resultSet) trong src/userauth/dao/AutoBidDAOImpl.java.
+
+4.2. Nen giu tu ban Duc Anh
+
+Nen giu:
+- resources/userauth/gui/fxml/style.css
+  Ly do: day la UI polish nhe, it rui ro.
+
+- Mot so dieu chinh layout trong resources/userauth/gui/fxml/bidder-dashboard-view.fxml:
+  - Dua "Change password" vao SETTINGS menu.
+  - Gan style.css cho tableAuctions va tableAutoBid.
+  - Co the giu cach sap xep panel neu thay hop ly sau khi test UI.
+
+- Ban AutoBidDAOImpl khong con debug print.
+
+4.3. Khong nen lay nguyen trang tu Duc Anh
+
+Khong nen lay nguyen file sau neu muc tieu la auto bid hoan chinh:
+- src/userauth/database/DatabaseInitializer.java
+
+Ly do:
+- Se mat trigger/function auto bid.
+- Tinh nang se lui tu "auto thuc thi" thanh "chi luu cau hinh".
+
+Khong nen coi data/*.txt la nguon merge chinh:
+- Neu he thong dang chay PostgreSQL, data file khong phai source of truth.
+- Chi nen dung neu muon giu du lieu mau/test du lieu.
+
+5. Huong merge toi uu de xuat
+
+Phuong an toi uu:
+
+- Lay business logic/DB execution tu Long.
+- Lay UI polish tu Duc Anh.
+- Bo data/*.txt cua Duc Anh, tru khi can du lieu mau.
+
+Cu the theo file:
+
+- src/userauth/database/DatabaseInitializer.java
+  => Giu ban Long.
+
+- src/userauth/dao/AuctionDAOImpl.java
+  => Giu ban Long.
+
+- src/userauth/dao/AutoBidDAOImpl.java
+  => Lay ban Long, nhung xoa dong System.out.println(resultSet).
+
+- resources/userauth/gui/fxml/style.css
+  => Lay ban Duc Anh.
+
+- resources/userauth/gui/fxml/bidder-dashboard-view.fxml
+  => Merge tay:
+     + Giu cau truc auto bid cua Long.
+     + Lay style.css hookup cua Duc Anh.
+     + Lay cach dua "Change password" vao SETTINGS menu cua Duc Anh.
+     + Test lai vi tri panel "Auto Bidding" va "LIVE BID FEED" de chon layout de dung hon.
+
+- data/*.txt
+  => Khong merge vao ban final neu da dung PostgreSQL.
+
+6. Danh gia cuoi cung
+
+Neu muc tieu la:
+
+- "Auto bid phai chay that"
+  => Chon Long lam nen.
+
+- "UI bidder dashboard de nhin hon"
+  => Lay them phan giao dien cua Duc Anh.
+
+Ban toi uu nhat khong phai chon 1 trong 2, ma la:
+- Long cho execution
+- Duc Anh cho giao dien
+
+Neu lam merge thuc te, file can merge tay ky nhat la:
+- DatabaseInitializer.java
+- bidder-dashboard-view.fxml
+- AutoBidDAOImpl.java

@@ -1,0 +1,1255 @@
+CAP NHAT KIEN TRUC - RESERVED BALANCE VA WALLET-AWARE AUTOBID
+
+Ngay cap nhat
+- 2026-05-03
+
+Tom tat thay doi
+- He thong wallet khong con chi co `balance`.
+- Wallet hien tai co 3 trang thai logic:
+  - `balance`: tong tien trong vi
+  - `reservedBalance`: tien dang bi khoa cho cac auction ma user dang dan dau
+  - `availableBalance`: tien kha dung de dat bid moi
+
+Anh huong len kien truc tong the
+- Tang model:
+  - `Wallet` duoc mo rong voi `reservedBalance`
+- Tang DAO:
+  - `WalletDAOImpl` doc/ghi `reserved_balance`
+  - `AuctionDAOImpl` co them transaction `saveBidAndUpdateAuction(...)`
+- Tang service:
+  - `WalletService` co them reserve/release/capture logic
+  - `AuctionService` duoc inject `WalletService`
+  - `AuctionService` gio kiem tra available balance truoc khi nhan bid tay
+  - `AuctionService` settle tien khi auction dong
+- Tang database:
+  - bang `wallets` co them cot `reserved_balance`
+  - trigger autobid cua Long duoc nang cap de wallet-aware
+- Tang UI:
+  - bidder dashboard hien `Available / Reserved / Total`
+
+Thay doi nghiep vu chinh
+1. Dat bid tay
+- User phai du `availableBalance`
+- Neu user dang la winner hien tai cua cung auction do, reserve cu duoc tinh lam credit
+
+2. Autobid
+- Trigger DB van la engine chinh
+- Autobid chi duoc chon neu bidder con du available
+- Trigger tu dong dong bo reserve theo winner cuoi cung
+
+3. Khi bi outbid
+- Reserve cua winner cu duoc giai phong
+- Reserve cua winner moi duoc khoa lai
+
+4. Khi auction ket thuc
+- Neu co winner va reserve hop le:
+  - tien bi tru that
+  - auction chuyen `PAID`
+- Neu khong:
+  - auction giu `FINISHED`
+
+5. Khi auction bi cancel
+- Reserve cua winner hien tai duoc release
+
+Ly do ky thuat
+- Muc tieu la lay duoc co che wallet co tac dong that tu Prime
+- Nhung van giu autobid DB-trigger cua Long
+- Cach nay tranh viec ton tai hai engine autobid khac nhau trong cung project
+
+Trang thai hien tai cua project sau cap nhat nay
+- Auth/admin: theo huong Kiet
+- Autobid: theo huong Long, nhung da wallet-aware
+- Wallet/top-up: theo huong DucAnh2, nhung da duoc nang cap thanh ledger co reserve
+- UI bidder: hien thi ro total/reserved/available
+
+PHÂN TÍCH TỔNG THỂ TOÀN BỘ PROJECT HIỆN TẠI
+
+1. Tổng quan chung
+
+Tên project hiện tại là một ứng dụng desktop JavaFX cho hệ thống đấu giá sản phẩm. Project đang chạy theo kiến trúc nhiều tầng khá rõ:
+- tầng khởi động và điều phối ứng dụng
+- tầng model
+- tầng DAO truy cập PostgreSQL
+- tầng service chứa nghiệp vụ
+- tầng controller làm cầu nối với UI
+- tầng JavaFX FXML + controller giao diện
+- tầng utility và validation
+
+Project hiện tại không còn là bản gốc đơn thuần. Nó đã là một bản tích hợp gồm:
+- phần auth/admin mạnh hơn từ nhánh Kiet
+- phần autobid hoạt động thật từ nhánh Long
+- phần polish giao diện bidder từ nhánh Đức Anh
+- phần wallet/top-up được tách riêng từ DucAnh2
+
+Vì vậy khi phân tích project này, cần hiểu nó là một codebase đã được hợp nhất theo hướng dùng được, không phải một nhánh đơn lẻ.
+
+==================================================
+2. Cấu trúc thư mục ở mức root
+==================================================
+
+Các thư mục và file quan trọng ở root:
+
+`User/`
+- Đây là phần source thực tế của ứng dụng.
+- Bao gồm:
+  - `src/` chứa Java source
+  - `resources/` chứa FXML, CSS, config
+  - `data/` chứa dữ liệu text cũ
+
+`javafx-sdk/`
+- JavaFX SDK local dùng cho chạy thủ công bằng PowerShell script.
+
+`lib/`
+- Chứa JDBC driver PostgreSQL local nếu không dùng Maven cache.
+
+`out/`
+- Thư mục output build/chạy cục bộ.
+
+`_compare_zip/`, `_compare_zip_anh/`, `_compare_zip_anh2/`
+- Đây không phải một phần runtime của ứng dụng.
+- Đây là thư mục tạm dùng để so sánh các bản zip khác nhau trong quá trình merge và phân tích.
+- Có thể xem là artifact hỗ trợ tích hợp, không phải source chính của app.
+
+`.idea/`
+- Metadata của IDE.
+
+`pom.xml`
+- Cấu hình Maven của project.
+
+`run-javafx.ps1`
+- Script chạy ứng dụng bằng JavaFX SDK local.
+
+`Note.txt`, `Note2.txt`, `FinalNote.txt`
+- Các file ghi chú/phân tích trong quá trình làm việc.
+- Không ảnh hưởng runtime.
+
+==================================================
+3. Công nghệ và phụ thuộc chính
+==================================================
+
+Theo `pom.xml`, project dùng:
+- Java 21
+- JavaFX 25.0.2
+- PostgreSQL JDBC 42.7.5
+
+Ý nghĩa:
+- UI chạy bằng JavaFX, không phải web.
+- Data persistence hiện dùng PostgreSQL thật, không còn dựa trên file `.txt`.
+- Có thể build bằng Maven, nhưng cũng có hỗ trợ chạy trực tiếp bằng script PowerShell.
+
+==================================================
+4. Phân tích file build và chạy
+==================================================
+
+4.1. `pom.xml`
+
+Vai trò:
+- Là file cấu hình build chính.
+
+Điểm đáng chú ý:
+- `sourceDirectory` trỏ thẳng vào `User/src`
+- `resources` trỏ vào `User/resources`
+- Dùng `maven-compiler-plugin`
+- Dùng `javafx-maven-plugin`
+- Main class là `userauth.Main`
+
+Ý nghĩa:
+- Project không theo layout Maven mặc định `src/main/java`, `src/main/resources`
+- Thay vào đó đang giữ cấu trúc cũ riêng của nhóm
+- Maven đã được cấu hình lại để chấp nhận cấu trúc đó
+
+4.2. `run-javafx.ps1`
+
+Vai trò:
+- Dùng để compile và chạy app mà không cần IDE.
+
+Những gì script này làm:
+- Xác định JavaFX SDK local
+- Xác định PostgreSQL driver
+- Compile toàn bộ file `.java`
+- Copy resources sang output dir
+- Truyền các biến database qua `-D`
+- Có cờ `DisableScheduler`
+- Cuối cùng chạy `userauth.Main`
+
+Ý nghĩa:
+- Script này là đường chạy thực tế quan trọng nếu máy không có Maven chạy sẵn
+- Nó cũng cho thấy app phụ thuộc rất rõ vào:
+  - JavaFX module path
+  - PostgreSQL JDBC driver
+
+==================================================
+5. Tầng entry point và composition root
+==================================================
+
+5.1. `User/src/userauth/Main.java`
+
+Vai trò:
+- Là điểm vào chính của ứng dụng.
+- Kế thừa `Application` của JavaFX.
+
+Những gì file này làm:
+- Gọi `DatabaseInitializer.initialize()`
+- Khởi tạo:
+  - `UserDAO` / `AuthService` / `AuthController`
+  - `AuctionDAO` / `AuctionService` / `AuctionController`
+  - `AutoBidDAO` / `AutobidService` / `AutobidController`
+  - `WalletDAO` / `WalletService` / `WalletController`
+  - `HomepageContentService` / `HomepageController`
+- Quyết định có bật `AuctionScheduler` hay không
+- Tạo `AuthFrame`
+- Hiển thị giao diện home
+
+Ý nghĩa kiến trúc:
+- `Main.java` đang đóng vai trò composition root đúng nghĩa
+- Toàn bộ dependency được tạo tập trung ở đây
+- Đây là điểm rất tốt vì tránh việc controller UI tự tạo service/dao lung tung
+
+Điểm mạnh:
+- Dễ nhìn dependency graph
+- Dễ thay service/dao nếu sau này refactor
+
+Điểm hạn chế:
+- Chưa có dependency injection framework
+- Khi ứng dụng lớn hơn, `Main` có thể phình to
+
+==================================================
+6. Tầng database
+==================================================
+
+Thư mục:
+- `User/src/userauth/database`
+
+Gồm:
+- `DatabaseConfig.java`
+- `DatabaseConnection.java`
+- `DatabaseInitializer.java`
+
+6.1. `DatabaseConfig.java`
+
+Vai trò:
+- Đọc cấu hình database từ:
+  - system property
+  - environment variable
+  - file resource `database.properties`
+
+Những giá trị chính:
+- jdbcUrl
+- adminJdbcUrl
+- host
+- port
+- database
+- username
+- password
+- sslMode
+- schema
+- createDatabaseIfMissing
+
+Ý nghĩa:
+- Cấu hình DB có khả năng override động
+- Phù hợp cho chạy local hoặc đổi môi trường
+
+Điểm mạnh:
+- Có fallback rõ ràng
+- Không hardcode toàn bộ chỉ vào 1 nguồn duy nhất
+
+Điểm yếu:
+- Hiện tại resource đang chứa thông tin DB thật
+
+6.2. `DatabaseConnection.java`
+
+Vai trò:
+- Mở kết nối PostgreSQL
+- Quản lý connection pool tự viết
+
+Điểm kỹ thuật quan trọng:
+- Có `MAX_POOLED_CONNECTIONS`
+- Dùng `BlockingQueue<Connection>` cho idle pool
+- Dùng proxy `Connection` để intercept `close()`
+- Khi `close()`, connection không bị đóng ngay mà được recycle vào pool
+- Có reset trạng thái cơ bản:
+  - autoCommit
+  - readOnly
+  - warnings
+
+Ý nghĩa:
+- Đây là một pool kết nối thủ công khá ổn cho bài tập lớn
+- Không dùng HikariCP hay thư viện pool ngoài
+
+Điểm mạnh:
+- Có reuse kết nối
+- Có shutdown hook dọn pool
+- Có timeout khi hết connection
+
+Điểm yếu:
+- Tự viết pool thì vẫn có rủi ro edge case
+- Không mạnh bằng thư viện chuyên dụng
+- Việc debug pool custom sẽ khó hơn khi scale
+
+6.3. `DatabaseInitializer.java`
+
+Vai trò:
+- Tạo schema cần thiết cho app
+- Seed default admin
+- Đồng bộ object DB đặc biệt như trigger/function
+
+Các bảng đang được tạo:
+- `users`
+- `auctions`
+- `bids`
+- `homepage_announcements`
+- `wallets`
+- `topup_transactions`
+- `auto_bids`
+
+Các object DB đặc biệt:
+- function `handle_auto_bidding()`
+- trigger `trigger_auto_bid`
+
+Nghiệp vụ quan trọng:
+- `ensureDefaultAdmin()`
+- upsert tài khoản admin mặc định
+
+Ý nghĩa:
+- File này là trục giao nhau của gần như mọi tính năng lớn
+- Đây là file quan trọng nhất về mặt tích hợp
+
+Điểm mạnh:
+- Toàn bộ schema chính nằm cùng một nơi
+- Có seed admin mặc định
+- Có hỗ trợ autobid ở tầng DB, không chỉ ở UI/service
+
+Điểm yếu:
+- Dồn nhiều trách nhiệm vào một file
+- Khi thêm nhiều module nữa, file này sẽ tiếp tục phình
+
+==================================================
+7. Resource database
+==================================================
+
+7.1. `User/resources/userauth/database.properties`
+
+Vai trò:
+- Chứa cấu hình DB mặc định
+
+Điểm rất quan trọng:
+- File này hiện đang chứa thông tin kết nối thật, bao gồm:
+  - host
+  - username
+  - password
+
+Đánh giá:
+- Đây là rủi ro bảo mật rõ ràng
+- Không nên commit credential thật vào source
+
+Đề xuất:
+- Chuyển password ra environment variable
+- Giữ file mẫu không có secret
+
+==================================================
+8. Tầng model
+==================================================
+
+Thư mục:
+- `User/src/userauth/model`
+
+Các file:
+- `Entity.java`
+- `Role.java`
+- `User.java`
+- `Admin.java`
+- `Seller.java`
+- `Bidder.java`
+- `Item.java`
+- `AuctionItem.java`
+- `AuctionStatus.java`
+- `BidTransaction.java`
+- `HomepageAnnouncement.java`
+- `AutoBid.java`
+- `Wallet.java`
+- `PaymentMethod.java`
+- `TopUpStatus.java`
+- `TopUpTransaction.java`
+
+8.1. Mô hình người dùng
+
+`User.java`
+- abstract base class
+- field chính:
+  - username
+  - password
+  - fullName
+  - email
+  - role
+  - status
+  - createdAt
+  - updatedAt
+
+`Admin.java`, `Seller.java`, `Bidder.java`
+- Là các subclass của `User`
+- Dùng để biểu diễn role bằng type cụ thể
+
+`Role.java`
+- enum:
+  - BIDDER
+  - SELLER
+  - ADMIN
+
+Ý nghĩa:
+- Thiết kế role hiện tại là khá rõ ràng
+- App vừa lưu `role` ở DB, vừa ánh xạ nó sang subtype object
+
+8.2. Mô hình auction
+
+`Entity.java`
+- base class chỉ giữ `id`
+
+`Item.java`
+- abstract class cho item chung
+- field:
+  - name
+  - description
+  - startPrice
+  - currentHighestBid
+  - startTime
+  - endTime
+  - category
+  - imageSource
+  - createdAt
+  - updatedAt
+
+`AuctionItem.java`
+- mở rộng `Item`
+- thêm:
+  - sellerId
+  - winnerId
+  - status
+
+`AuctionStatus.java`
+- enum:
+  - OPEN
+  - RUNNING
+  - FINISHED
+  - PAID
+  - CANCELED
+
+Ý nghĩa:
+- Dữ liệu auction được mô hình hóa khá đầy đủ
+- Hỗ trợ cả vòng đời đấu giá lẫn metadata UI như ảnh
+
+8.3. Mô hình transaction và homepage
+
+`BidTransaction.java`
+- lưu mỗi lần đặt giá
+- field:
+  - auctionId
+  - bidderId
+  - amount
+  - timestamp
+  - status
+
+`HomepageAnnouncement.java`
+- lưu nội dung admin đưa lên homepage
+- hỗ trợ liên kết tới auction cụ thể
+
+8.4. Mô hình autobid
+
+`AutoBid.java`
+- giữ:
+  - auctionId
+  - bidderId
+  - maxPrice
+  - increment
+
+Ý nghĩa:
+- Đây là input cấu hình cho trigger autobid trong DB
+
+8.5. Mô hình wallet
+
+`Wallet.java`
+- giữ:
+  - userId
+  - balance
+  - createdAt
+  - updatedAt
+
+`PaymentMethod.java`
+- enum phương thức top-up
+
+`TopUpStatus.java`
+- enum trạng thái top-up
+
+`TopUpTransaction.java`
+- lưu lịch sử nạp tiền
+
+Kết luận tầng model:
+- Model của project hiện đã đủ để biểu diễn gần hết nghiệp vụ chính:
+  - user
+  - auction
+  - bid
+  - homepage
+  - autobid
+  - wallet
+
+==================================================
+9. Tầng DAO
+==================================================
+
+Thư mục:
+- `User/src/userauth/dao`
+
+Các interface/implementation:
+- `UserDAO` / `UserDAOImpl`
+- `AuctionDAO` / `AuctionDAOImpl`
+- `HomepageAnnouncementDAO` / `HomepageAnnouncementDAOImpl`
+- `AutoBidDAO` / `AutoBidDAOImpl`
+- `WalletDAO` / `WalletDAOImpl`
+
+9.1. `UserDAOImpl.java`
+
+Vai trò:
+- CRUD và lookup cho user
+
+Chức năng chính:
+- save
+- update
+- findByUsername
+- findByEmail
+- findAll
+
+Điểm tốt:
+- Query rõ ràng
+- Map đúng subclass `Admin/Seller/Bidder`
+- Lookup theo username/email không phân biệt hoa thường
+
+9.2. `AuctionDAOImpl.java`
+
+Vai trò:
+- Truy cập dữ liệu auction và bid
+
+Chức năng chính:
+- save/update/delete auction
+- find auction by id
+- find all auctions
+- save bid
+- find bids by auction
+- find all bids
+
+Điểm kỹ thuật tốt:
+- `deleteAuction` dùng transaction để xóa bid trước rồi mới xóa auction
+- winner_id nullable được xử lý đúng
+- message lỗi update auction đã chi tiết hơn
+
+9.3. `HomepageAnnouncementDAOImpl.java`
+
+Vai trò:
+- Lưu nội dung hiển thị homepage
+
+Điểm tốt:
+- linked auction xử lý nullable ổn
+- mapping đơn giản, đủ dùng
+
+9.4. `AutoBidDAOImpl.java`
+
+Vai trò:
+- CRUD cho cấu hình autobid
+
+Điểm tốt:
+- Có query tìm autobid theo cặp `auction_id + bidder_id`
+- Có query list toàn bộ autobid của một bidder
+
+Ý nghĩa:
+- Service layer có thể enforce quy tắc “mỗi bidder chỉ có một autobid cho mỗi auction”
+
+9.5. `WalletDAOImpl.java`
+
+Vai trò:
+- Truy cập `wallets` và `topup_transactions`
+
+Điểm tốt:
+- Đã được làm sạch so với bản gốc:
+  - không dùng `printStackTrace()`
+  - ném exception rõ ràng hơn
+- Có đủ method cho:
+  - wallet hiện tại
+  - top-up history
+  - pending request
+
+Kết luận tầng DAO:
+- DAO layer của project hiện tại đã chuyển hẳn sang PostgreSQL
+- File `.txt` trong `User/data` gần như chỉ còn là di sản cũ, không thấy được tham chiếu trong source hiện tại
+
+==================================================
+10. Tầng service
+==================================================
+
+Thư mục:
+- `User/src/userauth/service`
+
+Gồm:
+- `AuthService.java`
+- `AuctionService.java`
+- `AutobidService.java`
+- `HomepageContentService.java`
+- `WalletService.java`
+- `AuctionScheduler.java`
+
+10.1. `AuthService.java`
+
+Vai trò:
+- Là business layer của user/auth/admin
+
+Chức năng chính:
+- đăng ký
+- đăng nhập
+- đổi mật khẩu
+- promote user lên admin
+- demote admin xuống bidder
+- khóa/mở khóa tài khoản
+
+Điểm nghiệp vụ quan trọng:
+- Không cho tạo `ADMIN` từ màn đăng ký
+- Chỉ default admin mới được promote/demote admin
+- Default admin không được đổi mật khẩu
+
+Ý nghĩa:
+- Đây là phần mạnh nhất của nhánh Kiet
+- Nó giữ được ràng buộc nghiệp vụ admin chặt hơn các nhánh còn lại
+
+10.2. `AuctionService.java`
+
+Vai trò:
+- Business layer lớn nhất của toàn project
+
+Chức năng chính:
+- tạo auction
+- sửa auction
+- xóa/cancel auction
+- đọc auction theo seller / toàn hệ thống
+- đặt giá
+- đóng auction thủ công
+- early-close countdown cho admin
+- refresh trạng thái auction theo thời gian
+
+Điểm kỹ thuật nổi bật:
+- Dùng `ConcurrentHashMap<Integer, ReentrantLock>` để khóa theo từng auction khi place bid
+- Điều này giảm race condition khi nhiều bid cùng đến
+
+Luồng đặt giá:
+- kiểm tra tồn tại auction
+- kiểm tra trạng thái phải là `RUNNING`
+- kiểm tra thời gian hợp lệ
+- kiểm tra giá bid > start price
+- kiểm tra giá bid > current highest bid
+- lưu bid
+- cập nhật auction
+- refresh snapshot nếu đang có countdown close sớm
+
+Tính năng đặc biệt:
+- `adminEarlyCloseStates`
+- admin có thể kích hoạt đếm ngược đóng sớm
+- nếu không có bid mới, auction sẽ bị kết thúc sớm
+- nếu có biến động bid/giá, countdown reset
+
+Đánh giá:
+- Đây là service quan trọng nhất về mặt nghiệp vụ đấu giá
+- Tương đối tốt với quy mô bài tập lớn
+
+10.3. `AutobidService.java`
+
+Vai trò:
+- Business logic cho cấu hình autobid
+
+Chức năng:
+- create
+- update
+- delete
+- đọc autobid theo bidder
+
+Điểm nghiệp vụ:
+- validate `maxPrice > 0`
+- validate `increment > 0`
+- không cho trùng autobid trên cùng một auction cho cùng bidder
+- chỉ chủ sở hữu autobid mới được sửa/xóa
+
+Giới hạn:
+- Service này chỉ quản lý cấu hình
+- Cơ chế tự nhảy giá thật nằm ở trigger/function DB chứ không nằm trong Java service
+
+10.4. `HomepageContentService.java`
+
+Vai trò:
+- Quản lý nội dung trang chủ
+
+Chức năng:
+- lấy danh sách announcement
+- lưu announcement mới hoặc update
+- xóa announcement
+
+Điểm đáng chú ý:
+- dữ liệu được sort theo `updatedAt` giảm dần
+- có normalize input
+- có validate title/summary/schedule
+
+10.5. `WalletService.java`
+
+Vai trò:
+- Business logic cho wallet và top-up
+
+Chức năng:
+- tạo wallet
+- đọc wallet
+- tạo top-up request
+- confirm top-up
+- cancel top-up
+- cộng/trừ tiền
+- đọc lịch sử top-up
+- đọc pending top-up
+
+Điểm nghiệp vụ hiện tại:
+- top-up request được auto confirm ngay
+- đây là behavior prototype, không phải payment flow thật
+
+Ý nghĩa:
+- Wallet hiện tại phù hợp cho demo và top-up mô phỏng
+- Chưa đủ để nói là hệ thống thanh toán hoàn chỉnh
+
+10.6. `AuctionScheduler.java`
+
+Vai trò:
+- Thread nền gọi `refreshAuctionStatuses()` mỗi giây
+
+Ý nghĩa:
+- App desktop nhưng vẫn có cảm giác “live”
+- auction tự chuyển từ OPEN sang RUNNING, rồi FINISHED mà không cần thao tác tay
+
+==================================================
+11. Tầng controller
+==================================================
+
+Thư mục:
+- `User/src/userauth/controller`
+
+Các file:
+- `AuthController.java`
+- `AuctionController.java`
+- `AutobidController.java`
+- `HomepageController.java`
+- `WalletController.java`
+
+Vai trò chung:
+- Là lớp trung gian giữa UI và service
+- Quy ước phổ biến trong project:
+  - thành công trả `"SUCCESS"`
+  - thất bại trả message string
+  - một số method đọc dữ liệu trả object/list trực tiếp
+
+11.1. `AuthController.java`
+- bọc `AuthService`
+- phù hợp cho UI login/register/change password/admin action
+
+11.2. `AuctionController.java`
+- bọc `AuctionService`
+- ngoài CRUD auction và bid còn bọc early-close countdown
+
+11.3. `AutobidController.java`
+- bọc `AutobidService`
+- chủ yếu phục vụ bidder dashboard
+
+11.4. `HomepageController.java`
+- bọc `HomepageContentService`
+- có check role admin trước khi save/delete announcement
+
+11.5. `WalletController.java`
+- bọc `WalletService`
+- cung cấp method lấy balance nhanh cho UI bidder
+
+Đánh giá tầng controller:
+- Mỏng, dễ hiểu
+- Phù hợp kiểu app desktop JavaFX
+- Tuy nhiên cách dùng string `"SUCCESS"`/message sẽ kém type-safe hơn result object chuẩn hóa
+
+==================================================
+12. Tầng validation và utility
+==================================================
+
+12.1. `UserValidator.java`
+
+Vai trò:
+- validate username, password, email
+
+Quy tắc hiện tại:
+- username: 6-20 ký tự
+- password: ít nhất 6 ký tự, có chữ và số
+- email: regex cơ bản
+
+Ghi chú:
+- Có một số comment bị lỗi encoding cũ, nhưng logic vẫn dùng được
+
+12.2. `PasswordUtil.java`
+
+Vai trò:
+- hash và verify password
+
+Cách làm:
+- SHA-256 đơn giản
+
+Đánh giá:
+- Tốt hơn plaintext
+- Nhưng chưa phải cách an toàn cấp production
+- Nếu nâng cấp nên dùng bcrypt/argon2
+
+12.3. `AdminDefaults.java`
+
+Vai trò:
+- giữ hằng số cho default admin
+
+Giá trị:
+- username = `admin`
+- password = `admin123`
+
+Đánh giá:
+- Thuận tiện cho demo
+- Nhưng ở production phải bỏ hoặc thay bằng init flow an toàn hơn
+
+==================================================
+13. Tầng UI controller JavaFX
+==================================================
+
+Thư mục:
+- `User/src/userauth/gui/fxml`
+
+Đây là phần lớn nhất của project về số file. Có thể chia thành các nhóm sau.
+
+13.1. Khung điều phối UI
+
+`AuthFrame.java`
+- Là lớp rất quan trọng
+- Load toàn bộ major views:
+  - home
+  - login
+  - register
+  - admin dashboard
+  - admin homepage manager
+  - seller dashboard
+  - bidder dashboard
+- Wire toàn bộ controller
+- Chuyển view theo role
+- Mở dialog đổi mật khẩu và lịch sử bid
+
+Ý nghĩa:
+- `AuthFrame` là UI composition root
+- Nếu `Main` là composition root của dependency, thì `AuthFrame` là composition root của scene/view/controller
+
+`AppShellController.java`
+- Là shell chứa content view chính
+
+`FxmlRuntime.java`
+- helper load FXML
+- helper tạo modal dialog
+- auto apply `UiText`
+
+13.2. Auth UI
+
+`LoginViewController.java`
+- quản lý đăng nhập
+- có:
+  - remember me checkbox
+  - show password
+  - async login
+  - hiệu ứng shake khi lỗi
+
+`RegisterViewController.java`
+- quản lý đăng ký
+- cho phép chọn:
+  - BIDDER
+  - SELLER
+- không cho tạo ADMIN
+- có live validation
+
+`ChangePasswordDialogController.java`
+- dialog đổi mật khẩu
+
+13.3. Home / landing UI
+
+`HomeViewController.java`
+- load homepage announcements
+- load upcoming/running auctions
+- có animation intro, scroll reveal, live refresh
+- dùng card component cho auction/announcement/empty state
+
+Các controller card:
+- `HomeAuctionCardController.java`
+- `HomeAnnouncementCardController.java`
+- `HomeEmptyCardController.java`
+
+Ý nghĩa:
+- Home screen hiện không còn là form đơn giản
+- Nó là một dashboard/landing view thực sự của ứng dụng
+
+13.4. Admin UI
+
+`AdminDashboardViewController.java`
+- quản lý user
+- quản lý auction ở góc nhìn admin
+- xem thống kê
+- promote/demote admin
+- khóa/mở khóa tài khoản
+- start/cancel early-close countdown
+- mở homepage manager
+
+Đặc điểm:
+- refresh định kỳ
+- có chart trạng thái auction
+- có sort option cho bảng auction
+
+`AdminHomepageViewController.java`
+- CMS nhỏ cho homepage
+- tạo/sửa/xóa announcement
+- liên kết announcement với auction
+- xem preview
+
+13.5. Seller UI
+
+`SellerDashboardViewController.java`
+- tạo auction
+- sửa auction
+- xóa/cancel auction
+- đóng auction
+- preview ảnh/sản phẩm theo thời gian thực
+- thống kê auction của seller
+
+Đặc điểm:
+- có chọn ảnh local
+- có spinner duration
+- có refresh định kỳ
+
+13.6. Bidder UI
+
+`BidderDashboardViewController.java`
+- là controller UI phức tạp nhất ở phía bidder
+
+Chức năng:
+- xem danh sách auction
+- lọc trạng thái
+- search
+- xem detail auction
+- place bid
+- xem live bid feed
+- xem price trend chart
+- xem bid history
+- create/update/delete autobid
+- xem wallet balance
+- mở top-up dialog
+- đổi ngôn ngữ
+- đổi mật khẩu
+
+Đặc điểm:
+- refresh auction và autobid
+- refresh balance wallet
+- UI đã là bản merge tương đối hoàn chỉnh
+
+13.7. Wallet UI
+
+`TopUpDialogController.java`
+- xử lý top-up dialog
+- validate amount
+- chọn payment method
+- gọi wallet controller async
+
+13.8. Infrastructure UI
+
+`UiAsync.java`
+- chạy async background thread rồi callback về JavaFX thread
+
+`UiEffects.java`
+- entrance / pulse / shake animation
+
+`UiText.java`
+- hệ thống dịch EN <-> VI
+- apply cho:
+  - label
+  - prompt text
+  - menu
+  - table column
+  - combo box
+
+`NotificationUtil.java`
+- toast success/info/warning/error
+- modal confirm
+- modal input
+
+`AuctionImageUtil.java`
+- xử lý image source local/url
+- fallback initial nếu không có ảnh
+- cache ảnh
+
+`AuctionViewFormatter.java`
+- format tiền
+- format thời gian
+- format lịch auction
+
+`AppLanguage.java`
+- enum ngôn ngữ
+
+Kết luận tầng UI controller:
+- Đây là phần đầu tư nhiều nhất của project
+- App không chỉ là CRUD thô, mà đã có:
+  - animation
+  - toasts
+  - modal
+  - đa ngôn ngữ
+  - dashboard thực sự
+
+==================================================
+14. Tầng resource FXML và CSS
+==================================================
+
+Thư mục:
+- `User/resources/userauth/gui/fxml`
+
+Các file chính:
+- `app-shell.fxml`
+- `home-view.fxml`
+- `login-view.fxml`
+- `register-view.fxml`
+- `admin-dashboard-view.fxml`
+- `admin-homepage-view.fxml`
+- `seller-dashboard-view.fxml`
+- `bidder-dashboard-view.fxml`
+- `change-password-dialog.fxml`
+- `bid-history-dialog.fxml`
+- `top-up-dialog.fxml`
+- `modal-message.fxml`
+- `text-input-dialog.fxml`
+- `toast-notification.fxml`
+- `home-auction-card.fxml`
+- `home-announcement-card.fxml`
+- `home-empty-card.fxml`
+- `auth-theme.css`
+- `style.css`
+
+Ý nghĩa:
+- UI được chia theo view và component khá tốt
+- `auth-theme.css` là theme chính
+- `style.css` đang hỗ trợ table look-and-feel, chủ yếu do nhánh Đức Anh mang vào
+
+Điểm mạnh:
+- FXML tách view khỏi logic
+- Có component hóa cho homepage
+
+Điểm yếu:
+- Số lượng FXML nhiều, dễ gây lệch nếu controller/FXML không đồng bộ
+
+==================================================
+15. Dữ liệu text cũ trong `User/data`
+==================================================
+
+Các file:
+- `users.txt`
+- `auctions.txt`
+- `bids.txt`
+- `homepage-announcements.txt`
+
+Quan sát:
+- Không thấy source hiện tại còn tham chiếu đến chúng
+
+Kết luận:
+- Đây nhiều khả năng là dữ liệu di sản từ giai đoạn trước khi project chuyển hẳn sang PostgreSQL
+- Có thể giữ làm tư liệu, nhưng không còn là persistence layer chính
+
+==================================================
+16. Luồng nghiệp vụ chính của toàn app
+==================================================
+
+16.1. Luồng khởi động
+- chạy `Main`
+- nạp config DB
+- tạo bảng nếu chưa có
+- seed default admin
+- đồng bộ trigger autobid
+- khởi động scheduler
+- mở home view
+
+16.2. Luồng đăng ký / đăng nhập
+- user vào home
+- mở register hoặc login
+- register chỉ tạo BIDDER hoặc SELLER
+- login trả user object theo role
+- `AuthFrame` điều hướng dashboard theo role
+
+16.3. Luồng seller
+- seller tạo auction
+- auction ban đầu ở trạng thái OPEN
+- scheduler sẽ chuyển OPEN -> RUNNING khi đến giờ
+- seller có thể:
+  - sửa nếu chưa có bid
+  - xóa hoặc cancel
+  - đóng thủ công
+
+16.4. Luồng bidder
+- bidder xem list auction
+- bidder xem detail
+- bidder đặt giá
+- bid được lưu vào bảng `bids`
+- auction được update current highest bid / winner
+- nếu auction có autobid đối kháng thì trigger DB sẽ tự nhảy giá tiếp
+
+16.5. Luồng autobid
+- bidder tạo cấu hình autobid cho auction
+- cấu hình lưu ở `auto_bids`
+- khi `current_highest_bid` đổi, trigger DB chạy
+- function `handle_auto_bidding()` sẽ:
+  - tìm autobid phù hợp
+  - sinh bid mới
+  - update auction nếu cần
+
+16.6. Luồng admin
+- xem danh sách user
+- khóa/mở khóa user
+- promote/demote admin
+- xem toàn bộ auction
+- kích hoạt hoặc hủy early-close countdown
+- quản lý homepage announcement
+
+16.7. Luồng homepage
+- admin tạo announcement
+- có thể gắn với auction
+- home view load dữ liệu announcement và auction nổi bật để hiển thị
+
+16.8. Luồng wallet
+- bidder mở top-up dialog
+- nhập amount + payment method
+- service tạo transaction PENDING
+- ngay sau đó auto confirm
+- cộng tiền vào wallet
+- bidder sidebar refresh balance
+
+==================================================
+17. Điểm mạnh của project hiện tại
+==================================================
+
+1. Kiến trúc nhiều tầng khá rõ
+- model / dao / service / controller / ui
+
+2. Chuyển hẳn từ file text sang PostgreSQL
+- dữ liệu tập trung, ổn định hơn
+
+3. Có scheduler cập nhật trạng thái auction
+- giúp app có behavior gần realtime
+
+4. Có autobid chạy thật ở tầng DB
+- đây là điểm mạnh kỹ thuật rõ ràng
+
+5. Hệ admin chặt chẽ hơn bản thường
+- default admin
+- không cho register admin
+- promote/demote có kiểm soát
+
+6. UI đã được đầu tư
+- animation
+- toast
+- modal
+- dashboard
+- đa ngôn ngữ
+
+7. Wallet đã được tách thành module riêng
+- không phá auth/admin/autobid
+
+==================================================
+18. Điểm yếu và rủi ro kỹ thuật
+==================================================
+
+1. Lộ credential DB trong source
+- Đây là rủi ro lớn nhất về bảo mật
+
+2. Password hashing còn yếu
+- SHA-256 thuần không phải best practice cho password storage
+
+3. Connection pool tự viết
+- Dùng được, nhưng rủi ro bảo trì lâu dài cao hơn dùng HikariCP
+
+4. Controller UI khá lớn
+- `BidderDashboardViewController`
+- `AdminDashboardViewController`
+- `SellerDashboardViewController`
+- `HomeViewController`
+
+Những file này đang ôm nhiều trách nhiệm:
+- load dữ liệu
+- state UI
+- action handler
+- hiệu ứng
+- formatting một phần
+
+5. Wallet hiện mới là prototype
+- auto confirm top-up
+- chưa có payment thật
+- chưa có settlement logic với auction
+
+6. `DatabaseInitializer.java` đang là điểm dồn logic
+- schema nhiều module cùng nằm một file
+- sẽ khó giữ sạch khi app còn phát triển
+
+7. Có dữ liệu cũ và thư mục compare nằm cùng workspace
+- không hại runtime
+- nhưng làm codebase trông lẫn lộn nếu nhìn ở mức repo
+
+==================================================
+19. Đề xuất cải tiến tiếp theo
+==================================================
+
+Ưu tiên cao:
+1. Tách secret DB ra khỏi `database.properties`
+2. Đổi hash password sang bcrypt hoặc argon2
+3. Thay pool custom bằng HikariCP
+
+Ưu tiên trung bình:
+4. Tách nhỏ các controller UI lớn
+5. Tạo result object chuẩn thay cho chuỗi `"SUCCESS"` / message
+6. Viết test cho service layer:
+   - AuthService
+   - AuctionService
+   - AutobidService
+   - WalletService
+
+Ưu tiên tính năng:
+7. Thêm top-up history UI
+8. Thêm admin approve/reject top-up nếu muốn payment flow rõ hơn
+9. Tích hợp wallet vào settlement sau auction, không phải trực tiếp vào placeBid ngay
+
+==================================================
+20. Kết luận cuối
+==================================================
+
+Project hiện tại là một ứng dụng đấu giá desktop JavaFX có độ hoàn thiện khá cao đối với phạm vi bài tập lớn.
+
+Nếu nhìn toàn cục, project này hiện có 4 trục chức năng lớn:
+- hệ xác thực và quản trị người dùng
+- hệ đấu giá và bid realtime
+- hệ homepage/cms cho nội dung
+- hệ mở rộng autobid và wallet
+
+Về kỹ thuật, đây không còn là một CRUD cơ bản. Nó đã có:
+- nhiều vai trò người dùng
+- DB PostgreSQL
+- scheduler nền
+- trigger nghiệp vụ ở DB
+- dashboard UI khá dày
+- toast/modal/animation
+- đa ngôn ngữ
+
+Điểm quan trọng nhất của bản hiện tại là:
+- phần auth/admin của Kiet vẫn được giữ
+- phần autobid của Long đã được tích hợp thật
+- phần bidder UI của Đức Anh đã được hấp thụ
+- phần wallet của DucAnh2 đã được cắt ra và gắn vào an toàn
+
+Nói ngắn:
+- Đây là một codebase tích hợp nhiều nhánh nhưng đang ở trạng thái khá hợp lý
+- Có thể tiếp tục phát triển
+- Nhưng trước khi mở rộng thêm tính năng, nên xử lý các nợ kỹ thuật lớn:
+  - secret DB
+  - password hashing
+  - controller quá to
+  - wallet chưa phải payment flow hoàn chỉnh

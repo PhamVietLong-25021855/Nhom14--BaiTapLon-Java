@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+
+<StackPane maxHeight="Infinity" maxWidth="Infinity" prefHeight="920.0" prefWidth="1320.0" styleClass="page-root landing-root" stylesheets="@auth-theme.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.HomeViewController">
+    <children>
+        <Pane mouseTransparent="true" pickOnBounds="false">
+            <children>
+                <Circle fx:id="orbOne" layoutX="164.0" layoutY="128.0" opacity="0.28" radius="102.0" stroke="TRANSPARENT" styleClass="accent-orb accent-orb-soft" />
+                <Circle fx:id="orbTwo" layoutX="1128.0" layoutY="172.0" opacity="0.18" radius="128.0" stroke="TRANSPARENT" styleClass="accent-orb accent-orb-blue" />
+                <Circle fx:id="orbThree" layoutX="986.0" layoutY="688.0" opacity="0.15" radius="82.0" stroke="TRANSPARENT" styleClass="accent-orb accent-orb-gold" />
+            </children>
+        </Pane>
+        <ScrollPane fx:id="landingScrollPane" fitToWidth="true" hbarPolicy="NEVER" pannable="true" styleClass="landing-scroll">
+            <content>
+                <VBox maxHeight="Infinity" maxWidth="Infinity" spacing="30.0" styleClass="landing-shell">
+                    <children>
+                        <HBox fx:id="topBar" alignment="CENTER_LEFT" styleClass="top-bar">
+                            <children>
+                                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                    <children>
+                                        <StackPane minHeight="48.0" minWidth="48.0" prefHeight="48.0" prefWidth="48.0" styleClass="brand-mark">
+                                            <children>
+                                                <Label styleClass="brand-mark-text" text="A" />
+                                            </children>
+                                        </StackPane>
+                                        <VBox spacing="2.0">
+                                            <children>
+                                                <Label styleClass="brand-title" text="AUCTION HOUSE" />
+                                                <Label styleClass="brand-subtitle" text="Online auctions for bidders, sellers, and admins" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                                <Region HBox.hgrow="ALWAYS" />
+                                <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                                    <children>
+                                        <Button mnemonicParsing="false" onAction="#handleShowLogin" styleClass="button nav-button nav-button-outline" text="LOG IN" />
+                                        <Button mnemonicParsing="false" onAction="#handleShowRegister" styleClass="button nav-button nav-button-solid" text="REGISTER" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </HBox>
+                        <HBox alignment="CENTER" maxWidth="Infinity" spacing="26.0" styleClass="landing-content">
+                            <children>
+                                <VBox fx:id="heroPanel" minWidth="760.0" spacing="20.0" styleClass="landing-hero" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="landing-badge" text="PREMIUM AUCTION APP" />
+                                        <Label styleClass="landing-title" text="PRODUCT AUCTION PLATFORM" wrapText="true" />
+                                        <Label styleClass="landing-copy" text="Browse live auctions, see upcoming listings, and follow admin updates from one homepage." wrapText="true" />
+                                        <Label styleClass="landing-note" text="Log in to bid, sell, or manage the platform." wrapText="true" />
+                                        <HBox fx:id="statsRow" spacing="18.0" styleClass="stats-row">
+                                            <children>
+                                                <VBox minWidth="220.0" spacing="8.0" styleClass="stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="stat-label" text="LIVE AUCTIONS" />
+                                                        <Label fx:id="statRunningValue" styleClass="stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="220.0" spacing="8.0" styleClass="stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="stat-label" text="OPENING SOON" />
+                                                        <Label fx:id="statUpcomingValue" styleClass="stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="220.0" spacing="8.0" styleClass="stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="stat-label" text="ADMIN UPDATES" />
+                                                        <Label fx:id="statAnnouncementValue" styleClass="stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                                <VBox fx:id="featurePanel" minWidth="320.0" prefWidth="360.0" spacing="14.0" styleClass="spotlight-panel" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <VBox spacing="12.0" styleClass="spotlight-card">
+                                            <children>
+                                                <Label styleClass="spotlight-eyebrow" text="FAST OVERVIEW" />
+                                                <Label styleClass="spotlight-title" text="Live stats, featured auctions, and homepage updates stay in one place" wrapText="true" />
+                                                <Label styleClass="body-text landing-muted" text="The homepage now opens straight to the information users actually need." wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                        <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="feature-card">
+                                            <children>
+                                                <StackPane minHeight="42.0" minWidth="42.0" prefHeight="42.0" prefWidth="42.0" styleClass="feature-badge">
+                                                    <children>
+                                                        <Label styleClass="feature-badge-text" text="01" />
+                                                    </children>
+                                                </StackPane>
+                                                <VBox spacing="4.0">
+                                                    <children>
+                                                        <Label styleClass="feature-title" text="Realtime" />
+                                                        <Label styleClass="feature-copy" text="Counts and featured content refresh automatically without crowding the screen." wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                        <VBox fx:id="feedSection" spacing="18.0" styleClass="landing-section">
+                            <children>
+                                <HBox alignment="CENTER_LEFT">
+                                    <children>
+                                        <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="section-title" text="FEATURED AUCTIONS AND HOMEPAGE UPDATES" />
+                                                <Label styleClass="body-text" text="Live and upcoming auctions are listed beside homepage announcements." wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                                <HBox spacing="20.0" styleClass="landing-grid">
+                                    <children>
+                                        <VBox fx:id="auctionColumn" spacing="14.0" styleClass="landing-column-card" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="section-title" text="AUCTION SPOTLIGHT" />
+                                                <VBox fx:id="upcomingAuctionsContainer" spacing="12.0" />
+                                            </children>
+                                        </VBox>
+                                        <VBox fx:id="announcementColumn" spacing="14.0" styleClass="landing-column-card" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="section-title" text="HOMEPAGE UPDATES" />
+                                                <VBox fx:id="announcementsContainer" spacing="12.0" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+                    </children>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </children>
+</StackPane>

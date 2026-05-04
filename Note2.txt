@@ -1,0 +1,1367 @@
+BÁO CÁO BỔ SUNG - TÍCH HỢP RESERVED BALANCE THEO HƯỚNG PRIME NHƯNG GIỮ AUTOBID CỦA LONG
+
+Ngày cập nhật
+- 2026-05-03
+
+Mục tiêu
+- Lấy ý tưởng wallet "có tác động thật tới đấu giá" từ DucAnh_Prime.
+- Không dùng Java-side autobid loop của Prime.
+- Giữ trigger/function autobid trong PostgreSQL của Long.
+- Nâng wallet từ dạng "chỉ top-up và hiển thị số dư" sang dạng:
+  - total balance
+  - reserved balance
+  - available balance
+
+Kết luận nhanh
+- Đã triển khai cơ chế reserve/release/capture theo hướng an toàn hơn.
+- Autobid cũ của Long vẫn là engine chính.
+- Wallet giờ tham gia trực tiếp vào:
+  - kiểm tra bid tay
+  - chọn autobidder đủ tiền trong trigger DB
+  - khóa tiền theo winner hiện tại
+  - trừ tiền thật khi auction kết thúc
+
+==================================================
+I. Ý TƯỞNG THIẾT KẾ
+==================================================
+
+1. Vì sao không lấy nguyên `AuctionService.java` của Prime
+- Prime chuyển autobid sang vòng lặp Java trong `AuctionService`.
+- Bản hiện tại đang dùng trigger DB của Long, ổn định hơn cho bài toán autobid.
+- Nếu lấy nguyên Prime sẽ tạo hai engine autobid khác nhau cùng tồn tại:
+  - DB trigger của Long
+  - Java loop của Prime
+- Điều đó làm tăng nguy cơ conflict nghiệp vụ và lỗi đồng bộ dữ liệu.
+
+2. Hướng đã chọn
+- Giữ trigger autobid của Long.
+- Chỉ lấy triết lý wallet của Prime:
+  - đặt bid phải có tiền khả dụng
+  - auto bid chỉ được chạy nếu bidder còn tiền khả dụng
+  - người đang dẫn đầu phải bị khóa tiền
+  - khi bị outbid thì giải phóng khoản khóa
+  - khi thắng phiên thì trừ thật từ khoản đã khóa
+
+3. Mô hình số dư mới
+- `balance`: tổng tiền trong ví
+- `reservedBalance`: phần đang bị khóa bởi auction mà user đang dẫn đầu
+- `availableBalance = balance - reservedBalance`
+
+Ý nghĩa
+- User có thể tham gia nhiều auction nhưng không được vượt quá phần `available`.
+- Khoản dẫn đầu hiện tại của một auction sẽ không còn là "cam kết miệng", mà được khóa lại thật.
+
+==================================================
+II. CÁC FILE ĐÃ SỬA
+==================================================
+
+1. `User/src/userauth/model/Wallet.java`
+
+Thay đổi
+- Thêm field `reservedBalance`
+- Thêm getter:
+  - `getReservedBalance()`
+  - `getAvailableBalance()`
+- Sửa constructor để map đủ:
+  - `balance`
+  - `reservedBalance`
+  - `createdAt`
+  - `updatedAt`
+
+Lý do
+- Wallet cũ chỉ có `balance`, không đủ để mô hình hóa tiền bị giữ chỗ cho auction đang dẫn đầu.
+
+2. `User/src/userauth/dao/WalletDAOImpl.java`
+
+Thay đổi
+- SQL insert/update/select của bảng `wallets` đã thêm cột `reserved_balance`
+- `mapWallet(...)` giờ dựng `Wallet` với cả `reserved_balance`
+
+Lý do
+- Nếu model có `reservedBalance` mà DAO không đọc/ghi trường này thì logic reserve sẽ không tồn tại thật trong DB.
+
+3. `User/src/userauth/service/WalletService.java`
+
+Thay đổi mới
+- `deductFromWallet(...)` giờ kiểm tra `availableBalance`, không kiểm tra `balance` thuần nữa
+- Thêm `ensureSufficientAvailableBalanceForBid(...)`
+- Thêm `releaseReservedFunds(...)`
+- Thêm `captureReservedFunds(...)`
+
+Vai trò từng method
+- `ensureSufficientAvailableBalanceForBid(...)`
+  - dùng trước khi nhận bid tay
+  - cho phép cộng thêm "credit" từ khoản reserve hiện có của chính auction đó nếu bidder đang là winner
+- `releaseReservedFunds(...)`
+  - dùng khi user bị outbid hoặc auction bị cancel
+- `captureReservedFunds(...)`
+  - dùng khi auction chốt thành công
+  - giảm cả `reservedBalance` lẫn `balance`
+
+Lý do
+- Đây là lớp Java điều phối lifecycle của tiền sau khi DB trigger đã quyết định ai là winner cuối cùng.
+
+4. `User/src/userauth/dao/AuctionDAO.java`
+
+Thay đổi
+- Thêm method `saveBidAndUpdateAuction(...)`
+
+Lý do
+- Trước đây `saveBid()` và `updateAuction()` chạy tách rời.
+- Với reserved balance, nếu insert bid thành công mà update auction fail do DB trigger hoặc wallet constraint, dữ liệu sẽ lệch.
+- Cần một method transaction để:
+  - insert bid
+  - update auction
+  - trigger autobid/reservation trong cùng transaction
+
+5. `User/src/userauth/dao/AuctionDAOImpl.java`
+
+Thay đổi
+- Implement `saveBidAndUpdateAuction(...)`
+- Dùng transaction JDBC:
+  - `setAutoCommit(false)`
+  - insert bid
+  - update auction
+  - commit / rollback
+
+Lý do
+- Đây là phần quan trọng nhất để tránh trạng thái "đã ghi bid nhưng auction không cập nhật được".
+
+6. `User/src/userauth/service/AuctionService.java`
+
+Thay đổi lớn
+- Constructor nhận thêm `WalletService`
+- `placeBid(...)`
+  - kiểm tra số dư khả dụng trước khi ghi bid
+  - nếu bidder đang là winner hiện tại thì cho phép tái sử dụng khoản reserve cũ của auction đó
+  - dùng `saveBidAndUpdateAuction(...)` thay cho hai lệnh rời
+  - sau commit, đọc lại auction mới nhất để không bị lệch với kết quả autobid do trigger DB
+- `deleteAuction(...)`
+  - nếu auction có bid và bị chuyển sang `CANCELED`, sẽ release reserve của winner hiện tại
+- `closeAuctionManually(...)`
+  - không chỉ set `FINISHED` nữa
+  - giờ đi qua `closeAuctionAndSettle(...)`
+- `refreshAuctionStatuses(...)`
+  - khi auction hết hạn sẽ settle wallet rồi mới set trạng thái cuối
+- `tickAdminEarlyCloseCountdowns(...)`
+  - khi countdown về 0 sẽ dùng cùng cơ chế settle
+- Thêm helper:
+  - `releaseWinningReservation(...)`
+  - `closeAuctionAndSettle(...)`
+
+Lý do
+- Tầng service phải là nơi chốt:
+  - release khi hủy
+  - capture khi thắng
+  - đồng bộ trạng thái `PAID` / `FINISHED`
+
+7. `User/src/userauth/Main.java`
+
+Thay đổi
+- Khởi tạo `WalletService` trước `AuctionService`
+- Truyền `walletService` vào `new AuctionService(auctionDAO, walletService)`
+
+Lý do
+- `AuctionService` giờ phụ trách settlement và pre-check wallet.
+
+8. `User/src/userauth/gui/fxml/BidderDashboardViewController.java`
+
+Thay đổi
+- Không chỉ đọc `balance` nữa
+- Giờ load `Wallet` object trực tiếp
+- Sidebar hiển thị:
+  - Available
+  - Reserved
+  - Total
+
+Lý do
+- UI cũ chỉ cho user thấy một con số `Balance`, không đủ để hiểu vì sao có lúc "còn tiền tổng" nhưng lại không bid được do phần đó đang bị reserve ở auction khác.
+
+9. `User/src/userauth/database/DatabaseInitializer.java`
+
+Đây là file thay đổi quan trọng nhất ở tầng DB.
+
+Thay đổi
+- Bảng `wallets` được mở rộng với cột:
+  - `reserved_balance DECIMAL(15, 2) NOT NULL DEFAULT 0`
+- Thêm migration mềm:
+  - `ALTER TABLE wallets ADD COLUMN IF NOT EXISTS reserved_balance ...`
+- Thêm SQL function:
+  - `sync_winning_reservation(...)`
+- Sửa `handle_auto_bidding()`:
+  - thêm `pg_trigger_depth() > 1` để chặn recursion logic lặp lại ở nested update
+  - autobid query giờ join `wallets`
+  - chỉ chọn auto bidder có đủ `available`
+  - nếu bidder chính là `old winner` của auction thì được cộng lại credit từ reserve cũ của auction đó
+  - sau khi xác định winner cuối cùng, function gọi `sync_winning_reservation(...)`
+
+Ý nghĩa của `sync_winning_reservation(...)`
+- nếu winner không đổi nhưng giá tăng:
+  - chỉ reserve phần delta
+- nếu winner không đổi nhưng giá giảm:
+  - release phần chênh lệch
+- nếu winner đổi:
+  - release reserve của winner cũ
+  - reserve amount mới cho winner mới
+
+Lý do
+- Đây là cách giữ engine autobid của Long nhưng làm nó wallet-aware mà không phải viết lại autobid bằng Java.
+
+==================================================
+III. THAY ĐỔI HÀNH VI THỰC THI
+==================================================
+
+1. Bid tay
+- Trước đây:
+  - chỉ cần amount hợp lệ
+- Bây giờ:
+  - phải có `availableBalance` đủ
+  - nếu đang là winner của chính auction đó thì được tái sử dụng reserve cũ làm credit
+
+2. Auto bid
+- Trước đây:
+  - trigger chỉ nhìn `max_price`
+- Bây giờ:
+  - trigger chỉ cho autobid chạy nếu bidder còn đủ `available`
+  - user từng là winner trước đó trong cùng chain update không bị chặn oan vì được dùng lại credit reserve cũ
+
+3. Khi bị outbid
+- Trước đây:
+  - không có khái niệm mở khóa tiền
+- Bây giờ:
+  - reserve tự chuyển theo winner mới
+  - winner cũ được giải phóng khoản đang khóa
+
+4. Khi auction kết thúc
+- Trước đây:
+  - auction chỉ chuyển `FINISHED`
+- Bây giờ:
+  - nếu có winner và capture reserve thành công:
+    - chuyển `PAID`
+    - trừ thật tiền từ ví
+  - nếu không có winner hoặc settle lỗi:
+    - giữ `FINISHED`
+
+5. Khi auction bị cancel
+- Bây giờ:
+  - reserve của winner hiện tại được release trước khi set `CANCELED`
+
+==================================================
+IV. ĐIỂM CHỦ ĐÍCH KHÔNG LÀM
+==================================================
+
+1. Không chuyển autobid sang Java loop
+- Vì sẽ đụng trực tiếp với bản Long và làm code khó kiểm soát hơn.
+
+2. Không reserve tiền ngay lúc tạo cấu hình autobid
+- Reserve chỉ xảy ra khi autobid thực sự trở thành winning bid.
+- Đây là hợp lý hơn vì `maxPrice` chỉ là trần cam kết, không phải khoản phải khóa toàn bộ ngay từ đầu.
+
+3. Không làm payment gateway thật
+- Top-up vẫn là simulated auto-confirm như nhánh DucAnh2.
+- Thay đổi hiện tại tập trung vào ledger nội bộ của wallet.
+
+==================================================
+V. VERIFY
+==================================================
+
+Đã kiểm tra
+- Compile Java toàn project bằng `javac` thành công sau khi sửa.
+
+Chưa kiểm tra trong phiên này
+- Không chạy GUI end-to-end
+- Không chạy integration test thật với PostgreSQL live để xác nhận syntax của function mới trên DB thực
+
+==================================================
+VI. KẾT LUẬN
+==================================================
+
+Bản hiện tại sau cập nhật này có logic như sau:
+- Kiet giữ auth/admin
+- Long giữ engine autobid ở DB
+- Duc Anh giữ UI bidder/wallet
+- Prime đóng góp ý tưởng wallet-aware bidding
+- Hệ thống mới có:
+  - total / reserved / available balance
+  - bid tay cần đủ available
+  - autobid chỉ chạy khi đủ available
+  - winner hiện tại bị khóa tiền
+  - bị outbid thì mở khóa
+  - thắng phiên thì trừ thật và chuyển `PAID`
+
+Đây là hướng tích hợp đúng nếu mục tiêu là:
+- tận dụng Autobid của Long
+- nhưng nâng wallet từ module hiển thị thành module nghiệp vụ thật
+
+BÁO CÁO CHI TIẾT TÍCH HỢP WALLET TỪ DUCANH2
+
+Mục tiêu
+- Giữ nguyên base hiện tại:
+  - Kiet: auth, admin, default admin
+  - Long: autobid engine
+  - Duc Anh: bidder UI polish
+- Tách riêng phần wallet/top-up từ DucAnh2 và gắn vào bản hiện tại mà không làm hỏng các phần trên.
+
+Kết luận nhanh
+- Đã tích hợp wallet/top-up thành công theo hướng module hóa.
+- Không merge thẳng project DucAnh2.
+- Chỉ lấy phần wallet cần thiết và nối vào bidder flow.
+- `default admin` và `autobid` vẫn được giữ nguyên.
+
+==================================================
+I. CHIẾN LƯỢC TÍCH HỢP
+==================================================
+
+1. Vì sao không merge nguyên project DucAnh2
+- `DatabaseInitializer.java` của DucAnh2 không còn phần `ensureDefaultAdmin()` của Kiet.
+- `DatabaseInitializer.java` của DucAnh2 cũng không còn phần function/trigger autobid của Long.
+- `BidderDashboardViewController.java` của bản hiện tại đã được merge sạch hơn cho bid và autobid.
+- Một số file của DucAnh2 có dấu hiệu code còn thô:
+  - dùng `printStackTrace()`
+  - xử lý lỗi yếu
+  - text/comment lỗi encoding
+
+2. Hướng tích hợp đã chọn
+- Dùng bản hiện tại làm base tuyệt đối.
+- Chỉ thêm module wallet theo 4 lớp:
+  - model
+  - dao
+  - service/controller
+  - UI dialog + bidder sidebar hook
+- Không đụng vào auth flow và admin flow ngoài mức wiring cần thiết.
+
+3. Kết quả của chiến lược này
+- Wallet được thêm vào nhưng không buộc thay đổi kiến trúc chính.
+- Có thể test riêng wallet mà không kéo theo thay đổi sâu ở admin/autobid.
+
+==================================================
+II. PHÂN TÍCH TỪNG FILE ĐÃ THÊM
+==================================================
+
+1. `User/src/userauth/model/PaymentMethod.java`
+
+Vai trò
+- Định nghĩa tập giá trị cho phương thức nạp tiền.
+
+Thay đổi
+- Thêm enum:
+  - `CREDIT_CARD`
+  - `BANK_TRANSFER`
+  - `E_WALLET`
+  - `CASH`
+
+Ý nghĩa kỹ thuật
+- Tách phương thức thanh toán thành kiểu dữ liệu rõ ràng thay vì dùng `String` rời rạc ở UI/service.
+- Giúp `TopUpDialogController` và `WalletDAOImpl` đồng bộ dữ liệu đầu cuối.
+
+Lý do giữ
+- Thiết kế này của DucAnh2 là hợp lý, đơn giản và đủ dùng.
+
+2. `User/src/userauth/model/TopUpStatus.java`
+
+Vai trò
+- Định nghĩa trạng thái giao dịch top-up.
+
+Thay đổi
+- Thêm enum:
+  - `PENDING`
+  - `SUCCESS`
+  - `FAILED`
+  - `CANCELLED`
+
+Ý nghĩa kỹ thuật
+- Tạo vòng đời trạng thái chuẩn cho top-up transaction.
+- Làm nền cho:
+  - tạo request
+  - confirm request
+  - cancel request
+  - đọc pending transaction sau này
+
+Lý do giữ
+- Cấu trúc enum sạch, đúng hướng thiết kế.
+
+3. `User/src/userauth/model/Wallet.java`
+
+Vai trò
+- Đại diện ví của một user.
+
+Thay đổi
+- Thêm các field:
+  - `userId`
+  - `balance`
+  - `createdAt`
+  - `updatedAt`
+- Có 3 constructor:
+  - full constructor
+  - constructor tạo ví mới theo `userId`
+  - constructor tạo ví với `balance` ban đầu
+
+Ý nghĩa kỹ thuật
+- `userId` được tách riêng khỏi `id` của entity, đúng với thiết kế khóa ngoại `wallets.user_id`.
+- `createdAt/updatedAt` giúp model khớp schema DB.
+
+Điểm chỉnh so với code gốc
+- Đổi tên từ `userID` sang `userId` để khớp style Java hiện tại hơn.
+- Giữ class gọn, không mang theo `toString()` thừa.
+
+4. `User/src/userauth/model/TopUpTransaction.java`
+
+Vai trò
+- Đại diện một giao dịch nạp tiền.
+
+Thay đổi
+- Thêm các field:
+  - `userId`
+  - `amount`
+  - `method`
+  - `status`
+  - `referenceCode`
+  - `transactionTime`
+  - `completeAt`
+- Có 3 constructor:
+  - full constructor
+  - constructor tạo request mới
+  - constructor tạo request có sẵn reference
+
+Ý nghĩa kỹ thuật
+- Tách rõ thời điểm tạo request và thời điểm hoàn tất.
+- `completeAt` nullable đúng với giao dịch chưa hoàn thành.
+
+Điểm chỉnh so với code gốc
+- Đổi naming sang `userId`.
+- Loại bỏ `toString()` không cần thiết.
+
+5. `User/src/userauth/dao/WalletDAO.java`
+
+Vai trò
+- Interface định nghĩa toàn bộ contract thao tác dữ liệu wallet/top-up.
+
+Thay đổi
+- Thêm các nhóm method:
+  - wallet CRUD cơ bản
+  - top-up transaction CRUD cơ bản
+  - tìm theo user
+  - tìm pending transaction
+
+Ý nghĩa kỹ thuật
+- Giữ wallet tách khỏi controller/service.
+- Cho phép sau này thay DAO impl mà không sửa business logic.
+
+Lý do giữ
+- Interface của DucAnh2 hợp lý về mặt chia trách nhiệm.
+
+6. `User/src/userauth/dao/WalletDAOImpl.java`
+
+Vai trò
+- Implementation truy cập PostgreSQL cho wallet/top-up.
+
+Thay đổi chính
+- Thêm toàn bộ SQL cho:
+  - `wallets`
+  - `topup_transactions`
+- Các method đã có:
+  - `saveWallet`
+  - `updateWallet`
+  - `findWalletByUserId`
+  - `deleteWallet`
+  - `saveTopUpTransaction`
+  - `updateTopUpTransaction`
+  - `findTopUpTransactionById`
+  - `findTopUpTransactionsByUserId`
+  - `findAllPendingTransactions`
+  - `deleteTopUpTransaction`
+
+Phân tích từng phần
+- `saveWallet`:
+  - insert ví mới
+  - đọc generated key
+  - nếu không đọc được key thì ném lỗi rõ ràng
+- `updateWallet`:
+  - update `balance` và `updatedAt`
+- `findWalletByUserId`:
+  - lấy ví theo `user_id`
+  - trả `null` nếu chưa có
+- `saveTopUpTransaction`:
+  - insert request top-up
+  - hỗ trợ `complete_at` nullable
+- `updateTopUpTransaction`:
+  - cập nhật `status`, `reference_code`, `complete_at`
+- `findTopUpTransactionsByUserId`:
+  - lấy lịch sử theo user, sort giảm dần theo thời gian
+- `findAllPendingTransactions`:
+  - lấy toàn bộ pending request
+
+Điểm đã chỉnh so với DucAnh2
+- Bỏ toàn bộ `printStackTrace()`
+- Đổi sang `IllegalStateException` với message rõ hơn
+- Xử lý `completeAt` null bằng `setNull(...)`
+- Giữ mapper riêng:
+  - `mapWallet`
+  - `mapTopUpTransaction`
+
+Ý nghĩa kỹ thuật
+- Đây là điểm nâng chất lượng lớn nhất so với bản gốc DucAnh2.
+- DAO hiện tại không âm thầm nuốt lỗi SQL nữa.
+
+7. `User/src/userauth/service/WalletService.java`
+
+Vai trò
+- Chứa business logic của wallet/top-up.
+
+Thay đổi chính
+- Thêm constant:
+  - `MIN_TOPUP_AMOUNT = 10_000`
+  - `MAX_TOPUP_AMOUNT = 100_000_000`
+- Thêm các method:
+  - `initializeWalletForUser`
+  - `getWallet`
+  - `createTopUpRequest`
+  - `confirmTopUp`
+  - `cancelTopUp`
+  - `deductFromWallet`
+  - `addToWallet`
+  - `getTopUpHistory`
+  - `getAllPendingTransactions`
+  - `ensureWalletExists`
+  - `validateTopUpAmount`
+
+Phân tích logic theo method
+- `initializeWalletForUser`:
+  - chỉ tạo ví nếu user chưa có
+  - tránh tạo trùng
+- `getWallet`:
+  - ép business layer phải phân biệt rõ “không có ví” bằng exception
+- `createTopUpRequest`:
+  - validate amount
+  - tự tạo wallet nếu user chưa có
+  - lưu request top-up
+  - gọi `confirmTopUp(..., "AUTO_CONFIRMED")`
+- `confirmTopUp`:
+  - chỉ cho phép confirm khi transaction đang `PENDING`
+  - cập nhật transaction sang `SUCCESS`
+  - set `referenceCode`
+  - set `completeAt`
+  - cộng tiền vào balance
+- `cancelTopUp`:
+  - chỉ cho phép cancel request còn `PENDING`
+- `deductFromWallet`:
+  - đã có sẵn để sau này nối vào payment/settlement
+  - hiện tại chưa được gọi ở bidder flow
+- `addToWallet`:
+  - method tiện ích để nạp thêm thủ công ở business layer
+- `getTopUpHistory`:
+  - ép phải có wallet trước khi đọc lịch sử
+
+Điểm quan trọng nhất của file này
+- Tôi giữ behavior gốc của DucAnh2: top-up được auto confirm ngay.
+
+Lý do giữ behavior đó
+- Nếu đổi sang quy trình thanh toán thật hoặc chờ admin confirm, đó sẽ là thay đổi nghiệp vụ lớn chứ không còn là “tách wallet của DucAnh2”.
+- Mục tiêu hiện tại là tích hợp an toàn, không redesign cả payment flow.
+
+Điểm đã chỉnh so với DucAnh2
+- Làm sạch comment lỗi encoding
+- Bỏ logic giả tạo kiểu kiểm tra `wallet user 1`
+- Tách `ensureWalletExists`
+- Chuẩn hóa validate amount
+- Message lỗi rõ ràng hơn
+
+8. `User/src/userauth/controller/WalletController.java`
+
+Vai trò
+- Cầu nối giữa JavaFX UI và `WalletService`.
+
+Thay đổi
+- Thêm các method wrapper:
+  - `initializeWallet`
+  - `createTopUpRequest`
+  - `confirmTopUp`
+  - `cancelTopUp`
+  - `getWallet`
+  - `deductFromWallet`
+  - `addToWallet`
+  - `getTopUpHistory`
+  - `getAllPendingTransactions`
+  - `getWalletBalance`
+
+Ý nghĩa kỹ thuật
+- Giữ đúng pattern hiện có của project:
+  - controller trả string `"SUCCESS"` hoặc `"ERROR: ..."`
+  - UI không phải xử lý exception trực tiếp
+
+Điểm đã chỉnh
+- `getWalletBalance` được thêm riêng để bidder UI gọi nhanh hơn.
+- `getWallet` khi không tìm thấy sẽ trả `null`, phù hợp với cách refresh sidebar hiện tại.
+
+9. `User/src/userauth/gui/fxml/TopUpDialogController.java`
+
+Vai trò
+- Controller cho dialog nạp tiền.
+
+Thay đổi chính
+- Thêm FXML field:
+  - `lblUsername`
+  - `txtAmount`
+  - `cbPaymentMethod`
+  - `lblError`
+- Thêm dependency:
+  - `WalletController`
+  - `User`
+  - `Consumer<String> successHandler`
+- Thêm logic:
+  - `initialize`
+  - `setDialogStage`
+  - `setWalletController`
+  - `setUser`
+  - `setSuccessHandler`
+  - `handleSubmit`
+  - `handleCancel`
+  - `showError`
+  - `hideError`
+  - `closeDialog`
+  - `setBusy`
+
+Phân tích `initialize`
+- Nạp toàn bộ `PaymentMethod.values()`
+- Set mặc định `CREDIT_CARD`
+- Dùng `StringConverter` để hiển thị text thân thiện hơn enum name
+
+Phân tích `handleSubmit`
+- Kiểm tra đủ context:
+  - có `walletController`
+  - có `user`
+- Validate input:
+  - amount không rỗng
+  - payment method không null
+  - amount parse được
+  - amount > 0
+- Chống submit lặp bằng `submitInProgress`
+- Gọi async `walletController.createTopUpRequest(...)`
+- Nếu thành công:
+  - lấy transaction id
+  - đóng dialog
+  - gọi `successHandler`
+- Nếu thất bại:
+  - hiển thị lỗi trên dialog
+
+Điểm đã chỉnh so với DucAnh2
+- Bỏ text/comment lỗi encoding
+- Chuẩn hóa thông báo
+- Không gọi popup lỗi chồng chéo trong controller này
+- Giữ dialog có trách nhiệm gọn: validate, submit, báo lỗi
+
+10. `User/resources/userauth/gui/fxml/top-up-dialog.fxml`
+
+Vai trò
+- View cho top-up dialog.
+
+Thành phần chính
+- tiêu đề `TOP UP WALLET`
+- label hiển thị account
+- textfield amount
+- combobox payment method
+- label lỗi
+- 2 nút:
+  - `CANCEL`
+  - `CREATE REQUEST`
+
+Ý nghĩa kỹ thuật
+- Dialog này đủ nhỏ để không làm bidder dashboard bị nặng thêm.
+- Tận dụng `auth-theme.css` sẵn có, không cần theme mới.
+
+==================================================
+III. PHÂN TÍCH TỪNG FILE ĐÃ SỬA
+==================================================
+
+1. `User/src/userauth/database/DatabaseInitializer.java`
+
+Đây là file quan trọng nhất của toàn bộ merge.
+
+Những gì đã có sẵn trước khi gắn wallet
+- `users`
+- `auctions`
+- `bids`
+- `homepage_announcements`
+- `auto_bids`
+- `ensureDefaultAdmin()`
+- `handle_auto_bidding()`
+- `trigger_auto_bid`
+
+Những gì tôi thêm
+- `CREATE_WALLETS_TABLE`
+- `CREATE_TOPUP_TRANSACTIONS_TABLE`
+- thêm 2 DDL này vào `createTables()`
+
+Những gì tôi không động vào
+- `UPSERT_DEFAULT_ADMIN`
+- `ensureDefaultAdmin()`
+- `synchronizeDatabaseObjects()`
+- trigger/function autobid
+
+Tại sao cách này đúng
+- Wallet chỉ cần thêm schema, không cần thay đổi seed admin.
+- Wallet không nên can thiệp trigger autobid.
+- Đây là điểm giúp 3 hướng chức năng cùng sống được:
+  - admin của Kiet
+  - autobid của Long
+  - wallet của DucAnh2
+
+2. `User/src/userauth/Main.java`
+
+Thay đổi
+- Thêm import wallet controller/dao/service
+- Tạo:
+  - `WalletDAO walletDAO = new WalletDAOImpl();`
+  - `WalletService walletService = new WalletService(walletDAO);`
+  - `WalletController walletController = new WalletController(walletService);`
+- Truyền `walletController` vào constructor `AuthFrame`
+
+Ý nghĩa kỹ thuật
+- `Main` là composition root.
+- Đây là nơi đúng nhất để khởi tạo dependency wallet.
+
+Tác động
+- Không thay đổi luồng start app ngoài việc thêm service mới.
+- Wallet được bật cùng với app, nhưng chỉ bidder view dùng đến.
+
+3. `User/src/userauth/gui/fxml/AuthFrame.java`
+
+Thay đổi
+- Thêm field `WalletController walletController`
+- Mở rộng constructor để nhận wallet controller
+- Trong `wireControllers()`, thêm:
+  - `bidderView.controller().setWalletController(walletController);`
+
+Ý nghĩa kỹ thuật
+- `AuthFrame` đang là lớp phối hợp view/controller của app.
+- Wallet được nối đúng chỗ, không cần bidder view tự tạo dependency.
+
+Tác động
+- Admin và seller flow không bị ảnh hưởng.
+- Chỉ bidder flow nhận thêm wallet support.
+
+4. `User/src/userauth/gui/fxml/BidderDashboardViewController.java`
+
+Đây là file UI logic chính bị thay đổi để wallet xuất hiện được.
+
+Thay đổi ở field
+- Thêm:
+  - `@FXML Label lblWalletBalance`
+  - `WalletController walletController`
+
+Thay đổi ở lifecycle
+- `setWalletController(...)`:
+  - lưu controller
+  - gọi `updateWalletBalanceAsync()`
+- `setUser(...)`:
+  - reset balance về `0.0`
+  - gọi refresh balance
+- `refreshData()`:
+  - ngoài refresh auction và autobid, còn refresh wallet balance
+
+Thay đổi ở action
+- Thêm `handleTopUp()`
+  - kiểm tra đủ `walletController` và `currentUser`
+  - load `top-up-dialog.fxml`
+  - tạo modal dialog
+  - inject `walletController` và `user`
+  - set success handler để:
+    - refresh balance
+    - hiện success notification
+
+Thay đổi ở helper
+- Thêm `updateWalletBalanceAsync()`
+  - gọi async `walletController.getWalletBalance(userId)`
+  - chỉ update nếu `currentUser` vẫn là user đó
+- Thêm `applyWalletBalance(...)`
+  - format text sidebar bằng `AuctionViewFormatter.formatMoney(...)`
+
+Điểm quan trọng
+- Không thay đổi `handlePlaceBid()`
+- Không thay đổi `submitBid(...)`
+- Không thay đổi `handleAutobid()` ngoài việc coexist với wallet
+
+Ý nghĩa kỹ thuật
+- Wallet được gắn thêm như một layer phụ, không can thiệp vào flow bid/autobid.
+- Đây là cách tích hợp có blast radius thấp nhất.
+
+5. `User/resources/userauth/gui/fxml/bidder-dashboard-view.fxml`
+
+Thay đổi ở sidebar
+- Thêm:
+  - `Label fx:id="lblWalletBalance"`
+  - `Button onAction="#handleTopUp"`
+
+Vị trí đặt
+- Đặt trong nhóm `USER SESSION`, ngay dưới `lblSidebarUser`
+
+Lý do bố trí như vậy
+- Balance gắn chặt với session user, hợp logic hơn đặt giữa panel auction.
+- Nút top-up là thao tác cá nhân của bidder, phù hợp sidebar hơn là detail panel.
+- Không làm vỡ bố cục hiện tại của bidder dashboard.
+
+Điểm đáng lưu ý
+- Tôi không thêm card wallet mới ở giữa màn hình.
+- Tôi chọn phương án ít xâm lấn nhất về UI.
+
+==================================================
+IV. NHỮNG GÌ CỐ Ý KHÔNG LẤY
+==================================================
+
+1. Không lấy nguyên `DatabaseInitializer.java` từ DucAnh2
+- Vì sẽ mất `default admin`
+- Vì sẽ mất `autobid trigger/function`
+
+2. Không lấy nguyên `BidderDashboardViewController.java` từ DucAnh2
+- Vì bản hiện tại đang sạch hơn
+- Vì bản DucAnh2 không phải nguồn tốt hơn cho phần bid/autobid
+
+3. Không lấy `notifyTopUp.css`
+- Không cần cho chức năng
+- `auth-theme.css` hiện tại đã đủ
+
+4. Không nối wallet vào `placeBid()`
+- Vì `wallet` của DucAnh2 mới chỉ là top-up prototype
+- Chưa có nghiệp vụ:
+  - reserve funds
+  - release funds
+  - settlement sau khi thắng
+  - refund khi thua
+
+5. Không tạo wallet ngay ở register/login
+- Chọn lazy initialization
+- Chỉ tạo ví khi cần top-up lần đầu
+
+Lý do chọn lazy init
+- Giảm coupling với auth
+- Không cần sửa `AuthService`, `RegisterViewController`, hay DB seed logic
+
+==================================================
+V. HÀNH VI HỆ THỐNG SAU TÍCH HỢP
+==================================================
+
+Những gì đã hoạt động
+- User bidder thấy balance trên sidebar
+- User bidder mở được top-up dialog
+- User bidder gửi được top-up request
+- Request được auto confirm
+- Balance tăng lên sau khi top-up
+- Auction flow và autobid flow vẫn đứng độc lập
+
+Những gì chưa được làm
+- Top-up history UI
+- Admin pending approval UI
+- Tích hợp payment gateway thật
+- Callback thật
+- Dùng wallet để trừ tiền khi bid
+- Settlement/refund sau đấu giá
+
+==================================================
+VI. VERIFY
+==================================================
+
+Đã verify
+- Parse XML thành công:
+  - `bidder-dashboard-view.fxml`
+  - `top-up-dialog.fxml`
+- Compile được phần backend wallet bằng `javac`:
+  - model
+  - dao
+  - service
+  - controller
+
+Chưa verify được trên command line
+- Full JavaFX GUI compile
+
+Lý do
+- Môi trường hiện tại không có JavaFX module/classpath cho `javac`
+
+==================================================
+VII. KẾT LUẬN
+==================================================
+
+Tích hợp này đạt đúng mục tiêu:
+- thêm được wallet/top-up từ DucAnh2
+- giữ được admin của Kiet
+- giữ được autobid của Long
+- không mở rộng phạm vi thay đổi sang auth hoặc payment flow sâu hơn mức cần thiết
+
+Nói ngắn:
+- Wallet đã được cắt ra đúng nghĩa module
+- Gắn được vào bản hiện tại
+- Chưa phải payment system hoàn chỉnh
+- Nhưng là một bản tích hợp an toàn và có thể chạy tiếp để test trong IDE
+
+
+==================================================
+DETAILED REPORT: WALLET INTEGRATION FROM DUCANH2
+==================================================
+
+Goal
+- Preserve the current base:
+  - Kiet: auth, admin, default admin
+  - Long: autobid engine
+  - Duc Anh: bidder UI polish
+- Extract only the wallet/top-up module from DucAnh2 and attach it without breaking the above systems.
+
+Quick conclusion
+- Wallet/top-up has been integrated successfully as a separate module.
+- DucAnh2 was not merged wholesale.
+- Only the wallet-related pieces were attached to the bidder flow.
+- Default admin and autobid remain intact.
+
+==================================================
+I. INTEGRATION STRATEGY
+==================================================
+
+1. Why the full DucAnh2 project was not merged
+- DucAnh2's `DatabaseInitializer.java` does not preserve Kiet's `ensureDefaultAdmin()`.
+- It also does not preserve Long's autobid function and trigger.
+- The current `BidderDashboardViewController.java` is already cleaner for the bid/autobid flow.
+- Some DucAnh2 files still show rough edges:
+  - `printStackTrace()`
+  - weak error handling
+  - broken-encoding comments and text
+
+2. Chosen approach
+- Keep the current project as the hard base.
+- Add wallet in four layers only:
+  - model
+  - dao
+  - service/controller
+  - UI dialog + bidder sidebar hook
+- Avoid touching auth or admin beyond minimal wiring.
+
+3. Result of this strategy
+- Wallet support is added without forcing a broader redesign.
+- The feature can be tested in isolation without destabilizing admin or autobid.
+
+==================================================
+II. FILE-BY-FILE ANALYSIS OF NEW FILES
+==================================================
+
+1. `User/src/userauth/model/PaymentMethod.java`
+
+Role
+- Defines the allowed payment methods for wallet top-up.
+
+Change
+- Added enum values:
+  - `CREDIT_CARD`
+  - `BANK_TRANSFER`
+  - `E_WALLET`
+  - `CASH`
+
+Technical meaning
+- Replaces loose string handling with a typed domain value.
+- Keeps UI, service, and DAO aligned.
+
+2. `User/src/userauth/model/TopUpStatus.java`
+
+Role
+- Defines the state machine for top-up transactions.
+
+Change
+- Added enum values:
+  - `PENDING`
+  - `SUCCESS`
+  - `FAILED`
+  - `CANCELLED`
+
+Technical meaning
+- Establishes a proper transaction lifecycle.
+
+3. `User/src/userauth/model/Wallet.java`
+
+Role
+- Represents a user's wallet.
+
+Change
+- Added fields:
+  - `userId`
+  - `balance`
+  - `createdAt`
+  - `updatedAt`
+- Added constructors for full state and new-wallet creation.
+
+Technical meaning
+- Matches the `wallets` table cleanly.
+- Separates wallet ownership (`userId`) from entity id.
+
+Adjustment from DucAnh2
+- Renamed `userID` to `userId` to better match Java naming style.
+
+4. `User/src/userauth/model/TopUpTransaction.java`
+
+Role
+- Represents a top-up transaction.
+
+Change
+- Added fields:
+  - `userId`
+  - `amount`
+  - `method`
+  - `status`
+  - `referenceCode`
+  - `transactionTime`
+  - `completeAt`
+
+Technical meaning
+- Captures both request time and completion time.
+- Supports nullable completion timestamps for pending requests.
+
+5. `User/src/userauth/dao/WalletDAO.java`
+
+Role
+- Declares the persistence contract for wallet and top-up data.
+
+Change
+- Added methods for:
+  - wallet create/read/update/delete
+  - top-up transaction create/read/update/delete
+  - lookup by user
+  - pending transaction retrieval
+
+Technical meaning
+- Keeps persistence concerns separated from business logic.
+
+6. `User/src/userauth/dao/WalletDAOImpl.java`
+
+Role
+- PostgreSQL implementation for wallet/top-up persistence.
+
+Main changes
+- Added SQL for:
+  - `wallets`
+  - `topup_transactions`
+- Implemented:
+  - `saveWallet`
+  - `updateWallet`
+  - `findWalletByUserId`
+  - `deleteWallet`
+  - `saveTopUpTransaction`
+  - `updateTopUpTransaction`
+  - `findTopUpTransactionById`
+  - `findTopUpTransactionsByUserId`
+  - `findAllPendingTransactions`
+  - `deleteTopUpTransaction`
+
+Method analysis
+- `saveWallet` inserts a wallet and reads the generated key.
+- `updateWallet` updates `balance` and `updatedAt`.
+- `findWalletByUserId` returns `null` when the wallet does not yet exist.
+- `saveTopUpTransaction` inserts a request and supports nullable `complete_at`.
+- `updateTopUpTransaction` updates status, reference, and completion time.
+- `findTopUpTransactionsByUserId` returns top-up history sorted by latest first.
+- `findAllPendingTransactions` returns all pending requests.
+
+Adjustments from DucAnh2
+- Removed all `printStackTrace()`
+- Replaced weak SQL failure handling with explicit `IllegalStateException`
+- Explicitly handled nullable `completeAt`
+- Kept dedicated row mappers
+
+Technical impact
+- This is one of the biggest quality upgrades compared with the raw DucAnh2 implementation.
+
+7. `User/src/userauth/service/WalletService.java`
+
+Role
+- Holds wallet business logic.
+
+Main changes
+- Added constants:
+  - `MIN_TOPUP_AMOUNT = 10_000`
+  - `MAX_TOPUP_AMOUNT = 100_000_000`
+- Added methods:
+  - `initializeWalletForUser`
+  - `getWallet`
+  - `createTopUpRequest`
+  - `confirmTopUp`
+  - `cancelTopUp`
+  - `deductFromWallet`
+  - `addToWallet`
+  - `getTopUpHistory`
+  - `getAllPendingTransactions`
+  - `ensureWalletExists`
+  - `validateTopUpAmount`
+
+Method-level behavior
+- `initializeWalletForUser` prevents duplicate wallet creation.
+- `getWallet` raises a domain error when the wallet does not exist.
+- `createTopUpRequest` validates amount, ensures a wallet exists, saves the request, then auto-confirms it.
+- `confirmTopUp` only allows confirmation from `PENDING`, marks the request `SUCCESS`, sets metadata, and credits the wallet.
+- `cancelTopUp` only allows cancellation while `PENDING`.
+- `deductFromWallet` and `addToWallet` prepare the service for future payment integration.
+- `getTopUpHistory` requires the wallet to exist before reading history.
+
+Most important behavior retained
+- The top-up request is auto-confirmed immediately, following DucAnh2's original behavior.
+
+Why that behavior was preserved
+- Replacing it with a real payment flow or an approval flow would be a business redesign, not a safe extraction.
+- The goal here was to integrate DucAnh2's wallet feature with minimal change in intended behavior.
+
+Adjustments from DucAnh2
+- Removed broken comments
+- Removed weak placeholder logic
+- Extracted `ensureWalletExists`
+- Tightened validation messages
+
+8. `User/src/userauth/controller/WalletController.java`
+
+Role
+- Bridges JavaFX UI and `WalletService`.
+
+Change
+- Added wrapper methods for wallet operations.
+- Preserved the controller convention already used in the app:
+  - `"SUCCESS"`
+  - `"ERROR: ..."`
+
+Technical meaning
+- UI stays simple and does not need to catch service exceptions directly.
+
+9. `User/src/userauth/gui/fxml/TopUpDialogController.java`
+
+Role
+- Controller for the top-up dialog.
+
+Main changes
+- Added FXML fields:
+  - `lblUsername`
+  - `txtAmount`
+  - `cbPaymentMethod`
+  - `lblError`
+- Added dependencies:
+  - `WalletController`
+  - `User`
+  - `Consumer<String> successHandler`
+- Added logic for:
+  - initialization
+  - validation
+  - async submit
+  - error handling
+  - dialog closing
+
+Method analysis
+- `initialize` loads enum values, selects a default method, and maps enum values to friendly labels.
+- `handleSubmit` validates context and user input, prevents duplicate submit, then calls `walletController.createTopUpRequest(...)` asynchronously.
+- On success it closes the dialog and calls the success callback.
+- On failure it shows an inline error.
+
+Adjustments from DucAnh2
+- Removed broken-encoding text
+- Normalized messages
+- Kept the controller focused on dialog responsibilities only
+
+10. `User/resources/userauth/gui/fxml/top-up-dialog.fxml`
+
+Role
+- View for the top-up dialog.
+
+Main elements
+- title
+- account label
+- amount field
+- payment method combo box
+- error label
+- cancel and create buttons
+
+Technical meaning
+- Keeps top-up isolated in a small modal instead of inflating the main bidder dashboard.
+- Reuses `auth-theme.css` rather than adding a new theme surface.
+
+==================================================
+III. FILE-BY-FILE ANALYSIS OF MODIFIED FILES
+==================================================
+
+1. `User/src/userauth/database/DatabaseInitializer.java`
+
+This is the most critical file in the merge.
+
+What already existed before wallet integration
+- `users`
+- `auctions`
+- `bids`
+- `homepage_announcements`
+- `auto_bids`
+- `ensureDefaultAdmin()`
+- `handle_auto_bidding()`
+- `trigger_auto_bid`
+
+What was added
+- `CREATE_WALLETS_TABLE`
+- `CREATE_TOPUP_TRANSACTIONS_TABLE`
+- both statements were appended to `createTables()`
+
+What was intentionally preserved
+- `UPSERT_DEFAULT_ADMIN`
+- `ensureDefaultAdmin()`
+- `synchronizeDatabaseObjects()`
+- the autobid function and trigger
+
+Why this approach is correct
+- Wallet only needs extra schema.
+- It should not interfere with admin seeding.
+- It should not interfere with autobid behavior.
+
+2. `User/src/userauth/Main.java`
+
+Change
+- Added wallet imports
+- Instantiated:
+  - `WalletDAO`
+  - `WalletService`
+  - `WalletController`
+- Passed `walletController` into `AuthFrame`
+
+Technical meaning
+- `Main` remains the composition root.
+- Dependency creation stays centralized and explicit.
+
+3. `User/src/userauth/gui/fxml/AuthFrame.java`
+
+Change
+- Added `WalletController` as a field
+- Expanded the constructor
+- Wired wallet into bidder view with:
+  - `bidderView.controller().setWalletController(walletController);`
+
+Technical meaning
+- The frame continues to own view/controller wiring.
+- Admin and seller flows remain untouched.
+
+4. `User/src/userauth/gui/fxml/BidderDashboardViewController.java`
+
+This is the main UI logic file that changed for wallet support.
+
+Field changes
+- Added:
+  - `@FXML Label lblWalletBalance`
+  - `WalletController walletController`
+
+Lifecycle changes
+- `setWalletController(...)`
+  - stores the dependency
+  - immediately refreshes wallet balance
+- `setUser(...)`
+  - resets wallet display to zero
+  - refreshes wallet balance for the active user
+- `refreshData()`
+  - still refreshes auctions and autobids
+  - now also refreshes wallet balance
+
+Action changes
+- Added `handleTopUp()`
+  - validates context
+  - loads `top-up-dialog.fxml`
+  - creates the modal
+  - injects `walletController` and `user`
+  - sets a success callback to refresh balance and show a notification
+
+Helper changes
+- Added `updateWalletBalanceAsync()`
+- Added `applyWalletBalance(...)`
+
+Most important preservation
+- `handlePlaceBid()` was left alone
+- `submitBid(...)` was left alone
+- `handleAutobid()` was left alone
+
+Technical impact
+- Wallet was added as a side feature rather than as a rewrite of bidder behavior.
+- This keeps the blast radius low.
+
+5. `User/resources/userauth/gui/fxml/bidder-dashboard-view.fxml`
+
+Change in sidebar
+- Added:
+  - `Label fx:id="lblWalletBalance"`
+  - `Button onAction="#handleTopUp"`
+
+Placement
+- Both were placed inside the `USER SESSION` block below the username label.
+
+Why this layout was chosen
+- Balance is part of user session state.
+- Top-up is a bidder-side personal action.
+- This avoids creating a large new wallet card in the main auction workspace.
+
+==================================================
+IV. WHAT WAS INTENTIONALLY NOT TAKEN
+==================================================
+
+1. The full `DatabaseInitializer.java` from DucAnh2
+- It would break default admin and autobid trigger support.
+
+2. The full `BidderDashboardViewController.java` from DucAnh2
+- The current merged controller is cleaner and more stable.
+
+3. `notifyTopUp.css`
+- Not required for functionality
+- `auth-theme.css` is sufficient
+
+4. Wallet integration into `placeBid()`
+- DucAnh2 does not provide a complete wallet-backed auction payment model.
+- No reserve, settlement, or refund flow exists yet.
+
+5. Wallet creation during register/login
+- The integration uses lazy initialization instead.
+- A wallet is created only when the user first needs one for top-up.
+
+==================================================
+V. SYSTEM BEHAVIOR AFTER INTEGRATION
+==================================================
+
+What now works
+- A bidder can see wallet balance in the sidebar
+- A bidder can open the top-up dialog
+- A bidder can submit a top-up request
+- The request is auto-confirmed
+- The sidebar balance updates after top-up
+- Auction and autobid flows remain independent
+
+What is still missing
+- top-up history UI
+- admin approval UI
+- real payment gateway integration
+- callback handling
+- wallet deduction during bid flow
+- auction settlement and refund logic
+
+==================================================
+VI. VERIFICATION
+==================================================
+
+Verified
+- XML parsing succeeded for:
+  - `bidder-dashboard-view.fxml`
+  - `top-up-dialog.fxml`
+- The wallet backend compiled with `javac`:
+  - model
+  - dao
+  - service
+  - controller
+
+Not verified from the command line
+- full JavaFX GUI compilation
+
+Reason
+- JavaFX modules are not available on the current `javac` command environment
+
+==================================================
+VII. FINAL CONCLUSION
+==================================================
+
+This integration meets the intended goal:
+- it adds wallet/top-up from DucAnh2
+- preserves Kiet's admin system
+- preserves Long's autobid engine
+- avoids expanding the change surface into auth or deep payment redesign
+
+In short
+- the wallet was extracted as a true module
+- it now fits into the current project
+- it is not yet a complete payment system
+- but it is a safe, technically coherent integration that is ready for IDE-level testing
