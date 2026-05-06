@@ -11,55 +11,69 @@ import javafx.scene.layout.VBox;
 import userauth.controller.AuthController;
 import userauth.model.Role;
 import userauth.validation.UserValidator;
-
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-// File note: Controller JavaFX cho màn hình đăng ký tài khoản mới.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop RegisterViewController; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 public class RegisterViewController {
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho error.
     private static final String INPUT_ERROR = "input-error";
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho valid.
     private static final String INPUT_VALID = "input-valid";
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt username.
     private TextField txtUsername;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt full name.
     private TextField txtFullName;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt email.
     private TextField txtEmail;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt password.
     private PasswordField txtPassword;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt confirm password.
     private PasswordField txtConfirmPassword;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho cb role.
     private ComboBox<String> cbRole;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl status.
     private Label lblStatus;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl validation hint.
     private Label lblValidationHint;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho register card.
     private VBox registerCard;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho field container.
     private VBox fieldContainer;
-
+    // Thuoc tinh: giu tham chieu den AuthController de phoi hop xu ly.
     private AuthController authController;
     private Runnable showHomeHandler = () -> {};
     private Runnable backToLoginHandler = () -> {};
     private Consumer<String> successHandler = message -> NotificationUtil.success(null, "Notification", message);
     private Consumer<String> warningHandler = message -> NotificationUtil.warning(null, "Notification", message);
     private Consumer<String> errorHandler = message -> NotificationUtil.error(null, "Error", message);
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho register in progress.
     private boolean registerInProgress;
 
     @FXML
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh initialize.
     private void initialize() {
         if (cbRole.getItems().isEmpty()) {
             cbRole.getItems().addAll(Role.BIDDER.name(), Role.SELLER.name());
@@ -78,6 +92,7 @@ public class RegisterViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle register.
     private void handleRegister() {
         hideStatus();
 
@@ -127,39 +142,41 @@ public class RegisterViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle back to login.
     private void handleBackToLogin() {
         backToLoginHandler.run();
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle show home.
     private void handleShowHome() {
         showHomeHandler.run();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set auth controller.
     public void setAuthController(AuthController authController) {
         this.authController = authController;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set show home handler.
     public void setShowHomeHandler(Runnable showHomeHandler) {
         this.showHomeHandler = Objects.requireNonNullElse(showHomeHandler, () -> {});
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set back to login handler.
     public void setBackToLoginHandler(Runnable backToLoginHandler) {
         this.backToLoginHandler = Objects.requireNonNullElse(backToLoginHandler, () -> {});
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set success handler.
     public void setSuccessHandler(Consumer<String> successHandler) {
         this.successHandler = Objects.requireNonNullElse(successHandler, message -> NotificationUtil.success(null, "Notification", message));
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set warning handler.
     public void setWarningHandler(Consumer<String> warningHandler) {
         this.warningHandler = Objects.requireNonNullElse(warningHandler, message -> NotificationUtil.warning(null, "Notification", message));
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set error handler.
     public void setErrorHandler(Consumer<String> errorHandler) {
         this.errorHandler = Objects.requireNonNullElse(errorHandler, message -> NotificationUtil.error(null, "Error", message));
     }
-
+    // Phuong thuc: bien doi du lieu cho thao tac parse role.
     private Role parseRole(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -171,7 +188,7 @@ public class RegisterViewController {
             return null;
         }
     }
-
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac clear inputs.
     private void clearInputs() {
         txtUsername.clear();
         txtFullName.clear();
@@ -182,7 +199,7 @@ public class RegisterViewController {
         hideStatus();
         updateLiveValidation();
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac register validation listeners.
     private void registerValidationListeners() {
         txtUsername.textProperty().addListener((observable, oldValue, newValue) -> updateLiveValidation());
         txtFullName.textProperty().addListener((observable, oldValue, newValue) -> updateLiveValidation());
@@ -191,7 +208,7 @@ public class RegisterViewController {
         txtConfirmPassword.textProperty().addListener((observable, oldValue, newValue) -> updateLiveValidation());
         cbRole.valueProperty().addListener((observable, oldValue, newValue) -> updateLiveValidation());
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update live validation.
     private void updateLiveValidation() {
         updateRequiredState(txtUsername);
         updateRequiredState(txtFullName);
@@ -230,7 +247,7 @@ public class RegisterViewController {
             }
         }
     }
-
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac validate before submit.
     private boolean validateBeforeSubmit(String username,
                                          String fullName,
                                          String email,
@@ -287,7 +304,7 @@ public class RegisterViewController {
         showInlineError(message);
         return false;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update required state.
     private void updateRequiredState(Control control) {
         if (control == null) {
             return;
@@ -299,7 +316,7 @@ public class RegisterViewController {
         }
         applyValidState(control);
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update optional validated state.
     private void updateOptionalValidatedState(Control control, boolean valid) {
         if (control == null) {
             return;
@@ -315,7 +332,7 @@ public class RegisterViewController {
             applyErrorState(control);
         }
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show inline error.
     private void showInlineError(String message) {
         if (lblStatus == null) {
             return;
@@ -325,7 +342,7 @@ public class RegisterViewController {
         lblStatus.setVisible(true);
         UiEffects.shake(registerCard);
     }
-
+    // Phuong thuc: thuc hien chuc nang hide status trong lop RegisterViewController.
     private void hideStatus() {
         if (lblStatus == null) {
             return;
@@ -334,7 +351,7 @@ public class RegisterViewController {
         lblStatus.setVisible(false);
         lblStatus.setText("");
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply error state.
     private void applyErrorState(Control control) {
         if (control == null) {
             return;
@@ -344,7 +361,7 @@ public class RegisterViewController {
             control.getStyleClass().add(INPUT_ERROR);
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply valid state.
     private void applyValidState(Control control) {
         if (control == null) {
             return;
@@ -354,7 +371,7 @@ public class RegisterViewController {
             control.getStyleClass().add(INPUT_VALID);
         }
     }
-
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac clear field state.
     private void clearFieldState(Control... controls) {
         for (Control control : controls) {
             if (control == null) {
@@ -363,11 +380,10 @@ public class RegisterViewController {
             control.getStyleClass().removeAll(INPUT_ERROR, INPUT_VALID);
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set busy.
     private void setBusy(boolean busy) {
         if (registerCard != null) {
             registerCard.setDisable(busy);
         }
     }
 }
-

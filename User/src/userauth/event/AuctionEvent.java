@@ -3,8 +3,8 @@ package userauth.event;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 
-// File note: Gói dữ liệu sự kiện auction để các màn hình biết thay đổi gì vừa xảy ra.
-// Snapshot gá»n cá»§a má»™t thay Ä‘á»•i auction Ä‘á»ƒ UI biáº¿t cÃ¡i gÃ¬ vá»«a xáº£y ra.
+// Ghi chu file: File ho tro co che su kien; dung de phat va nhan cap nhat trang thai dau gia.
+// Khai bao record AuctionEvent; phuc vu co che observer cho cac cap nhat dau gia.
 public record AuctionEvent(
         int auctionId,
         AuctionEventType type,
@@ -24,6 +24,7 @@ public record AuctionEvent(
     }
 
     // Event cho trÆ°á»ng há»£p giÃ¡ hoáº·c ngÆ°á»i dáº«n Ä‘áº§u vá»«a thay Ä‘á»•i.
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac bid activity.
     public static AuctionEvent bidActivity(AuctionItem item, long occurredAt) {
         return new AuctionEvent(
                 item.getId(),
@@ -38,6 +39,7 @@ public record AuctionEvent(
     }
 
     // Event cho trÆ°á»ng há»£p bá»‹ gia háº¡n vÃ¬ anti-sniping.
+    // Phuong thuc: thuc hien chuc nang anti sniping extended trong lop AuctionEvent.
     public static AuctionEvent antiSnipingExtended(AuctionItem item, long occurredAt) {
         return new AuctionEvent(
                 item.getId(),
@@ -52,6 +54,7 @@ public record AuctionEvent(
     }
 
     // Event cho cÃ¡c thay Ä‘á»•i tráº¡ng thÃ¡i nhÆ° OPEN -> RUNNING hoáº·c Ä‘Ã³ng tay.
+    // Phuong thuc: thuc hien chuc nang status changed trong lop AuctionEvent.
     public static AuctionEvent statusChanged(AuctionItem item, long occurredAt, String summary) {
         return new AuctionEvent(
                 item.getId(),
@@ -66,6 +69,7 @@ public record AuctionEvent(
     }
 
     // Event cho cÃ¡c bÆ°á»›c settlement nhÆ° PAID hoáº·c CANCEL RESULT.
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac settled.
     public static AuctionEvent settled(AuctionItem item, long occurredAt, String summary) {
         return new AuctionEvent(
                 item.getId(),
@@ -79,4 +83,3 @@ public record AuctionEvent(
         );
     }
 }
-

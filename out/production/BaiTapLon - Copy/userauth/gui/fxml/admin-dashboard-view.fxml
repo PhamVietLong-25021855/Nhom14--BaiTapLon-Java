@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!-- File note: Bố cục dashboard admin cho quản trị auction, user và số liệu hệ thống. -->
+<!-- Ghi chu file: File tai nguyen hoac cau hinh can thiet de ung dung nap va chay dung. -->
 <?import javafx.scene.chart.PieChart?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
@@ -209,4 +207,3 @@
         </HBox>
     </children>
 </StackPane>
-

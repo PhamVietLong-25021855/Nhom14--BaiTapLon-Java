@@ -4,7 +4,6 @@ import userauth.database.DatabaseConnection;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 import userauth.model.BidTransaction;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,10 +13,11 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
-// File note: Triển khai PostgreSQL cho DAO của module này.
-// DAO PostgreSQL cho auction vÃ  bid history.
+// Ghi chu file: File DAO; dinh nghia hoac trien khai cac thao tac doc ghi du lieu voi database.
+// Khai bao lop AuctionDAOImpl; phu trach hop dong hoac truy cap du lieu cho database.
 public class AuctionDAOImpl implements AuctionDAO {
-    // Insert má»›i Ä‘Ã£ mang theo áº£nh binary vÃ  sá»‘ láº§n anti-sniping.
+    // Insert mÃ¡Â»â€ºi Ã„â€˜ÃƒÂ£ mang theo Ã¡ÂºÂ£nh binary vÃƒÂ  sÃ¡Â»â€˜ lÃ¡ÂºÂ§n anti-sniping.
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String INSERT_AUCTION_SQL = """
             INSERT INTO auctions (
                 name, description, start_price, current_highest_bid, start_time, end_time,
@@ -25,38 +25,46 @@ public class AuctionDAOImpl implements AuctionDAO {
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
-    // Update cÅ©ng ghi láº¡i áº£nh má»›i vÃ  tráº¡ng thÃ¡i anti-sniping hiá»‡n táº¡i.
+    // Update cÃ…Â©ng ghi lÃ¡ÂºÂ¡i Ã¡ÂºÂ£nh mÃ¡Â»â€ºi vÃƒÂ  trÃ¡ÂºÂ¡ng thÃƒÂ¡i anti-sniping hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i.
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String UPDATE_AUCTION_SQL = """
             UPDATE auctions
             SET name = ?, description = ?, start_price = ?, current_highest_bid = ?, start_time = ?, end_time = ?,
                 category = ?, image_source = ?, image_data = ?, updated_at = ?, seller_id = ?, winner_id = ?, status = ?, anti_sniping_extensions = ?
             WHERE id = ?
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String DELETE_BIDS_BY_AUCTION_SQL = "DELETE FROM bids WHERE auction_id = ?";
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String DELETE_AUCTION_SQL = "DELETE FROM auctions WHERE id = ?";
-    // Select pháº£i Ä‘á»c Ä‘á»§ cá»™t má»›i Ä‘á»ƒ UI/service nhÃ¬n tháº¥y dá»¯ liá»‡u Ä‘áº§y Ä‘á»§.
+    // Select phÃ¡ÂºÂ£i Ã„â€˜Ã¡Â»Âc Ã„â€˜Ã¡Â»Â§ cÃ¡Â»â„¢t mÃ¡Â»â€ºi Ã„â€˜Ã¡Â»Æ’ UI/service nhÃƒÂ¬n thÃ¡ÂºÂ¥y dÃ¡Â»Â¯ liÃ¡Â»â€¡u Ã„â€˜Ã¡ÂºÂ§y Ã„â€˜Ã¡Â»Â§.
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_AUCTION_BY_ID_SQL = """
             SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
                    category, image_source, image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions
             FROM auctions
             WHERE id = ?
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_ALL_AUCTIONS_SQL = """
             SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
                    category, image_source, image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions
             FROM auctions
             ORDER BY id
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String INSERT_BID_SQL = """
             INSERT INTO bids (auction_id, bidder_id, amount, bid_time, status)
             VALUES (?, ?, ?, ?, ?)
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_BIDS_BY_AUCTION_SQL = """
             SELECT id, auction_id, bidder_id, amount, bid_time, status
             FROM bids
             WHERE auction_id = ?
             ORDER BY bid_time, id
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_ALL_BIDS_SQL = """
             SELECT id, auction_id, bidder_id, amount, bid_time, status
             FROM bids
@@ -64,6 +72,7 @@ public class AuctionDAOImpl implements AuctionDAO {
             """;
 
     @Override
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac save auction.
     public void saveAuction(AuctionItem item) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(INSERT_AUCTION_SQL, Statement.RETURN_GENERATED_KEYS)) {
@@ -81,6 +90,7 @@ public class AuctionDAOImpl implements AuctionDAO {
     }
 
     @Override
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update auction.
     public void updateAuction(AuctionItem item) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(UPDATE_AUCTION_SQL)) {
@@ -96,6 +106,7 @@ public class AuctionDAOImpl implements AuctionDAO {
     }
 
     @Override
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac delete auction.
     public void deleteAuction(int id) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection()) {
             connection.setAutoCommit(false);
@@ -119,6 +130,7 @@ public class AuctionDAOImpl implements AuctionDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find auction by id.
     public AuctionItem findAuctionById(int id) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(FIND_AUCTION_BY_ID_SQL)) {
@@ -135,6 +147,7 @@ public class AuctionDAOImpl implements AuctionDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find all auctions.
     public List<AuctionItem> findAllAuctions() {
         List<AuctionItem> auctions = new ArrayList<>();
 
@@ -152,6 +165,7 @@ public class AuctionDAOImpl implements AuctionDAO {
     }
 
     @Override
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac save bid.
     public void saveBid(BidTransaction bid) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(INSERT_BID_SQL, Statement.RETURN_GENERATED_KEYS)) {
@@ -173,6 +187,7 @@ public class AuctionDAOImpl implements AuctionDAO {
     }
 
     @Override
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac save bid and update auction.
     public void saveBidAndUpdateAuction(BidTransaction bid, AuctionItem item) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection()) {
             connection.setAutoCommit(false);
@@ -210,6 +225,7 @@ public class AuctionDAOImpl implements AuctionDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find bids by auction.
     public List<BidTransaction> findBidsByAuction(int auctionId) {
         List<BidTransaction> bids = new ArrayList<>();
 
@@ -229,6 +245,7 @@ public class AuctionDAOImpl implements AuctionDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find all bids.
     public List<BidTransaction> findAllBids() {
         List<BidTransaction> bids = new ArrayList<>();
 
@@ -245,7 +262,8 @@ public class AuctionDAOImpl implements AuctionDAO {
         return bids;
     }
 
-    // Map thá»© tá»± field Java sang Ä‘Ãºng thá»© tá»± placeholder cá»§a cÃ¢u INSERT.
+    // Map thÃ¡Â»Â© tÃ¡Â»Â± field Java sang Ã„â€˜ÃƒÂºng thÃ¡Â»Â© tÃ¡Â»Â± placeholder cÃ¡Â»Â§a cÃƒÂ¢u INSERT.
+    // Phuong thuc: thuc hien chuc nang bind auction for insert trong lop AuctionDAOImpl.
     private void bindAuctionForInsert(PreparedStatement statement, AuctionItem item) throws SQLException {
         statement.setString(1, item.getName());
         statement.setString(2, item.getDescription());
@@ -268,7 +286,8 @@ public class AuctionDAOImpl implements AuctionDAO {
         statement.setInt(15, item.getAntiSnipingExtensionCount());
     }
 
-    // Map thá»© tá»± field Java sang Ä‘Ãºng thá»© tá»± placeholder cá»§a cÃ¢u UPDATE.
+    // Map thÃ¡Â»Â© tÃ¡Â»Â± field Java sang Ã„â€˜ÃƒÂºng thÃ¡Â»Â© tÃ¡Â»Â± placeholder cÃ¡Â»Â§a cÃƒÂ¢u UPDATE.
+    // Phuong thuc: thuc hien chuc nang bind auction for update trong lop AuctionDAOImpl.
     private void bindAuctionForUpdate(PreparedStatement statement, AuctionItem item) throws SQLException {
         statement.setString(1, item.getName());
         statement.setString(2, item.getDescription());
@@ -291,7 +310,8 @@ public class AuctionDAOImpl implements AuctionDAO {
         statement.setInt(15, item.getId());
     }
 
-    // Dá»±ng AuctionItem hoÃ n chá»‰nh tá»« row PostgreSQL.
+    // DÃ¡Â»Â±ng AuctionItem hoÃƒÂ n chÃ¡Â»â€°nh tÃ¡Â»Â« row PostgreSQL.
+    // Phuong thuc: bien doi du lieu cho thao tac map auction.
     private AuctionItem mapAuction(ResultSet resultSet) throws SQLException {
         Object winnerValue = resultSet.getObject("winner_id");
         int winnerId = winnerValue == null ? -1 : ((Number) winnerValue).intValue();
@@ -315,7 +335,7 @@ public class AuctionDAOImpl implements AuctionDAO {
                 resultSet.getInt("anti_sniping_extensions")
         );
     }
-
+    // Phuong thuc: bien doi du lieu cho thao tac map bid.
     private BidTransaction mapBid(ResultSet resultSet) throws SQLException {
         return new BidTransaction(
                 resultSet.getInt("id"),
@@ -327,4 +347,3 @@ public class AuctionDAOImpl implements AuctionDAO {
         );
     }
 }
-

@@ -9,32 +9,41 @@ import javafx.util.StringConverter;
 import userauth.controller.WalletController;
 import userauth.model.PaymentMethod;
 import userauth.model.User;
-
 import java.util.Objects;
 import java.util.function.Consumer;
 
-// File note: Controller dialog nạp tiền vào ví của bidder.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop TopUpDialogController; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 public class TopUpDialogController {
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl username.
     private Label lblUsername;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt amount.
     private TextField txtAmount;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho cb payment method.
     private ComboBox<PaymentMethod> cbPaymentMethod;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl error.
     private Label lblError;
-
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho dialog stage.
     private Stage dialogStage;
+    // Thuoc tinh: giu tham chieu den WalletController de phoi hop xu ly.
     private WalletController walletController;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho user.
     private User user;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho success handler.
     private Consumer<String> successHandler = message -> {
     };
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho submit in progress.
     private boolean submitInProgress;
 
     @FXML
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh initialize.
     private void initialize() {
         hideError();
         cbPaymentMethod.getItems().setAll(PaymentMethod.values());
@@ -59,26 +68,27 @@ public class TopUpDialogController {
             }
         });
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set dialog stage.
     public void setDialogStage(Stage dialogStage) {
         this.dialogStage = dialogStage;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set wallet controller.
     public void setWalletController(WalletController walletController) {
         this.walletController = walletController;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set user.
     public void setUser(User user) {
         this.user = user;
         lblUsername.setText(user == null ? UiText.text("Account: -") : UiText.text("Account:") + " " + user.getUsername());
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set success handler.
     public void setSuccessHandler(Consumer<String> successHandler) {
         this.successHandler = Objects.requireNonNullElse(successHandler, message -> {
         });
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle submit.
     private void handleSubmit() {
         hideError();
 
@@ -137,28 +147,29 @@ public class TopUpDialogController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle cancel.
     private void handleCancel() {
         closeDialog();
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show error.
     private void showError(String message) {
         lblError.setText(UiText.text(message == null ? "" : message));
         lblError.setManaged(true);
         lblError.setVisible(true);
     }
-
+    // Phuong thuc: thuc hien chuc nang hide error trong lop TopUpDialogController.
     private void hideError() {
         lblError.setManaged(false);
         lblError.setVisible(false);
         lblError.setText("");
     }
-
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac close dialog.
     private void closeDialog() {
         if (dialogStage != null) {
             dialogStage.close();
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set busy.
     private void setBusy(boolean busy) {
         if (txtAmount != null) {
             txtAmount.setDisable(busy);
@@ -168,4 +179,3 @@ public class TopUpDialogController {
         }
     }
 }
-

@@ -2,7 +2,6 @@ package userauth.dao;
 
 import userauth.database.DatabaseConnection;
 import userauth.model.AutoBid;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,48 +10,56 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-// File note: Triển khai PostgreSQL cho DAO của module này.
-// DAO PostgreSQL cho luáº­t auto-bid vÃ  timestamp cá»§a chÃºng.
+// Ghi chu file: File DAO; dinh nghia hoac trien khai cac thao tac doc ghi du lieu voi database.
+// Khai bao lop AutoBidDAOImpl; phu trach hop dong hoac truy cap du lieu cho database.
 public class AutoBidDAOImpl implements AutoBidDAO {
-    // Khi lÆ°u má»›i, createdAt/updatedAt Ä‘Æ°á»£c ghi tháº³ng Ä‘á»ƒ DB sort á»•n Ä‘á»‹nh.
+    // Khi lÃ†Â°u mÃ¡Â»â€ºi, createdAt/updatedAt Ã„â€˜Ã†Â°Ã¡Â»Â£c ghi thÃ¡ÂºÂ³ng Ã„â€˜Ã¡Â»Æ’ DB sort Ã¡Â»â€¢n Ã„â€˜Ã¡Â»â€¹nh.
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String INSERT_AUTOBID_SQL = """
             INSERT INTO auto_bids (
                 auction_id, bidder_id, max_price, "increment", created_at, updated_at
             )
             VALUES (?, ?, ?, ?, ?, ?)
             """;
-    // Update chá»‰ Ä‘á»•i pháº§n rule vÃ  dáº¥u thá»i gian chá»‰nh sá»­a cuá»‘i.
+    // Update chÃ¡Â»â€° Ã„â€˜Ã¡Â»â€¢i phÃ¡ÂºÂ§n rule vÃƒÂ  dÃ¡ÂºÂ¥u thÃ¡Â»Âi gian chÃ¡Â»â€°nh sÃ¡Â»Â­a cuÃ¡Â»â€˜i.
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String UPDATE_AUTOBID_SQL = """
             UPDATE auto_bids
             SET max_price = ?, "increment" = ?, updated_at = ?
             WHERE id = ?
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_AUTOBID_BY_ID_SQL = """
             SELECT id, bidder_id, auction_id, max_price, "increment", created_at, updated_at
             FROM auto_bids
             WHERE id = ?
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_AUTOBID_BY_AUCTION_BIDDER_SQL = """
             SELECT id, bidder_id, auction_id, max_price, "increment", created_at, updated_at
             FROM auto_bids
             WHERE auction_id = ? AND bidder_id = ?
             """;
-    // Query nÃ y phá»¥c vá»¥ cÃ¡c xá»­ lÃ½ cáº§n xem táº¥t cáº£ auto-bid trong má»™t auction.
+    // Query nÃƒÂ y phÃ¡Â»Â¥c vÃ¡Â»Â¥ cÃƒÂ¡c xÃ¡Â»Â­ lÃƒÂ½ cÃ¡ÂºÂ§n xem tÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ auto-bid trong mÃ¡Â»â„¢t auction.
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_AUTOBIDS_BY_AUCTION_SQL = """
             SELECT id, bidder_id, auction_id, max_price, "increment", created_at, updated_at
             FROM auto_bids
             WHERE auction_id = ?
             ORDER BY created_at, id
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_ALL_USER_AUTOBID_SQL = """
             SELECT id, bidder_id, auction_id, max_price, "increment", created_at, updated_at
             FROM auto_bids
             WHERE bidder_id = ?
             ORDER BY created_at, id
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String DELETE_AUTOBID_SQL = "DELETE FROM auto_bids WHERE id = ?";
 
     @Override
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac save auto bid.
     public void saveAutoBid(AutoBid item) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(INSERT_AUTOBID_SQL, Statement.RETURN_GENERATED_KEYS)) {
@@ -70,6 +77,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
     }
 
     @Override
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update auto bid.
     public void updateAutoBid(AutoBid item) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(UPDATE_AUTOBID_SQL)) {
@@ -81,6 +89,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
     }
 
     @Override
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac delete auto bid.
     public void deleteAutoBid(int id) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection()) {
             connection.setAutoCommit(false);
@@ -100,6 +109,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find auto bid by id.
     public AutoBid findAutoBidById(int id) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(FIND_AUTOBID_BY_ID_SQL)) {
@@ -116,6 +126,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find auto bid by auction bidder.
     public AutoBid findAutoBidByAuctionBidder(int auctionId, int bidderId) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(FIND_AUTOBID_BY_AUCTION_BIDDER_SQL)) {
@@ -133,6 +144,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find all user auto bid.
     public List<AutoBid> findAllUserAutoBid(int bidderId) {
         List<AutoBid> autobids = new ArrayList<>();
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
@@ -150,6 +162,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find auto bids by auction.
     public List<AutoBid> findAutoBidsByAuction(int auctionId) {
         List<AutoBid> autobids = new ArrayList<>();
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
@@ -166,7 +179,8 @@ public class AutoBidDAOImpl implements AutoBidDAO {
         return autobids;
     }
 
-    // Gáº¯n dá»¯ liá»‡u Java vÃ o thá»© tá»± placeholder cá»§a cÃ¢u INSERT.
+    // GÃ¡ÂºÂ¯n dÃ¡Â»Â¯ liÃ¡Â»â€¡u Java vÃƒÂ o thÃ¡Â»Â© tÃ¡Â»Â± placeholder cÃ¡Â»Â§a cÃƒÂ¢u INSERT.
+    // Phuong thuc: thuc hien chuc nang bind auto bid for insert trong lop AutoBidDAOImpl.
     private void bindAutoBidForInsert(PreparedStatement statement, AutoBid item) throws SQLException {
         statement.setInt(1, item.getAuctionId());
         statement.setInt(2, item.getBidderId());
@@ -176,7 +190,8 @@ public class AutoBidDAOImpl implements AutoBidDAO {
         statement.setLong(6, item.getUpdatedAt());
     }
 
-    // Gáº¯n dá»¯ liá»‡u Java vÃ o thá»© tá»± placeholder cá»§a cÃ¢u UPDATE.
+    // GÃ¡ÂºÂ¯n dÃ¡Â»Â¯ liÃ¡Â»â€¡u Java vÃƒÂ o thÃ¡Â»Â© tÃ¡Â»Â± placeholder cÃ¡Â»Â§a cÃƒÂ¢u UPDATE.
+    // Phuong thuc: thuc hien chuc nang bind auto bid for update trong lop AutoBidDAOImpl.
     private void bindAutoBidForUpdate(PreparedStatement statement, AutoBid item) throws SQLException {
         statement.setDouble(1, item.getMaxPrice());
         statement.setDouble(2, item.getIncrement());
@@ -184,7 +199,8 @@ public class AutoBidDAOImpl implements AutoBidDAO {
         statement.setInt(4, item.getId());
     }
 
-    // Dá»±ng AutoBid tá»« row DB Ä‘á»ƒ service xá»­ lÃ½ tiáº¿p.
+    // DÃ¡Â»Â±ng AutoBid tÃ¡Â»Â« row DB Ã„â€˜Ã¡Â»Æ’ service xÃ¡Â»Â­ lÃƒÂ½ tiÃ¡ÂºÂ¿p.
+    // Phuong thuc: bien doi du lieu cho thao tac map autobid.
     private AutoBid mapAutobid(ResultSet resultSet) throws SQLException {
         return new AutoBid(
                 resultSet.getInt("id"),
@@ -197,4 +213,3 @@ public class AutoBidDAOImpl implements AutoBidDAO {
         );
     }
 }
-

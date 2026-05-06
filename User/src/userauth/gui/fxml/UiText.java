@@ -15,14 +15,14 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextInputControl;
 import javafx.util.StringConverter;
 import userauth.model.AuctionStatus;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-// File note: Utility text/i18n cho giao diện; gom chuỗi và chuyển đổi ngôn ngữ.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop UiText; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 final class UiText {
     private static final Map<String, String> EN_TO_VI = createTranslations();
     private static final Map<String, String> VI_TO_EN = createReverseTranslations(EN_TO_VI);
@@ -30,16 +30,16 @@ final class UiText {
     private static final Map<String, String> VI_PREFIX_TO_EN = createReverseTranslations(EN_PREFIX_TO_VI);
     private static final List<Map.Entry<String, String>> EN_PREFIXES = sortByKeyLengthDesc(EN_PREFIX_TO_VI);
     private static final List<Map.Entry<String, String>> VI_PREFIXES = sortByKeyLengthDesc(VI_PREFIX_TO_EN);
-
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho current language.
     private static AppLanguage currentLanguage = AppLanguage.ENGLISH;
-
+    // Ham tao: khoi tao doi tuong UiText voi cac phu thuoc can thiet.
     private UiText() {
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set current language.
     static void setCurrentLanguage(AppLanguage language) {
         currentLanguage = language == null ? AppLanguage.ENGLISH : language;
     }
-
+    // Phuong thuc: thuc hien chuc nang text trong lop UiText.
     static String text(String value) {
         if (value == null || value.isBlank()) {
             return value;
@@ -55,7 +55,7 @@ final class UiText {
 
         return translateStructured(value, exact, prefixes);
     }
-
+    // Phuong thuc: thuc hien chuc nang auction status trong lop UiText.
     static String auctionStatus(AuctionStatus status) {
         if (status == null) {
             return "";
@@ -68,18 +68,18 @@ final class UiText {
             case PAID -> text("PAID");
         };
     }
-
+    // Phuong thuc: thuc hien chuc nang user status trong lop UiText.
     static String userStatus(String status) {
         return text(status);
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply.
     static void apply(Node root) {
         if (root == null) {
             return;
         }
         applyNode(root);
     }
-
+    // Phuong thuc: thuc hien chuc nang configure translated combo box trong lop UiText.
     static void configureTranslatedComboBox(ComboBox<String> comboBox) {
         if (comboBox == null) {
             return;
@@ -115,7 +115,7 @@ final class UiText {
 
         refreshTranslatedComboBox(comboBox);
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac refresh translated combo box.
     static void refreshTranslatedComboBox(ComboBox<String> comboBox) {
         if (comboBox == null) {
             return;
@@ -127,7 +127,7 @@ final class UiText {
         }
         comboBox.requestLayout();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply node.
     private static void applyNode(Node node) {
         if (node instanceof Labeled labeled) {
             labeled.setText(text(labeled.getText()));
@@ -163,7 +163,7 @@ final class UiText {
             }
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply table column.
     private static void applyTableColumn(TableColumn<?, ?> column) {
         if (column == null) {
             return;
@@ -173,7 +173,7 @@ final class UiText {
             applyTableColumn(child);
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply menu item.
     private static void applyMenuItem(MenuItem item) {
         if (item == null) {
             return;
@@ -185,7 +185,7 @@ final class UiText {
             }
         }
     }
-
+    // Phuong thuc: thuc hien chuc nang translate structured trong lop UiText.
     private static String translateStructured(String value,
                                               Map<String, String> exact,
                                               List<Map.Entry<String, String>> prefixes) {
@@ -201,7 +201,7 @@ final class UiText {
 
         return result.toString();
     }
-
+    // Phuong thuc: thuc hien chuc nang translate pipe segments trong lop UiText.
     private static String translatePipeSegments(String value,
                                                 Map<String, String> exact,
                                                 List<Map.Entry<String, String>> prefixes) {
@@ -219,7 +219,7 @@ final class UiText {
         }
         return result.toString();
     }
-
+    // Phuong thuc: thuc hien chuc nang translate segment trong lop UiText.
     private static String translateSegment(String value,
                                            Map<String, String> exact,
                                            List<Map.Entry<String, String>> prefixes) {
@@ -249,7 +249,7 @@ final class UiText {
 
         return " ".repeat(leading) + translatedCore + " ".repeat(trailing);
     }
-
+    // Phuong thuc: thuc hien chuc nang translate numeric suffix trong lop UiText.
     private static String translateNumericSuffix(String value, Map<String, String> exact) {
         int separator = value.indexOf(' ');
         if (separator <= 0 || separator >= value.length() - 1) {
@@ -268,7 +268,7 @@ final class UiText {
         }
         return left + " " + translatedRight;
     }
-
+    // Phuong thuc: thuc hien chuc nang translate known prefix trong lop UiText.
     private static String translateKnownPrefix(String value,
                                                Map<String, String> exact,
                                                List<Map.Entry<String, String>> prefixes) {
@@ -284,7 +284,7 @@ final class UiText {
         }
         return null;
     }
-
+    // Phuong thuc: thuc hien chuc nang count leading spaces trong lop UiText.
     private static int countLeadingSpaces(String value) {
         int count = 0;
         while (count < value.length() && Character.isWhitespace(value.charAt(count))) {
@@ -292,7 +292,7 @@ final class UiText {
         }
         return count;
     }
-
+    // Phuong thuc: thuc hien chuc nang count trailing spaces trong lop UiText.
     private static int countTrailingSpaces(String value) {
         int count = 0;
         while (count < value.length() && Character.isWhitespace(value.charAt(value.length() - 1 - count))) {
@@ -347,7 +347,7 @@ final class UiText {
         put(values, "Invalid numeric value for ", "GiÃ¡ trá»‹ sá»‘ khÃ´ng há»£p lá»‡ cho ");
         return values;
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac add common translations.
     private static void addCommonTranslations(Map<String, String> values) {
         put(values, "SETTINGS", "CÃ€I Äáº¶T");
         put(values, "English", "Tiáº¿ng Anh");
@@ -485,7 +485,7 @@ final class UiText {
         put(values, "AD", "QT");
         put(values, "24/7", "24/7");
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac add landing translations.
     private static void addLandingTranslations(Map<String, String> values) {
         put(values, "PRODUCT AUCTION PLATFORM", "Ná»€N Táº¢NG Äáº¤U GIÃ Sáº¢N PHáº¨M");
         put(values, "PREMIUM AUCTION APP", "á»¨NG Dá»¤NG Äáº¤U GIÃ CAO Cáº¤P");
@@ -512,7 +512,7 @@ final class UiText {
         put(values, "Information will be updated later", "ThÃ´ng tin sáº½ Ä‘Æ°á»£c cáº­p nháº­t sau.");
         put(values, "Content will be updated later", "Ná»™i dung sáº½ Ä‘Æ°á»£c cáº­p nháº­t sau.");
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac add dashboard translations.
     private static void addDashboardTranslations(Map<String, String> values) {
         put(values, "Seller Dashboard", "Báº£ng Ä‘iá»u khiá»ƒn ngÆ°á»i bÃ¡n");
         put(values, "Bidder Dashboard", "Báº£ng Ä‘iá»u khiá»ƒn ngÆ°á»i Ä‘áº¥u giÃ¡");
@@ -616,7 +616,7 @@ final class UiText {
         put(values, "STATUS FILTER", "Bá»˜ Lá»ŒC TRáº NG THÃI");
         put(values, "STATUS FORM", "TRáº NG THÃI BIá»‚U MáºªU");
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac add form translations.
     private static void addFormTranslations(Map<String, String> values) {
         put(values, "LOG IN", "ÄÄ‚NG NHáº¬P");
         put(values, "REGISTER", "ÄÄ‚NG KÃ");
@@ -662,7 +662,7 @@ final class UiText {
         put(values, "Invalid role.", "Vai trÃ² khÃ´ng há»£p lá»‡.");
         put(values, "Please fill in all required information.", "Vui lÃ²ng Ä‘iá»n Ä‘áº§y Ä‘á»§ thÃ´ng tin báº¯t buá»™c.");
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac add runtime translations.
     private static void addRuntimeTranslations(Map<String, String> values) {
         put(values, "SAVE CHANGES", "LÆ¯U THAY Äá»”I");
         put(values, "UPDATE", "Cáº¬P NHáº¬T");
@@ -740,7 +740,7 @@ final class UiText {
         put(values, "Only admins can publish announcements to the homepage.", "Chá»‰ quáº£n trá»‹ viÃªn má»›i Ä‘Æ°á»£c Ä‘Äƒng thÃ´ng bÃ¡o lÃªn trang chá»§.");
         put(values, "Only admins can delete homepage announcements.", "Chá»‰ quáº£n trá»‹ viÃªn má»›i Ä‘Æ°á»£c xÃ³a thÃ´ng bÃ¡o trang chá»§.");
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac add service translations.
     private static void addServiceTranslations(Map<String, String> values) {
         put(values, "Account for lock or unlock was not found.", "KhÃ´ng tÃ¬m tháº¥y tÃ i khoáº£n Ä‘á»ƒ khÃ³a hoáº·c má»Ÿ khÃ³a.");
         put(values, "Announcement summary cannot be empty.", "TÃ³m táº¯t thÃ´ng bÃ¡o khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
@@ -792,7 +792,7 @@ final class UiText {
         put(values, "You do not have permission to close this auction.", "Báº¡n khÃ´ng cÃ³ quyá»n Ä‘Ã³ng phiÃªn nÃ y.");
         put(values, "Your account has been locked.", "TÃ i khoáº£n cá»§a báº¡n Ä‘Ã£ bá»‹ khÃ³a.");
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac add database translations.
     private static void addDatabaseTranslations(Map<String, String> values) {
         put(values, "PostgreSQL JDBC driver not found. Make sure the PostgreSQL driver is available.", "KhÃ´ng tÃ¬m tháº¥y driver JDBC PostgreSQL. HÃ£y báº£o Ä‘áº£m driver PostgreSQL Ä‘Ã£ sáºµn sÃ ng.");
         put(values, "The PostgreSQL connection pool is exhausted. Please try again.", "Pool káº¿t ná»‘i PostgreSQL Ä‘Ã£ háº¿t. Vui lÃ²ng thá»­ láº¡i.");
@@ -827,9 +827,8 @@ final class UiText {
         }
         return values;
     }
-
+    // Phuong thuc: thuc hien chuc nang put trong lop UiText.
     private static void put(Map<String, String> values, String source, String target) {
         values.put(source, target);
     }
 }
-

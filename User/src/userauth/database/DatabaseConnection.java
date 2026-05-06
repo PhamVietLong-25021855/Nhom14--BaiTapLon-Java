@@ -12,10 +12,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-// File note: Cung cấp kết nối JDBC tới server hoặc database của ứng dụng.
+// Ghi chu file: File thuoc tang database; phu trach doc cau hinh, tao ket noi va khoi tao schema.
+// Khai bao lop DatabaseConnection; phu trach mot phan ha tang ket noi va khoi tao database.
 public final class DatabaseConnection {
     private static final DatabaseConfig CONFIG = DatabaseConfig.load();
     private static final int MAX_POOLED_CONNECTIONS = Math.max(2, Math.min(6, Runtime.getRuntime().availableProcessors()));
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho ms.
     private static final long POOL_WAIT_TIMEOUT_MS = 5_000;
     private static final BlockingQueue<Connection> IDLE_CONNECTIONS = new ArrayBlockingQueue<>(MAX_POOLED_CONNECTIONS);
     private static final AtomicInteger CREATED_CONNECTIONS = new AtomicInteger();
@@ -29,14 +31,14 @@ public final class DatabaseConnection {
 
         Runtime.getRuntime().addShutdownHook(new Thread(DatabaseConnection::closeIdleConnections, "db-pool-shutdown"));
     }
-
+    // Ham tao: khoi tao doi tuong DatabaseConnection voi cac phu thuoc can thiet.
     private DatabaseConnection() {
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac get config.
     public static DatabaseConfig getConfig() {
         return CONFIG;
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac open server connection.
     public static Connection openServerConnection() throws SQLException {
         return DriverManager.getConnection(
                 CONFIG.getServerJdbcUrl(),
@@ -44,7 +46,7 @@ public final class DatabaseConnection {
                 CONFIG.getPassword()
         );
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac open database connection.
     public static Connection openDatabaseConnection() throws SQLException {
         while (true) {
             Connection idleConnection = IDLE_CONNECTIONS.poll();
@@ -81,7 +83,7 @@ public final class DatabaseConnection {
             }
         }
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac create physical database connection.
     private static Connection createPhysicalDatabaseConnection() throws SQLException {
         return DriverManager.getConnection(
                 CONFIG.getDatabaseJdbcUrl(),
@@ -89,7 +91,7 @@ public final class DatabaseConnection {
                 CONFIG.getPassword()
         );
     }
-
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac is reusable.
     private static boolean isReusable(Connection connection) {
         try {
             return connection != null && !connection.isClosed() && connection.isValid(2);
@@ -97,7 +99,7 @@ public final class DatabaseConnection {
             return false;
         }
     }
-
+    // Phuong thuc: thuc hien chuc nang wrap pooled connection trong lop DatabaseConnection.
     private static Connection wrapPooledConnection(Connection connection) {
         InvocationHandler handler = new PooledConnectionHandler(connection);
         return (Connection) Proxy.newProxyInstance(
@@ -106,7 +108,7 @@ public final class DatabaseConnection {
                 handler
         );
     }
-
+    // Phuong thuc: thuc hien chuc nang recycle trong lop DatabaseConnection.
     private static void recycle(Connection connection) {
         if (connection == null) {
             return;
@@ -131,7 +133,7 @@ public final class DatabaseConnection {
             retire(connection);
         }
     }
-
+    // Phuong thuc: thuc hien chuc nang retire trong lop DatabaseConnection.
     private static void retire(Connection connection) {
         if (connection == null) {
             return;
@@ -142,7 +144,7 @@ public final class DatabaseConnection {
         } catch (SQLException ignored) {
         }
     }
-
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac close idle connections.
     private static void closeIdleConnections() {
         Connection connection;
         while ((connection = IDLE_CONNECTIONS.poll()) != null) {
@@ -210,4 +212,3 @@ public final class DatabaseConnection {
         }
     }
 }
-

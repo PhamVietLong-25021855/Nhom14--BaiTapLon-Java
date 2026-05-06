@@ -24,14 +24,18 @@ import userauth.service.AutobidService;
 import userauth.service.HomepageContentService;
 import userauth.service.WalletService;
 
-// File note: Điểm vào của ứng dụng; khởi tạo DAO, service, controller, scheduler và mở JavaFX app.
+// Ghi chu file: Diem vao cua ung dung; khoi tao database, service, controller, scheduler va mo giao dien JavaFX.
+// Khai bao lop Main; quan ly vong doi khoi dong, dung ung dung va mo giao dien chinh.
 public class Main extends Application {
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho property.
     private static final String SCHEDULER_PROPERTY = "app.scheduler.enabled";
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho env.
     private static final String SCHEDULER_ENV = "APP_SCHEDULER_ENABLED";
-
+    // Thuoc tinh: giu tham chieu den AuctionScheduler de phoi hop xu ly.
     private AuctionScheduler scheduler;
 
     @Override
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh start.
     public void start(Stage stage) {
         DatabaseInitializer.initialize();
 
@@ -72,16 +76,17 @@ public class Main extends Application {
     }
 
     @Override
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac stop.
     public void stop() {
         if (scheduler != null) {
             scheduler.stop();
         }
     }
-
+    // Ham tao: khoi tao doi tuong Main voi cac phu thuoc can thiet.
     public static void main(String[] args) {
         launch(args);
     }
-
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac is scheduler enabled.
     private static boolean isSchedulerEnabled() {
         String propertyValue = System.getProperty(SCHEDULER_PROPERTY);
         if (propertyValue != null && !propertyValue.isBlank()) {
@@ -96,4 +101,3 @@ public class Main extends Application {
         return true;
     }
 }
-

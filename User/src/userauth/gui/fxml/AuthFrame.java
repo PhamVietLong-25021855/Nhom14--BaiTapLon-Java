@@ -12,32 +12,48 @@ import userauth.controller.WalletController;
 import userauth.model.AuctionItem;
 import userauth.model.BidTransaction;
 import userauth.model.User;
-
 import java.util.List;
 
-// File note: Khung JavaFX chính; tải FXML, giữ scene và mở các dialog/chuyển màn hình.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop AuthFrame; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 public class AuthFrame {
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho width.
     private static final double DEFAULT_WIDTH = 1280;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho height.
     private static final double DEFAULT_HEIGHT = 840;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho fullscreen.
     private static final boolean OPEN_FULLSCREEN = true;
-
+    // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final Stage stage;
+    // Thuoc tinh: giu tham chieu den AuthController de phoi hop xu ly.
     private final AuthController authController;
+    // Thuoc tinh: giu tham chieu den AuctionController de phoi hop xu ly.
     private final AuctionController auctionController;
+    // Thuoc tinh: giu tham chieu den AutobidController de phoi hop xu ly.
     private final AutobidController autobidController;
+    // Thuoc tinh: giu tham chieu den WalletController de phoi hop xu ly.
     private final WalletController walletController;
+    // Thuoc tinh: giu tham chieu den HomepageController de phoi hop xu ly.
     private final HomepageController homepageController;
+    // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final Scene scene;
+    // Thuoc tinh: giu tham chieu den AppShellController de phoi hop xu ly.
     private final AppShellController shellController;
-
+    // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<HomeViewController> homeView;
+    // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<LoginViewController> loginView;
+    // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<RegisterViewController> registerView;
+    // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<AdminDashboardViewController> adminView;
+    // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<AdminHomepageViewController> adminHomepageView;
+    // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<SellerDashboardViewController> sellerView;
+    // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<BidderDashboardViewController> bidderView;
-
+    // Ham tao: khoi tao doi tuong AuthFrame voi cac phu thuoc can thiet.
     public AuthFrame(
             Stage stage,
             AuthController authController,
@@ -79,18 +95,18 @@ public class AuthFrame {
         scene = new Scene(shellView.root(), DEFAULT_WIDTH, DEFAULT_HEIGHT);
         stage.setScene(scene);
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show.
     public void show() {
         stage.show();
         if (!OPEN_FULLSCREEN) {
             stage.centerOnScreen();
         }
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac get window.
     public Window getWindow() {
         return stage;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set language.
     public void setLanguage(AppLanguage language) {
         UiText.setCurrentLanguage(language);
         stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
@@ -102,23 +118,23 @@ public class AuthFrame {
         applyLanguage(sellerView.root());
         applyLanguage(bidderView.root());
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show home.
     public void showHome() {
         deactivateLiveViews();
         switchView(homeView.root());
         homeView.controller().activate();
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show login.
     public void showLogin() {
         deactivateLiveViews();
         switchView(loginView.root());
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show register.
     public void showRegister() {
         deactivateLiveViews();
         switchView(registerView.root());
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show role dashboard.
     public void showRoleDashboard(User user) {
         switch (user.getRole()) {
             case ADMIN -> showAdminDashboard(user);
@@ -136,21 +152,21 @@ public class AuthFrame {
             }
         }
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show admin dashboard.
     public void showAdminDashboard(User user) {
         deactivateLiveViews();
         adminView.controller().setUser(user);
         switchView(adminView.root());
         adminView.controller().activate();
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show admin homepage manager.
     public void showAdminHomepageManager(User user) {
         deactivateLiveViews();
         adminHomepageView.controller().setUser(user);
         switchView(adminHomepageView.root());
         adminHomepageView.controller().activate();
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show change password dialog.
     public void showChangePasswordDialog(User user) {
         LoadedView<ChangePasswordDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "change-password-dialog.fxml", "dialog");
         Stage dialog = FxmlRuntime.createModalDialog(stage, "CHANGE PASSWORD", view.root(), 440, 320);
@@ -160,7 +176,7 @@ public class AuthFrame {
         view.controller().setSuccessHandler(message -> NotificationUtil.success(stage, "NOTIFICATION", message));
         dialog.showAndWait();
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show bid history dialog.
     public void showBidHistoryDialog(AuctionItem auctionItem, List<BidTransaction> bids) {
         LoadedView<BidHistoryDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "bid-history-dialog.fxml", "dialog");
         Stage dialog = FxmlRuntime.createModalDialog(stage, "BID HISTORY", view.root(), 720, 460);
@@ -169,7 +185,7 @@ public class AuthFrame {
         view.controller().setBids(bids);
         dialog.showAndWait();
     }
-
+    // Phuong thuc: thuc hien chuc nang wire controllers trong lop AuthFrame.
     private void wireControllers() {
         homeView.controller().setShowLoginHandler(this::showLogin);
         homeView.controller().setShowRegisterHandler(this::showRegister);
@@ -207,7 +223,7 @@ public class AuthFrame {
         bidderView.controller().setAutobidController(autobidController);
         bidderView.controller().setWalletController(walletController);
     }
-
+    // Phuong thuc: thuc hien chuc nang deactivate live views trong lop AuthFrame.
     private void deactivateLiveViews() {
         homeView.controller().deactivate();
         adminView.controller().deactivate();
@@ -215,7 +231,7 @@ public class AuthFrame {
         bidderView.controller().deactivate();
         sellerView.controller().deactivate();
     }
-
+    // Phuong thuc: thuc hien chuc nang switch view trong lop AuthFrame.
     private void switchView(Parent root) {
         shellController.setContent(root, true);
         if (stage.isMaximized() || stage.isFullScreen()) {
@@ -228,9 +244,8 @@ public class AuthFrame {
             stage.centerOnScreen();
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply language.
     private void applyLanguage(Parent root) {
         UiText.apply(root);
     }
 }
-

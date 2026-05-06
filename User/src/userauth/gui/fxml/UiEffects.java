@@ -10,21 +10,24 @@ import javafx.animation.TranslateTransition;
 import javafx.scene.CacheHint;
 import javafx.scene.Node;
 import javafx.util.Duration;
-
 import java.util.List;
 
-// File note: Utility hiệu ứng giao diện nhỏ để UI mượt và nhất quán hơn.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop UiEffects; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 public final class UiEffects {
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho key.
     private static final String ENTRANCE_KEY = "ui.effects.entrance";
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho key.
     private static final String PULSE_KEY = "ui.effects.pulse";
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho key.
     private static final String SHAKE_KEY = "ui.effects.shake";
     private static final Duration ENTRANCE_DURATION = Duration.millis(220);
     private static final Duration PULSE_DURATION = Duration.millis(120);
     private static final Duration SHAKE_DURATION = Duration.millis(58);
-
+    // Ham tao: khoi tao doi tuong UiEffects voi cac phu thuoc can thiet.
     private UiEffects() {
     }
-
+    // Phuong thuc: thuc hien chuc nang play entrance trong lop UiEffects.
     public static void playEntrance(Node node, double delayMillis, double fromX, double fromY) {
         if (node == null) {
             return;
@@ -64,7 +67,7 @@ public final class UiEffects {
         transition.setOnFinished(event -> finishAnimation(node, ENTRANCE_KEY, previousCache, previousCacheHint));
         transition.play();
     }
-
+    // Phuong thuc: thuc hien chuc nang play staggered trong lop UiEffects.
     public static void playStaggered(List<? extends Node> nodes, double initialDelay, double stepDelay, double fromY) {
         if (nodes == null) {
             return;
@@ -76,7 +79,7 @@ public final class UiEffects {
             delay += stepDelay;
         }
     }
-
+    // Phuong thuc: thuc hien chuc nang pulse trong lop UiEffects.
     public static void pulse(Node node) {
         if (node == null) {
             return;
@@ -110,7 +113,7 @@ public final class UiEffects {
         transition.setOnFinished(event -> finishAnimation(node, PULSE_KEY, previousCache, previousCacheHint));
         transition.play();
     }
-
+    // Phuong thuc: thuc hien chuc nang shake trong lop UiEffects.
     public static void shake(Node node) {
         if (node == null) {
             return;
@@ -133,25 +136,25 @@ public final class UiEffects {
         transition.setOnFinished(event -> finishAnimation(node, SHAKE_KEY, previousCache, previousCacheHint));
         transition.play();
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac create shake step.
     private static TranslateTransition createShakeStep(Node node, double targetX) {
         TranslateTransition transition = new TranslateTransition(SHAKE_DURATION, node);
         transition.setToX(targetX);
         transition.setInterpolator(Interpolator.EASE_BOTH);
         return transition;
     }
-
+    // Phuong thuc: thuc hien chuc nang track animation trong lop UiEffects.
     private static void trackAnimation(Node node, String key, Animation animation) {
         node.getProperties().put(key, animation);
     }
-
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac stop tracked animation.
     private static void stopTrackedAnimation(Node node, String key) {
         Object value = node.getProperties().remove(key);
         if (value instanceof Animation animation) {
             animation.stop();
         }
     }
-
+    // Phuong thuc: thuc hien chuc nang finish animation trong lop UiEffects.
     private static void finishAnimation(Node node, String key, boolean previousCache, CacheHint previousCacheHint) {
         node.getProperties().remove(key);
         node.setOpacity(1);
@@ -162,13 +165,12 @@ public final class UiEffects {
         node.setCache(previousCache);
         node.setCacheHint(previousCacheHint);
     }
-
+    // Phuong thuc: thuc hien chuc nang clamp offset trong lop UiEffects.
     private static double clampOffset(double value) {
         return Math.max(-20, Math.min(20, value));
     }
-
+    // Phuong thuc: thuc hien chuc nang clamp delay trong lop UiEffects.
     private static double clampDelay(double value) {
         return Math.max(0, Math.min(220, value));
     }
 }
-

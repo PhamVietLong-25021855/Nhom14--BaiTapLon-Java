@@ -11,44 +11,55 @@ import javafx.scene.layout.VBox;
 import userauth.controller.AuthController;
 import userauth.exception.UnauthorizedException;
 import userauth.model.User;
-
 import java.util.Objects;
 import java.util.function.Consumer;
 
-// File note: Controller JavaFX cho màn hình đăng nhập.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop LoginViewController; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 public class LoginViewController {
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho error.
     private static final String INPUT_ERROR = "input-error";
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt username.
     private TextField txtUsername;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt password.
     private PasswordField txtPassword;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt visible password.
     private TextField txtVisiblePassword;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho chk remember me.
     private CheckBox chkRememberMe;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho chk show password.
     private CheckBox chkShowPassword;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl status.
     private Label lblStatus;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho auth card.
     private VBox authCard;
-
+    // Thuoc tinh: giu tham chieu den AuthController de phoi hop xu ly.
     private AuthController authController;
     private Runnable showHomeHandler = () -> {};
     private Runnable showRegisterHandler = () -> {};
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho login success handler.
     private Consumer<User> loginSuccessHandler = user -> {};
     private Consumer<String> infoHandler = message -> NotificationUtil.info(null, "Notification", message);
     private Consumer<String> errorHandler = message -> NotificationUtil.error(null, "Login failed", message);
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho login in progress.
     private boolean loginInProgress;
 
     @FXML
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh initialize.
     private void initialize() {
         initializePasswordVisibilityToggle();
         hideStatus();
@@ -56,6 +67,7 @@ public class LoginViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle login.
     private void handleLogin() {
         hideStatus();
         clearFieldState(txtUsername, txtPassword);
@@ -114,45 +126,48 @@ public class LoginViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle show register.
     private void handleShowRegister() {
         showRegisterHandler.run();
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle show home.
     private void handleShowHome() {
         showHomeHandler.run();
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle forgot password.
     private void handleForgotPassword() {
         showErrorState("A dedicated password recovery flow is not available in this version.");
         infoHandler.accept("Please contact an admin for password assistance.");
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set auth controller.
     public void setAuthController(AuthController authController) {
         this.authController = authController;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set show home handler.
     public void setShowHomeHandler(Runnable showHomeHandler) {
         this.showHomeHandler = Objects.requireNonNullElse(showHomeHandler, () -> {});
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set show register handler.
     public void setShowRegisterHandler(Runnable showRegisterHandler) {
         this.showRegisterHandler = Objects.requireNonNullElse(showRegisterHandler, () -> {});
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set login success handler.
     public void setLoginSuccessHandler(Consumer<User> loginSuccessHandler) {
         this.loginSuccessHandler = Objects.requireNonNullElse(loginSuccessHandler, user -> {});
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set info handler.
     public void setInfoHandler(Consumer<String> infoHandler) {
         this.infoHandler = Objects.requireNonNullElse(infoHandler, message -> NotificationUtil.info(null, "Notification", message));
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set error handler.
     public void setErrorHandler(Consumer<String> errorHandler) {
         this.errorHandler = Objects.requireNonNullElse(errorHandler, message -> NotificationUtil.error(null, "Login failed", message));
     }
-
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac clear inputs.
     private void clearInputs() {
         txtUsername.clear();
         txtPassword.clear();
@@ -169,7 +184,7 @@ public class LoginViewController {
         hideStatus();
         clearFieldState(txtUsername, txtPassword, txtVisiblePassword);
     }
-
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh initialize password visibility toggle.
     private void initializePasswordVisibilityToggle() {
         if (txtVisiblePassword == null || txtPassword == null) {
             return;
@@ -182,14 +197,14 @@ public class LoginViewController {
                     updatePasswordVisibility(showPassword));
         }
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac get password text.
     private String getPasswordText() {
         if (chkShowPassword != null && chkShowPassword.isSelected() && txtVisiblePassword != null) {
             return txtVisiblePassword.getText();
         }
         return txtPassword.getText();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update password visibility.
     private void updatePasswordVisibility(boolean showPassword) {
         if (txtVisiblePassword == null || txtPassword == null) {
             return;
@@ -207,7 +222,7 @@ public class LoginViewController {
             txtPassword.positionCaret(txtPassword.getText().length());
         }
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show error state.
     private void showErrorState(String message) {
         if (lblStatus == null) {
             return;
@@ -217,7 +232,7 @@ public class LoginViewController {
         lblStatus.setVisible(true);
         UiEffects.shake(authCard);
     }
-
+    // Phuong thuc: thuc hien chuc nang hide status trong lop LoginViewController.
     private void hideStatus() {
         if (lblStatus == null) {
             return;
@@ -226,7 +241,7 @@ public class LoginViewController {
         lblStatus.setVisible(false);
         lblStatus.setText("");
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply error state.
     private void applyErrorState(Control... controls) {
         for (Control control : controls) {
             if (control == null) {
@@ -237,7 +252,7 @@ public class LoginViewController {
             }
         }
     }
-
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac clear field state.
     private void clearFieldState(Control... controls) {
         for (Control control : controls) {
             if (control == null) {
@@ -246,11 +261,10 @@ public class LoginViewController {
             control.getStyleClass().remove(INPUT_ERROR);
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set busy.
     private void setBusy(boolean busy) {
         if (authCard != null) {
             authCard.setDisable(busy);
         }
     }
 }
-

@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!-- File note: Bố cục card trạng thái rỗng khi không có dữ liệu để hiển thị. -->
+<!-- Ghi chu file: File tai nguyen hoac cau hinh can thiet de ung dung nap va chay dung. -->
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.VBox?>
 
@@ -21,4 +19,3 @@
                styleClass="feed-card-foot"/>
     </children>
 </VBox>
-

@@ -1,6 +1,7 @@
 package userauth.model;
 
-// File note: Enum trạng thái vòng đời của một auction.
+// Ghi chu file: File model; luu cau truc du lieu va thuoc tinh cua doi tuong nghiep vu.
+// Khai bao enum AuctionStatus; mo ta cau truc du lieu cua doi tuong nghiep vu.
 public enum AuctionStatus {
     OPEN,       // Created but not started
     RUNNING,    // Active and accepting bids
@@ -8,4 +9,3 @@ public enum AuctionStatus {
     PAID,       // Paid by winner
     CANCELED;   // Cancelled
 }
-

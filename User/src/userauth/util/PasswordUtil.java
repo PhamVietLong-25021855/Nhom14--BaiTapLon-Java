@@ -4,9 +4,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-// File note: Utility băm và kiểm tra mật khẩu trước khi lưu xuống DB.
+// Ghi chu file: File tien ich dung chung; gom cac ham phu tro cho xu ly toan ung dung.
+// Khai bao lop PasswordUtil; cung cap ham tien ich dung lai trong nhieu noi.
 public class PasswordUtil {
-
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac hash password.
     public static String hashPassword(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -22,9 +23,8 @@ public class PasswordUtil {
             throw new RuntimeException("Password hashing failed", e);
         }
     }
-
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac verify password.
     public static boolean verifyPassword(String inputPassword, String storedHash) {
         return hashPassword(inputPassword).equals(storedHash);
     }
 }
-

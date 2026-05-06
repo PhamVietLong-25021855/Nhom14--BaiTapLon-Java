@@ -1,15 +1,4 @@
-/* File note: Theme CSS chính cho toàn bộ màn hình JavaFX của ứng dụng. */
-/*
- * SceneBuilder-friendly visual theme.
- *
- * Design intent:
- * - More polished, premium, and welcoming than the neutral fallback theme.
- * - Avoid global .label/.button/.text-field overrides that make SceneBuilder
- *   edits feel "locked".
- * - Use semantic classes and looked-up colors where possible instead of
- *   forcing -fx-text-fill on every control.
- */
-
+/* Ghi chu file: File tai nguyen hoac cau hinh can thiet de ung dung nap va chay dung. */
 .root {
     -fx-font-family: "Segoe UI Variable", "Bahnschrift", "Segoe UI", sans-serif;
     -fx-font-smoothing-type: lcd;
@@ -180,7 +169,7 @@
 .toast-root {
     -fx-background-color: linear-gradient(to bottom right, rgba(255, 255, 255, 0.98), rgba(246, 250, 253, 0.96));
     -fx-background-radius: 24;
-    -fx-border-color: -app-border;
+    -fx-border-color: rgba(122, 144, 169, 0.18);
     -fx-border-radius: 24;
     -fx-border-width: 1;
     -fx-effect: dropshadow(gaussian, rgba(16, 32, 52, 0.08), 22, 0.16, 0, 10);
@@ -1493,5 +1482,3 @@
 .landing-feed-card:hover {
     -fx-effect: null;
 }
-
-

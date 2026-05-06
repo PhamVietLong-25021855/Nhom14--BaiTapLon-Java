@@ -31,7 +31,6 @@ import userauth.model.AutoBid;
 import userauth.model.BidTransaction;
 import userauth.model.User;
 import userauth.model.Wallet;
-
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -41,18 +40,25 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-// File note: Controller JavaFX cho bidder: xem auction, đặt bid, auto-bid và theo dõi ví.
-// MÃ n bidder: xem auction, Ä‘áº·t bid, xem auto-bid vÃ  theo dÃµi vÃ­.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop BidderDashboardViewController; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 public class BidderDashboardViewController {
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho all.
     private static final String FILTER_ALL = "All";
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho running.
     private static final String FILTER_RUNNING = "Running";
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho open.
     private static final String FILTER_OPEN = "Opening Soon";
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho finished.
     private static final String FILTER_FINISHED = "Finished";
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho ms.
     private static final long ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho time.
     private static final DateTimeFormatter LIVE_TIME =
             DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho table auctions.
     private TableView<AuctionItem> tableAuctions;
 
     @FXML
@@ -74,6 +80,7 @@ public class BidderDashboardViewController {
     private TableColumn<AuctionItem, String> colTimeLeft;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho table auto bid.
     private TableView<AutoBid> tableAutoBid;
 
     @FXML
@@ -89,109 +96,148 @@ public class BidderDashboardViewController {
     private TableColumn<AutoBid, Double> colIncrementAB;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt search.
     private TextField txtSearch;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho cb status filter.
     private ComboBox<String> cbStatusFilter;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl sidebar user.
     private Label lblSidebarUser;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl wallet balance.
     private Label lblWalletBalance;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl user name.
     private Label lblUserName;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl running count.
     private Label lblRunningCount;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl ending soon count.
     private Label lblEndingSoonCount;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl leading count.
     private Label lblLeadingCount;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl detail name.
     private Label lblDetailName;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho img detail auction.
     private ImageView imgDetailAuction;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl detail image initial.
     private Label lblDetailImageInitial;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl detail description.
     private Label lblDetailDescription;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl detail current bid.
     private Label lblDetailCurrentBid;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl detail state.
     private Label lblDetailState;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl detail time left.
     private Label lblDetailTimeLeft;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl detail start price.
     private Label lblDetailStartPrice;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl detail leader.
     private Label lblDetailLeader;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl detail schedule.
     private Label lblDetailSchedule;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl detail category.
     private Label lblDetailCategory;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl bid status.
     private Label lblBidStatus;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl live bid count.
     private Label lblLiveBidCount;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt bid amount.
     private TextField txtBidAmount;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho bids live container.
     private VBox bidsLiveContainer;
 
     @FXML
     private LineChart<Number, Number> chartBidTrend;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho x axis bid trend.
     private NumberAxis xAxisBidTrend;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho y axis bid trend.
     private NumberAxis yAxisBidTrend;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho id autobid.
     private TextField idAutobid;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho max price.
     private TextField maxPrice;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho increment autobid.
     private TextField incrementAutobid;
-
+    // Thuoc tinh: giu tham chieu den AuthFrame de phoi hop xu ly.
     private AuthFrame frame;
+    // Thuoc tinh: giu tham chieu den AuctionController de phoi hop xu ly.
     private AuctionController auctionController;
+    // Thuoc tinh: giu tham chieu den AutobidController de phoi hop xu ly.
     private AutobidController autobidController;
+    // Thuoc tinh: giu tham chieu den WalletController de phoi hop xu ly.
     private WalletController walletController;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho current user.
     private User currentUser;
     // Polling Ä‘á»‹nh ká»³ Ä‘á»ƒ mÃ n hÃ¬nh bidder luÃ´n bÃ¡m sÃ¡t thay Ä‘á»•i cá»§a auction.
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho timeline.
     private Timeline timeline;
     private final PauseTransition filterRefreshDebounce = new PauseTransition(Duration.millis(220));
     // Cache bid history theo auction Ä‘á»ƒ render panel chi tiáº¿t nhanh hÆ¡n.
     private Map<Integer, List<BidTransaction>> bidsByAuction = Map.of();
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho last selected auction id.
     private int lastSelectedAuctionId = -1;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho last selected winner id.
     private int lastSelectedWinnerId = -1;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho last selected highest bid.
     private double lastSelectedHighestBid = -1;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho refresh ticket.
     private long refreshTicket;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho bid action in progress.
     private boolean bidActionInProgress;
 
     @FXML
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh initialize.
     private void initialize() {
         colId.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
         colName.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getName()));
@@ -246,24 +292,24 @@ public class BidderDashboardViewController {
         setBidStatus("Select an auction to view details.", false);
         showEmptySelectionState();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set frame.
     public void setFrame(AuthFrame frame) {
         this.frame = frame;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set auction controller.
     public void setAuctionController(AuctionController auctionController) {
         this.auctionController = auctionController;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set autobid controller.
     public void setAutobidController(AutobidController autobidController) {
         this.autobidController = autobidController;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set wallet controller.
     public void setWalletController(WalletController walletController) {
         this.walletController = walletController;
         updateWalletBalanceAsync();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set user.
     public void setUser(User user) {
         this.currentUser = user;
         String displayName = user == null ? UiText.text("Bidder") : abbreviate(resolveDisplayName(user), 26);
@@ -280,14 +326,14 @@ public class BidderDashboardViewController {
         applyWalletBalance(null);
         updateWalletBalanceAsync();
     }
-
+    // Phuong thuc: thuc hien chuc nang activate trong lop BidderDashboardViewController.
     public void activate() {
         refreshData();
         if (timeline != null && timeline.getStatus() != Animation.Status.RUNNING) {
             timeline.play();
         }
     }
-
+    // Phuong thuc: thuc hien chuc nang deactivate trong lop BidderDashboardViewController.
     public void deactivate() {
         refreshTicket++;
         if (timeline != null) {
@@ -295,7 +341,7 @@ public class BidderDashboardViewController {
         }
         filterRefreshDebounce.stop();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac refresh data.
     public void refreshData() {
         if (auctionController == null || currentUser == null) {
             return;
@@ -331,6 +377,7 @@ public class BidderDashboardViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle place bid.
     private void handlePlaceBid() {
         if (auctionController == null || currentUser == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Bid placement is not ready.");
@@ -363,6 +410,7 @@ public class BidderDashboardViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle autobid.
     private void handleAutobid() {
         if (autobidController == null || currentUser == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Auto bid is not ready.");
@@ -423,6 +471,7 @@ public class BidderDashboardViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle show history.
     private void handleShowHistory() {
         if (auctionController == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "AuctionController has not been assigned to the bidder screen.");
@@ -445,6 +494,7 @@ public class BidderDashboardViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle top up.
     private void handleTopUp() {
         if (walletController == null || currentUser == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Wallet top-up is not ready.");
@@ -468,6 +518,7 @@ public class BidderDashboardViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle change password.
     private void handleChangePassword() {
         if (currentUser == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Current user information is unavailable.");
@@ -482,16 +533,19 @@ public class BidderDashboardViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle switch to english.
     private void handleSwitchToEnglish() {
         switchLanguage(AppLanguage.ENGLISH);
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle switch to vietnamese.
     private void handleSwitchToVietnamese() {
         switchLanguage(AppLanguage.VIETNAMESE);
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle logout.
     private void handleLogout() {
         currentUser = null;
         deactivate();
@@ -501,7 +555,7 @@ public class BidderDashboardViewController {
             NotificationUtil.info(ownerWindow(), "Notification", "The logout action is prepared. Connect this controller to AuthFrame when integrating.");
         }
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac create auction row.
     private TableRow<AuctionItem> createAuctionRow(TableView<AuctionItem> ignored) {
         return new TableRow<>() {
             @Override
@@ -526,7 +580,7 @@ public class BidderDashboardViewController {
             }
         };
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update metrics.
     private void updateMetrics(List<AuctionItem> allAuctions) {
         long running = allAuctions.stream()
                 .filter(item -> item.getStatus() == AuctionStatus.RUNNING)
@@ -544,7 +598,7 @@ public class BidderDashboardViewController {
         lblEndingSoonCount.setText(String.valueOf(Math.max(endingSoon, 0)));
         lblLeadingCount.setText(String.valueOf(leading));
     }
-
+    // Phuong thuc: thuc hien chuc nang matches search trong lop BidderDashboardViewController.
     private boolean matchesSearch(AuctionItem item, String keyword) {
         if (keyword.isBlank()) {
             return true;
@@ -553,7 +607,7 @@ public class BidderDashboardViewController {
         return item.getName().toLowerCase(Locale.ROOT).contains(keyword)
                 || item.getCategory().toLowerCase(Locale.ROOT).contains(keyword);
     }
-
+    // Phuong thuc: thuc hien chuc nang matches status filter trong lop BidderDashboardViewController.
     private boolean matchesStatusFilter(AuctionItem item, String filter) {
         if (filter == null || FILTER_ALL.equals(filter)) {
             return true;
@@ -568,12 +622,12 @@ public class BidderDashboardViewController {
             default -> true;
         };
     }
-
+    // Phuong thuc: thuc hien chuc nang selected auction id trong lop BidderDashboardViewController.
     private int selectedAuctionId() {
         AuctionItem selected = tableAuctions.getSelectionModel().getSelectedItem();
         return selected == null ? -1 : selected.getId();
     }
-
+    // Phuong thuc: thuc hien chuc nang reselect auction trong lop BidderDashboardViewController.
     private void reselectAuction(int selectedId) {
         if (selectedId < 0) {
             return;
@@ -584,7 +638,7 @@ public class BidderDashboardViewController {
                 .findFirst()
                 .ifPresent(item -> tableAuctions.getSelectionModel().select(item));
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac render selected auction.
     private void renderSelectedAuction(AuctionItem auction, boolean allowNotifications) {
         if (auction == null) {
             showEmptySelectionState();
@@ -617,7 +671,7 @@ public class BidderDashboardViewController {
         lastSelectedWinnerId = auction.getWinnerId();
         lastSelectedHighestBid = auction.getCurrentHighestBid();
     }
-
+    // Phuong thuc: thuc hien chuc nang notify selected auction state changes trong lop BidderDashboardViewController.
     private void notifySelectedAuctionStateChanges(AuctionItem auction) {
         if (auction.getCurrentHighestBid() != lastSelectedHighestBid) {
             UiEffects.pulse(lblDetailCurrentBid);
@@ -638,7 +692,7 @@ public class BidderDashboardViewController {
             NotificationUtil.success(ownerWindow(), "Leading", "You currently have the highest bid in this auction.");
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply status chip.
     private void applyStatusChip(AuctionItem auction) {
         lblDetailState.getStyleClass().setAll("status-chip");
         switch (auction.getStatus()) {
@@ -660,7 +714,7 @@ public class BidderDashboardViewController {
             }
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply time chip.
     private void applyTimeChip(AuctionItem auction) {
         lblDetailTimeLeft.getStyleClass().setAll("status-chip");
         lblDetailTimeLeft.setText(AuctionViewFormatter.formatTimeLeft(auction));
@@ -679,7 +733,7 @@ public class BidderDashboardViewController {
             lblDetailTimeLeft.getStyleClass().add("status-chip-live");
         }
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac populate bid feed.
     private void populateBidFeed(List<BidTransaction> bids) {
         bidsLiveContainer.getChildren().clear();
         if (bids == null || bids.isEmpty()) {
@@ -717,7 +771,7 @@ public class BidderDashboardViewController {
             bidsLiveContainer.getChildren().add(card);
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update bid trend.
     private void updateBidTrend(List<BidTransaction> bids) {
         chartBidTrend.getData().clear();
         if (bids == null || bids.isEmpty()) {
@@ -735,7 +789,7 @@ public class BidderDashboardViewController {
         }
         chartBidTrend.getData().add(series);
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show empty selection state.
     private void showEmptySelectionState() {
         lblDetailName.setText(UiText.text("Select an auction to view details"));
         AuctionImageUtil.applyAuctionImage(imgDetailAuction, lblDetailImageInitial, null, null, "A");
@@ -753,7 +807,7 @@ public class BidderDashboardViewController {
         bidsLiveContainer.getChildren().clear();
         chartBidTrend.getData().clear();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set bid status.
     private void setBidStatus(String message, boolean error) {
         lblBidStatus.setText(UiText.text(message));
         lblBidStatus.getStyleClass().removeAll("error-text", "success-text");
@@ -768,14 +822,14 @@ public class BidderDashboardViewController {
             lblBidStatus.getStyleClass().add("success-text");
         }
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac create label.
     private Label createLabel(String text, String styleClass) {
         Label label = new Label(text);
         label.setWrapText(true);
         label.getStyleClass().add(styleClass);
         return label;
     }
-
+    // Phuong thuc: bien doi du lieu cho thao tac format leader.
     private String formatLeader(AuctionItem auction) {
         if (auction.getWinnerId() <= 0) {
             return UiText.text("No leading bidder yet");
@@ -785,15 +839,15 @@ public class BidderDashboardViewController {
         }
         return UiText.text("Bidder #") + auction.getWinnerId();
     }
-
+    // Phuong thuc: thuc hien chuc nang owner window trong lop BidderDashboardViewController.
     private javafx.stage.Window ownerWindow() {
         return frame == null ? null : frame.getWindow();
     }
-
+    // Phuong thuc: bien doi du lieu cho thao tac format transaction count.
     private String formatTransactionCount(int count) {
         return count + " " + UiText.text("transactions");
     }
-
+    // Phuong thuc: thuc hien chuc nang switch language trong lop BidderDashboardViewController.
     private void switchLanguage(AppLanguage language) {
         if (frame == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Language settings are unavailable.");
@@ -808,11 +862,11 @@ public class BidderDashboardViewController {
         renderSelectedAuction(tableAuctions.getSelectionModel().getSelectedItem(), false);
         NotificationUtil.success(ownerWindow(), "Notification", "Language updated.");
     }
-
+    // Phuong thuc: thuc hien chuc nang schedule refresh data trong lop BidderDashboardViewController.
     private void scheduleRefreshData() {
         filterRefreshDebounce.playFromStart();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set bid controls busy.
     private void setBidControlsBusy(boolean busy) {
         if (txtBidAmount != null) {
             txtBidAmount.setDisable(busy);
@@ -821,7 +875,7 @@ public class BidderDashboardViewController {
             tableAuctions.setDisable(busy);
         }
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac load bidder snapshot.
     private BidderSnapshot loadBidderSnapshot(String keyword, String statusFilter) {
         List<AuctionItem> allAuctions = auctionController.getAllAuctions();
         Map<Integer, List<BidTransaction>> groupedBids = new HashMap<>();
@@ -839,7 +893,7 @@ public class BidderDashboardViewController {
 
         return new BidderSnapshot(allAuctions, filteredAuctions, groupedBids);
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply bidder snapshot.
     private void applyBidderSnapshot(BidderSnapshot snapshot, int selectedId) {
         bidsByAuction = snapshot.groupedBids();
         updateMetrics(snapshot.allAuctions());
@@ -854,11 +908,11 @@ public class BidderDashboardViewController {
         renderSelectedAuction(selectedAuction, true);
         tableAuctions.refresh();
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac load autobid snapshot.
     private AutobidSnapshot loadAutobidSnapshot() {
         return new AutobidSnapshot(autobidController.getAutobidByBidder(currentUser.getId()));
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply autobid snapshot.
     private void applyAutobidSnapshot(AutobidSnapshot snapshot) {
         if (tableAutoBid == null) {
             return;
@@ -876,7 +930,7 @@ public class BidderDashboardViewController {
         }
         tableAutoBid.refresh();
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac populate autobid editor.
     private void populateAutobidEditor(AutoBid autobid) {
         if (autobid == null) {
             clearAutobidEditor();
@@ -887,7 +941,7 @@ public class BidderDashboardViewController {
         maxPrice.setText(String.valueOf(autobid.getMaxPrice()));
         incrementAutobid.setText(String.valueOf(autobid.getIncrement()));
     }
-
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac clear autobid editor.
     private void clearAutobidEditor() {
         if (idAutobid != null) {
             idAutobid.clear();
@@ -899,7 +953,7 @@ public class BidderDashboardViewController {
             incrementAutobid.clear();
         }
     }
-
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac submit bid.
     private void submitBid(double amount, int auctionId, int bidderId) {
         bidActionInProgress = true;
         setBidControlsBusy(true);
@@ -928,7 +982,7 @@ public class BidderDashboardViewController {
                 }
         );
     }
-
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle autobid result.
     private void handleAutobidResult(String result, String successMessage) {
         if ("SUCCESS".equals(result)) {
             NotificationUtil.success(ownerWindow(), "Notification", successMessage);
@@ -938,7 +992,7 @@ public class BidderDashboardViewController {
         }
         NotificationUtil.error(ownerWindow(), "Error", result);
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update wallet balance async.
     private void updateWalletBalanceAsync() {
         if (walletController == null || currentUser == null || lblWalletBalance == null) {
             return;
@@ -959,7 +1013,7 @@ public class BidderDashboardViewController {
                 }
         );
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply wallet balance.
     private void applyWalletBalance(Wallet wallet) {
         if (lblWalletBalance == null) {
             return;
@@ -979,14 +1033,14 @@ public class BidderDashboardViewController {
                         UiText.text("Total: ") + AuctionViewFormatter.formatMoney(wallet.getBalance())
         );
     }
-
+    // Phuong thuc: thuc hien chuc nang safe input trong lop BidderDashboardViewController.
     private String safeInput(TextField field) {
         if (field == null || field.getText() == null) {
             return "";
         }
         return field.getText().trim();
     }
-
+    // Phuong thuc: thuc hien chuc nang resolve display name trong lop BidderDashboardViewController.
     private String resolveDisplayName(User user) {
         String fullName = safeText(user.getFullName(), "");
         if (!fullName.isBlank()) {
@@ -994,7 +1048,7 @@ public class BidderDashboardViewController {
         }
         return safeText(user.getUsername(), UiText.text("Bidder"));
     }
-
+    // Phuong thuc: thuc hien chuc nang safe text trong lop BidderDashboardViewController.
     private String safeText(String value, String fallback) {
         if (value == null) {
             return fallback;
@@ -1002,24 +1056,23 @@ public class BidderDashboardViewController {
         String trimmed = value.trim();
         return trimmed.isEmpty() ? fallback : trimmed;
     }
-
+    // Phuong thuc: thuc hien chuc nang abbreviate trong lop BidderDashboardViewController.
     private String abbreviate(String value, int maxLength) {
         if (value == null || value.length() <= maxLength) {
             return value;
         }
         return value.substring(0, Math.max(0, maxLength - 3)) + "...";
     }
-
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac bidder snapshot.
     private record BidderSnapshot(
             List<AuctionItem> allAuctions,
             List<AuctionItem> filteredAuctions,
             Map<Integer, List<BidTransaction>> groupedBids
     ) {
     }
-
+    // Phuong thuc: thuc hien chuc nang autobid snapshot trong lop BidderDashboardViewController.
     private record AutobidSnapshot(
             List<AutoBid> allAutobids
     ) {
     }
 }
-

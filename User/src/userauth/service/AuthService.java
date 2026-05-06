@@ -11,17 +11,18 @@ import userauth.model.User;
 import userauth.util.AdminDefaults;
 import userauth.util.PasswordUtil;
 import userauth.validation.UserValidator;
-
 import java.util.List;
 
-// File note: Tầng nghiệp vụ xác thực và quản lý tài khoản người dùng.
+// Ghi chu file: File service; chua nghiep vu chinh va phoi hop giua controller, DAO va event.
+// Khai bao lop AuthService; chua xu ly nghiep vu va cac quy tac chinh cua he thong.
 public class AuthService {
+    // Thuoc tinh: giu tham chieu den UserDAO de phoi hop xu ly.
     private final UserDAO userDAO;
-
+    // Ham tao: khoi tao doi tuong AuthService voi cac phu thuoc can thiet.
     public AuthService(UserDAO userDAO) {
         this.userDAO = userDAO;
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac register.
     public void register(String username, String password, String fullName, String email, Role role) throws ValidationException {
         String normalizedUsername = username == null ? null : username.trim();
         String normalizedEmail = email == null ? null : email.trim().toLowerCase();
@@ -34,7 +35,7 @@ public class AuthService {
         User user = createUser(0, normalizedUsername, hashedPassword, fullName, normalizedEmail, role, now);
         userDAO.save(user);
     }
-
+    // Phuong thuc: thuc hien chuc nang login trong lop AuthService.
     public User login(String username, String password) throws UnauthorizedException {
         String normalizedUsername = username == null ? null : username.trim();
         if (normalizedUsername == null || normalizedUsername.isEmpty() || password == null || password.isBlank()) {
@@ -51,11 +52,11 @@ public class AuthService {
 
         return user;
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac get all users.
     public List<User> getAllUsers() {
         return userDAO.findAll();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac change password.
     public void changePassword(String username, String oldPassword, String newPassword)
             throws ValidationException, UnauthorizedException {
         User user = requireExistingUser(username);
@@ -73,7 +74,7 @@ public class AuthService {
         user.setUpdatedAt(System.currentTimeMillis());
         userDAO.update(user);
     }
-
+    // Phuong thuc: thuc hien chuc nang promote user to admin trong lop AuthService.
     public void promoteUserToAdmin(String adminUsername, int targetUserId)
             throws UnauthorizedException, ValidationException {
         User admin = requireExistingUser(adminUsername);
@@ -96,7 +97,7 @@ public class AuthService {
         target.setUpdatedAt(System.currentTimeMillis());
         userDAO.update(target);
     }
-
+    // Phuong thuc: thuc hien chuc nang demote admin to bidder trong lop AuthService.
     public void demoteAdminToBidder(String adminUsername, int targetUserId)
             throws UnauthorizedException, ValidationException {
         User admin = requireExistingUser(adminUsername);
@@ -119,7 +120,7 @@ public class AuthService {
         target.setUpdatedAt(System.currentTimeMillis());
         userDAO.update(target);
     }
-
+    // Phuong thuc: thuc hien chuc nang toggle user status trong lop AuthService.
     public void toggleUserStatus(String adminUsername, int targetUserId)
             throws UnauthorizedException, ValidationException {
         User admin = requireExistingUser(adminUsername);
@@ -139,7 +140,7 @@ public class AuthService {
         target.setUpdatedAt(System.currentTimeMillis());
         userDAO.update(target);
     }
-
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac validate registration input.
     private void validateRegistrationInput(String username, String password, String fullName, String email, Role role)
             throws ValidationException {
         if (!UserValidator.isValidUsername(username)) {
@@ -161,7 +162,7 @@ public class AuthService {
             throw new ValidationException("Full name cannot be empty.");
         }
     }
-
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac ensure unique user.
     private void ensureUniqueUser(String username, String email) throws ValidationException {
         if (userDAO.findByUsername(username) != null) {
             throw new ValidationException("Username already exists.");
@@ -170,7 +171,7 @@ public class AuthService {
             throw new ValidationException("Email already exists.");
         }
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac create user.
     private User createUser(int id, String username, String hashedPassword, String fullName, String email, Role role, long timestamp) {
         return switch (role) {
             case ADMIN -> new Admin(id, username, hashedPassword, fullName, email, "ACTIVE", timestamp, timestamp);
@@ -178,7 +179,7 @@ public class AuthService {
             case BIDDER -> new Bidder(id, username, hashedPassword, fullName, email, "ACTIVE", timestamp, timestamp);
         };
     }
-
+    // Phuong thuc: thuc hien chuc nang require existing user trong lop AuthService.
     private User requireExistingUser(String username) throws UnauthorizedException {
         User user = userDAO.findByUsername(username);
         if (user == null) {
@@ -186,7 +187,7 @@ public class AuthService {
         }
         return user;
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find user by id.
     private User findUserById(int userId) {
         for (User user : userDAO.findAll()) {
             if (user.getId() == userId) {
@@ -195,11 +196,10 @@ public class AuthService {
         }
         return null;
     }
-
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac is default admin.
     private boolean isDefaultAdmin(User user) {
         return user != null
                 && user.getRole() == Role.ADMIN
                 && AdminDefaults.USERNAME.equalsIgnoreCase(user.getUsername());
     }
 }
-

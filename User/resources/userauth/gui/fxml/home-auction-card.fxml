@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!-- File note: Bố cục card auction rút gọn dùng trong trang chủ. -->
+<!-- Ghi chu file: File tai nguyen hoac cau hinh can thiet de ung dung nap va chay dung. -->
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
@@ -81,4 +79,3 @@
         </HBox>
     </children>
 </VBox>
-

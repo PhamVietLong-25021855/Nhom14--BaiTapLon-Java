@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!-- File note: Bố cục màn hình đăng ký tài khoản. -->
+<!-- Ghi chu file: File tai nguyen hoac cau hinh can thiet de ung dung nap va chay dung. -->
 <?import java.lang.String?>
 <?import javafx.collections.FXCollections?>
 <?import javafx.scene.control.Button?>
@@ -105,4 +103,3 @@
         </HBox>
     </children>
 </StackPane>
-

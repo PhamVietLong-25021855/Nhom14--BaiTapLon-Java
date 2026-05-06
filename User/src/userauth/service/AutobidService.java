@@ -5,18 +5,18 @@ import userauth.exception.ItemNotFoundException;
 import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
 import userauth.model.AutoBid;
-
 import java.util.List;
 
-// File note: Tầng nghiệp vụ cho auto-bid; validate input và kiểm tra quyền sở hữu.
-// Táº§ng nghiá»‡p vá»¥ cho auto-bid: validate input vÃ  kiá»ƒm tra quyá»n sá»Ÿ há»¯u.
+// Ghi chu file: File service; chua nghiep vu chinh va phoi hop giua controller, DAO va event.
+// Khai bao lop AutobidService; chua xu ly nghiep vu va cac quy tac chinh cua he thong.
 public class AutobidService {
+    // Thuoc tinh: giu tham chieu den AutoBidDAO de phoi hop xu ly.
     private final AutoBidDAO autoBidDAO;
-
+    // Ham tao: khoi tao doi tuong AutobidService voi cac phu thuoc can thiet.
     public AutobidService(AutoBidDAO autoBidDAO) {
         this.autoBidDAO = autoBidDAO;
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac create autobid.
     public void createAutobid(int bidderId, int auctionId, double maxPrice, double increment)
             throws ValidationException {
         validateThresholds(maxPrice, increment);
@@ -29,7 +29,7 @@ public class AutobidService {
         AutoBid item = new AutoBid(0, auctionId, bidderId, maxPrice, increment, now, now);
         autoBidDAO.saveAutoBid(item);
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update autobid.
     public void updateAutobid(int bidderId, int id, double maxPrice, double increment)
             throws ItemNotFoundException, UnauthorizedException, ValidationException {
         AutoBid item = requireOwnedAutobid(bidderId, id);
@@ -40,20 +40,20 @@ public class AutobidService {
         item.setUpdatedAt(System.currentTimeMillis());
         autoBidDAO.updateAutoBid(item);
     }
-
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac delete autobid.
     public void deleteAutobid(int bidderId, int id) throws ItemNotFoundException, UnauthorizedException {
         requireOwnedAutobid(bidderId, id);
         autoBidDAO.deleteAutoBid(id);
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac get autobid by bidder.
     public List<AutoBid> getAutobidByBidder(int bidderId) {
         return autoBidDAO.findAllUserAutoBid(bidderId);
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac get autobid.
     public AutoBid getAutobid(int id) {
         return autoBidDAO.findAutoBidById(id);
     }
-
+    // Phuong thuc: thuc hien chuc nang require owned autobid trong lop AutobidService.
     private AutoBid requireOwnedAutobid(int bidderId, int id) throws ItemNotFoundException, UnauthorizedException {
         AutoBid item = autoBidDAO.findAutoBidById(id);
         if (item == null) {
@@ -64,7 +64,7 @@ public class AutobidService {
         }
         return item;
     }
-
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac validate thresholds.
     private void validateThresholds(double maxPrice, double increment) throws ValidationException {
         if (maxPrice <= 0) {
             throw new ValidationException("Max price must be greater than 0.");
@@ -77,4 +77,3 @@ public class AutobidService {
         }
     }
 }
-

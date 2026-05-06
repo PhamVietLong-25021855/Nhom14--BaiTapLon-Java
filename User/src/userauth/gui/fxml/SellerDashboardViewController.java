@@ -27,7 +27,6 @@ import userauth.event.AuctionEventListener;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 import userauth.model.User;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,12 +34,14 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// File note: Controller JavaFX cho seller: tạo/sửa auction, upload ảnh và xử lý settlement.
-// MÃ n seller: táº¡o/sá»­a auction, upload áº£nh, xem preview vÃ  thao tÃ¡c settlement.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop SellerDashboardViewController; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 public class SellerDashboardViewController {
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho ms.
     private static final long ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho table auctions.
     private TableView<AuctionItem> tableAuctions;
 
     @FXML
@@ -68,84 +69,116 @@ public class SellerDashboardViewController {
     private TableColumn<AuctionItem, String> colRemaining;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt name.
     private TextField txtName;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt desc.
     private TextArea txtDesc;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt price.
     private TextField txtPrice;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt category.
     private TextField txtCategory;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt image source.
     private TextField txtImageSource;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho spin duration.
     private Spinner<Integer> spinDuration;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho btn create.
     private Button btnCreate;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl seller sidebar.
     private Label lblSellerSidebar;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl seller name.
     private Label lblSellerName;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl total auctions.
     private Label lblTotalAuctions;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl running auctions.
     private Label lblRunningAuctions;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl scheduled auctions.
     private Label lblScheduledAuctions;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl closed auctions.
     private Label lblClosedAuctions;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview initial.
     private Label lblPreviewInitial;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho img preview image.
     private ImageView imgPreviewImage;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview name.
     private Label lblPreviewName;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview description.
     private Label lblPreviewDescription;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview category.
     private Label lblPreviewCategory;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview duration.
     private Label lblPreviewDuration;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview price.
     private Label lblPreviewPrice;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview mode.
     private Label lblPreviewMode;
-
+    // Thuoc tinh: giu tham chieu den AuthFrame de phoi hop xu ly.
     private AuthFrame frame;
+    // Thuoc tinh: giu tham chieu den AuctionController de phoi hop xu ly.
     private AuctionController auctionController;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho current user.
     private User currentUser;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho editing id.
     private int editingId = -1;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho refresh timeline.
     private Timeline refreshTimeline;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho refresh ticket.
     private long refreshTicket;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho action in progress.
     private boolean actionInProgress;
     // Bá»™ 3 biáº¿n táº¡m Ä‘á»ƒ quáº£n lÃ½ áº£nh seller Ä‘ang thao tÃ¡c trÆ°á»›c khi lÆ°u xuá»‘ng DB.
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho working image data.
     private byte[] workingImageData;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho working image source.
     private String workingImageSource;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho working image preview source.
     private String workingImagePreviewSource;
     // Listener dÃ¹ng event bus Ä‘á»ƒ seller dashboard refresh ngay khi auction Ä‘á»•i tráº¡ng thÃ¡i.
     private final AuctionEventListener auctionEventListener = event -> Platform.runLater(() -> handleAuctionEvent(event));
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho observer registered.
     private boolean observerRegistered;
 
     @FXML
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh initialize.
     private void initialize() {
         if (spinDuration.getValueFactory() == null) {
             spinDuration.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 99999, 30));
@@ -169,15 +202,15 @@ public class SellerDashboardViewController {
         refreshTimeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> refreshData()));
         refreshTimeline.setCycleCount(Animation.INDEFINITE);
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set frame.
     public void setFrame(AuthFrame frame) {
         this.frame = frame;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set auction controller.
     public void setAuctionController(AuctionController auctionController) {
         this.auctionController = auctionController;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set user.
     public void setUser(User user) {
         this.currentUser = user;
         String displayName = user == null ? UiText.text("Seller") : abbreviate(resolveDisplayName(user), 26);
@@ -190,6 +223,7 @@ public class SellerDashboardViewController {
     }
 
     // Khi mÃ n hÃ¬nh seller má»Ÿ ra thÃ¬ báº­t cáº£ polling vÃ  event-based refresh.
+    // Phuong thuc: thuc hien chuc nang activate trong lop SellerDashboardViewController.
     public void activate() {
         registerAuctionObserver();
         refreshData();
@@ -197,7 +231,7 @@ public class SellerDashboardViewController {
             refreshTimeline.play();
         }
     }
-
+    // Phuong thuc: thuc hien chuc nang deactivate trong lop SellerDashboardViewController.
     public void deactivate() {
         refreshTicket++;
         unregisterAuctionObserver();
@@ -205,7 +239,7 @@ public class SellerDashboardViewController {
             refreshTimeline.stop();
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac refresh data.
     public void refreshData() {
         if (auctionController == null || currentUser == null) {
             return;
@@ -235,6 +269,7 @@ public class SellerDashboardViewController {
 
     @FXML
     // Save Ä‘i qua controller má»›i Ä‘á»ƒ cÃ³ thá»ƒ ghi kÃ¨m áº£nh binary.
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle save auction.
     private void handleSaveAuction() {
         if (auctionController == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "AuctionController has not been assigned to the seller screen.");
@@ -286,12 +321,14 @@ public class SellerDashboardViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle clear form.
     private void handleClearForm() {
         resetForm();
     }
 
     @FXML
     // Cho seller chá»n file local rá»“i náº¡p bytes vÃ o biáº¿n táº¡m.
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle choose image.
     private void handleChooseImage() {
         FileChooser chooser = new FileChooser();
         chooser.setTitle(UiText.text("Choose product image"));
@@ -315,6 +352,7 @@ public class SellerDashboardViewController {
 
     @FXML
     // Náº¡p auction Ä‘ang chá»n lÃªn form Ä‘á»ƒ sá»­a.
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle edit selected.
     private void handleEditSelected() {
         AuctionItem item = tableAuctions.getSelectionModel().getSelectedItem();
         if (item == null) {
@@ -340,6 +378,7 @@ public class SellerDashboardViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle delete selected.
     private void handleDeleteSelected() {
         if (auctionController == null || currentUser == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Auction deletion is not ready.");
@@ -370,6 +409,7 @@ public class SellerDashboardViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle close auction.
     private void handleCloseAuction() {
         if (auctionController == null || currentUser == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Auction closing is not ready.");
@@ -396,6 +436,7 @@ public class SellerDashboardViewController {
 
     @FXML
     // Seller chá»‘t káº¿t quáº£ vÃ  xÃ¡c nháº­n Ä‘Ã£ thanh toÃ¡n.
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle mark auction paid.
     private void handleMarkAuctionPaid() {
         if (auctionController == null || currentUser == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Auction settlement is not ready.");
@@ -420,6 +461,7 @@ public class SellerDashboardViewController {
 
     @FXML
     // Seller há»§y káº¿t quáº£ Ä‘Ã£ chá»‘t, cÃ³ thá»ƒ kÃ©o theo refund/release wallet.
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle cancel finished auction.
     private void handleCancelFinishedAuction() {
         if (auctionController == null || currentUser == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Auction settlement is not ready.");
@@ -443,16 +485,19 @@ public class SellerDashboardViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle switch to english.
     private void handleSwitchToEnglish() {
         switchLanguage(AppLanguage.ENGLISH);
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle switch to vietnamese.
     private void handleSwitchToVietnamese() {
         switchLanguage(AppLanguage.VIETNAMESE);
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle logout.
     private void handleLogout() {
         currentUser = null;
         deactivate();
@@ -462,7 +507,7 @@ public class SellerDashboardViewController {
             NotificationUtil.info(ownerWindow(), "Notification", "The logout action is prepared. Connect this controller to AuthFrame when integrating.");
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update metrics.
     private void updateMetrics(List<AuctionItem> myAuctions) {
         long running = myAuctions.stream().filter(item -> item.getStatus() == AuctionStatus.RUNNING).count();
         long open = myAuctions.stream().filter(item -> item.getStatus() == AuctionStatus.OPEN).count();
@@ -477,7 +522,7 @@ public class SellerDashboardViewController {
         lblScheduledAuctions.setText(String.valueOf(open));
         lblClosedAuctions.setText(String.valueOf(closed));
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac register preview listeners.
     private void registerPreviewListeners() {
         txtName.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtDesc.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
@@ -488,6 +533,7 @@ public class SellerDashboardViewController {
     }
 
     // Preview luÃ´n Æ°u tiÃªn áº£nh bytes náº¿u cÃ³, giÃºp seller tháº¥y Ä‘Ãºng áº£nh sáº½ lÆ°u.
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update preview.
     private void updatePreview() {
         if (normalizeOptionalText(txtImageSource.getText()) == null) {
             clearWorkingImage();
@@ -513,7 +559,7 @@ public class SellerDashboardViewController {
                 ? UiText.text("Creating a new auction")
                 : UiText.text("Editing auction") + " #" + editingId);
     }
-
+    // Phuong thuc: bien doi du lieu cho thao tac parse price preview.
     private String parsePricePreview() {
         try {
             String value = txtPrice.getText() == null ? "" : txtPrice.getText().trim();
@@ -525,7 +571,7 @@ public class SellerDashboardViewController {
             return UiText.text("Invalid price");
         }
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac create auction row.
     private TableRow<AuctionItem> createAuctionRow(TableView<AuctionItem> ignored) {
         return new TableRow<>() {
             @Override
@@ -550,12 +596,12 @@ public class SellerDashboardViewController {
             }
         };
     }
-
+    // Phuong thuc: thuc hien chuc nang selected auction id trong lop SellerDashboardViewController.
     private int selectedAuctionId() {
         AuctionItem selected = tableAuctions.getSelectionModel().getSelectedItem();
         return selected == null ? -1 : selected.getId();
     }
-
+    // Phuong thuc: thuc hien chuc nang reselect auction trong lop SellerDashboardViewController.
     private void reselectAuction(int selectedId) {
         if (selectedId < 0) {
             return;
@@ -566,7 +612,7 @@ public class SellerDashboardViewController {
                 .findFirst()
                 .ifPresent(item -> tableAuctions.getSelectionModel().select(item));
     }
-
+    // Phuong thuc: thuc hien chuc nang reset form trong lop SellerDashboardViewController.
     private void resetForm() {
         editingId = -1;
         clearWorkingImage();
@@ -581,7 +627,7 @@ public class SellerDashboardViewController {
         btnCreate.setText(UiText.text("CREATE NEW"));
         updatePreview();
     }
-
+    // Phuong thuc: thuc hien chuc nang resolve display name trong lop SellerDashboardViewController.
     private String resolveDisplayName(User user) {
         String fullName = safeText(user.getFullName(), "");
         if (!fullName.isBlank()) {
@@ -589,7 +635,7 @@ public class SellerDashboardViewController {
         }
         return safeText(user.getUsername(), UiText.text("Seller"));
     }
-
+    // Phuong thuc: thuc hien chuc nang safe text trong lop SellerDashboardViewController.
     private String safeText(String value, String fallback) {
         if (value == null) {
             return fallback;
@@ -597,14 +643,14 @@ public class SellerDashboardViewController {
         String trimmed = value.trim();
         return trimmed.isEmpty() ? fallback : trimmed;
     }
-
+    // Phuong thuc: thuc hien chuc nang abbreviate trong lop SellerDashboardViewController.
     private String abbreviate(String value, int maxLength) {
         if (value == null || value.length() <= maxLength) {
             return value;
         }
         return value.substring(0, Math.max(0, maxLength - 3)) + "...";
     }
-
+    // Phuong thuc: thuc hien chuc nang normalize optional text trong lop SellerDashboardViewController.
     private String normalizeOptionalText(String value) {
         if (value == null) {
             return null;
@@ -614,6 +660,7 @@ public class SellerDashboardViewController {
     }
 
     // Náº¿u Ä‘Ã£ cÃ³ bytes thÃ¬ source lÆ°u chá»‰ cÃ²n mang Ã½ nghÄ©a tÃªn/nguá»“n tham chiáº¿u.
+    // Phuong thuc: thuc hien chuc nang resolve image source for save trong lop SellerDashboardViewController.
     private String resolveImageSourceForSave(String rawImageInput) {
         if (workingImageData != null && workingImageData.length > 0) {
             return workingImageSource;
@@ -622,6 +669,7 @@ public class SellerDashboardViewController {
     }
 
     // Äá»“ng bá»™ text path/url ngÆ°á»i dÃ¹ng nháº­p vá»›i bá»™ áº£nh táº¡m Ä‘ang giá»¯ trong form.
+    // Phuong thuc: thuc hien chuc nang sync image from input trong lop SellerDashboardViewController.
     private void syncImageFromInput(boolean strict) {
         String rawInput = normalizeOptionalText(txtImageSource.getText());
         if (rawInput == null) {
@@ -663,7 +711,7 @@ public class SellerDashboardViewController {
             }
         }
     }
-
+    // Phuong thuc: thuc hien chuc nang resolve local image path trong lop SellerDashboardViewController.
     private Path resolveLocalImagePath(String rawInput) {
         try {
             if (rawInput.startsWith("file:/")) {
@@ -679,23 +727,24 @@ public class SellerDashboardViewController {
     }
 
     // Äá»c file áº£nh local thÃ nh bytes Ä‘á»ƒ lÆ°u xuá»‘ng DB vÃ  preview ngay.
+    // Phuong thuc: lay hoac doc du lieu cho thao tac load selected image.
     private void loadSelectedImage(Path path) throws IOException {
         byte[] bytes = Files.readAllBytes(path);
         workingImageData = bytes;
         workingImageSource = path.getFileName() == null ? path.toString() : path.getFileName().toString();
         workingImagePreviewSource = path.toAbsolutePath().toString();
     }
-
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac clear working image.
     private void clearWorkingImage() {
         workingImageData = null;
         workingImageSource = null;
         workingImagePreviewSource = null;
     }
-
+    // Phuong thuc: thuc hien chuc nang owner window trong lop SellerDashboardViewController.
     private javafx.stage.Window ownerWindow() {
         return frame == null ? null : frame.getWindow();
     }
-
+    // Phuong thuc: thuc hien chuc nang switch language trong lop SellerDashboardViewController.
     private void switchLanguage(AppLanguage language) {
         if (frame == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Language settings are unavailable.");
@@ -706,7 +755,7 @@ public class SellerDashboardViewController {
         updatePreview();
         NotificationUtil.success(ownerWindow(), "Notification", "Language updated.");
     }
-
+    // Phuong thuc: thuc hien chuc nang run action async trong lop SellerDashboardViewController.
     private void runActionAsync(java.util.function.Supplier<String> action,
                                 String successMessage,
                                 Runnable successAction) {
@@ -732,7 +781,7 @@ public class SellerDashboardViewController {
                 }
         );
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set action busy.
     private void setActionBusy(boolean busy) {
         if (tableAuctions != null) {
             tableAuctions.setDisable(busy);
@@ -761,6 +810,7 @@ public class SellerDashboardViewController {
     }
 
     // ÄÄƒng kÃ½ event bus khi mÃ n hÃ¬nh active Ä‘á»ƒ tá»± refresh khi auction thay Ä‘á»•i.
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac register auction observer.
     private void registerAuctionObserver() {
         if (observerRegistered) {
             return;
@@ -768,7 +818,7 @@ public class SellerDashboardViewController {
         AuctionEventBus.getInstance().subscribe(auctionEventListener);
         observerRegistered = true;
     }
-
+    // Phuong thuc: thuc hien chuc nang unregister auction observer trong lop SellerDashboardViewController.
     private void unregisterAuctionObserver() {
         if (!observerRegistered) {
             return;
@@ -776,7 +826,7 @@ public class SellerDashboardViewController {
         AuctionEventBus.getInstance().unsubscribe(auctionEventListener);
         observerRegistered = false;
     }
-
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle auction event.
     private void handleAuctionEvent(AuctionEvent event) {
         if (event == null || currentUser == null) {
             return;
@@ -785,4 +835,3 @@ public class SellerDashboardViewController {
         refreshData();
     }
 }
-

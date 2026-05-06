@@ -13,42 +13,46 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// File note: Utility mở toast, alert và confirm dialog thống nhất toàn ứng dụng.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop NotificationUtil; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 public final class NotificationUtil {
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho width.
     private static final double TOAST_WIDTH = 360;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho gap.
     private static final double TOAST_GAP = 14;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho margin.
     private static final double TOAST_MARGIN = 24;
     private static final Duration TOAST_DURATION = Duration.seconds(3.6);
     private static final Duration TOAST_HIDE_DURATION = Duration.millis(150);
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho key.
     private static final String TOAST_HIDING_KEY = "toast.hiding";
 
     private static final Map<Window, List<Popup>> ACTIVE_TOASTS = new HashMap<>();
-
+    // Ham tao: khoi tao doi tuong NotificationUtil voi cac phu thuoc can thiet.
     private NotificationUtil() {
     }
-
+    // Phuong thuc: thuc hien chuc nang success trong lop NotificationUtil.
     public static void success(Window owner, String title, String message) {
         showToast(owner, UiText.text(title), UiText.text(message), "toast-success");
     }
-
+    // Phuong thuc: thuc hien chuc nang info trong lop NotificationUtil.
     public static void info(Window owner, String title, String message) {
         showToast(owner, UiText.text(title), UiText.text(message), "toast-info");
     }
-
+    // Phuong thuc: thuc hien chuc nang warning trong lop NotificationUtil.
     public static void warning(Window owner, String title, String message) {
         showToast(owner, UiText.text(title), UiText.text(message), "toast-warning");
     }
-
+    // Phuong thuc: thuc hien chuc nang error trong lop NotificationUtil.
     public static void error(Window owner, String title, String message) {
         showToast(owner, UiText.text(title), UiText.text(message), "toast-error");
     }
-
+    // Phuong thuc: thuc hien chuc nang confirm trong lop NotificationUtil.
     public static boolean confirm(Window owner, String title, String message) {
         LoadedView<ModalMessageController> view = FxmlRuntime.loadView(NotificationUtil.class, "modal-message.fxml", "dialog");
         String localizedTitle = UiText.text(title);
@@ -59,7 +63,7 @@ public final class NotificationUtil {
         dialog.showAndWait();
         return view.controller().isConfirmed();
     }
-
+    // Phuong thuc: thuc hien chuc nang input trong lop NotificationUtil.
     public static String input(Window owner, String title, String message, String defaultValue) {
         LoadedView<TextInputDialogController> view = FxmlRuntime.loadView(NotificationUtil.class, "text-input-dialog.fxml", "dialog");
         String localizedTitle = UiText.text(title);
@@ -78,7 +82,7 @@ public final class NotificationUtil {
         dialog.showAndWait();
         return view.controller().getInputValue();
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show message.
     private static void showMessage(Window owner, String title, String message, String primaryText, String primaryStyleClass) {
         LoadedView<ModalMessageController> view = FxmlRuntime.loadView(NotificationUtil.class, "modal-message.fxml", "dialog");
         String localizedTitle = UiText.text(title);
@@ -88,7 +92,7 @@ public final class NotificationUtil {
         view.controller().configure(localizedTitle, localizedMessage, UiText.text(primaryText), primaryStyleClass, null, false);
         dialog.showAndWait();
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show toast.
     private static void showToast(Window owner, String title, String message, String toneStyleClass) {
         Window resolvedOwner = resolveOwner(owner);
         if (resolvedOwner == null) {
@@ -122,7 +126,7 @@ public final class NotificationUtil {
 
         root.setOnMouseClicked(event -> hideToast(resolvedOwner, popup, root));
     }
-
+    // Phuong thuc: thuc hien chuc nang hide toast trong lop NotificationUtil.
     private static void hideToast(Window owner, Popup popup, Parent root) {
         if (Boolean.TRUE.equals(root.getProperties().get(TOAST_HIDING_KEY))) {
             return;
@@ -158,7 +162,7 @@ public final class NotificationUtil {
         });
         transition.play();
     }
-
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac remove toast.
     private static void removeToast(Window owner, Popup popup) {
         popup.hide();
         List<Popup> toasts = ACTIVE_TOASTS.get(owner);
@@ -170,7 +174,7 @@ public final class NotificationUtil {
         }
         positionToasts(owner);
     }
-
+    // Phuong thuc: thuc hien chuc nang position toasts trong lop NotificationUtil.
     private static void positionToasts(Window owner) {
         List<Popup> toasts = ACTIVE_TOASTS.get(owner);
         if (toasts == null || toasts.isEmpty()) {
@@ -190,7 +194,7 @@ public final class NotificationUtil {
             currentY += 96 + TOAST_GAP;
         }
     }
-
+    // Phuong thuc: thuc hien chuc nang resolve owner trong lop NotificationUtil.
     private static Window resolveOwner(Window owner) {
         if (owner != null) {
             return owner;
@@ -204,4 +208,3 @@ public final class NotificationUtil {
         return null;
     }
 }
-

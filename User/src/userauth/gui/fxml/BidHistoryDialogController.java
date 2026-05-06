@@ -6,37 +6,40 @@ import javafx.scene.control.TextArea;
 import javafx.stage.Stage;
 import userauth.model.AuctionItem;
 import userauth.model.BidTransaction;
-
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-// File note: Controller dialog lịch sử bid của một auction.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop BidHistoryDialogController; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 public class BidHistoryDialogController {
     private static final DateTimeFormatter BID_TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl auction name.
     private Label lblAuctionName;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl summary.
     private Label lblSummary;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt history.
     private TextArea txtHistory;
-
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho dialog stage.
     private Stage dialogStage;
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set dialog stage.
     public void setDialogStage(Stage dialogStage) {
         this.dialogStage = dialogStage;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set auction.
     public void setAuction(AuctionItem auctionItem) {
         lblAuctionName.setText(auctionItem == null
                 ? UiText.text("Product") + ": -"
                 : UiText.text("Product") + ": " + auctionItem.getName() + " | " + UiText.text("Category") + ": " + auctionItem.getCategory());
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set bids.
     public void setBids(List<BidTransaction> bids) {
         int count = bids == null ? 0 : bids.size();
         lblSummary.setText(UiText.text("Total transactions") + ": " + count);
@@ -70,10 +73,10 @@ public class BidHistoryDialogController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle close.
     private void handleClose() {
         if (dialogStage != null) {
             dialogStage.close();
         }
     }
 }
-

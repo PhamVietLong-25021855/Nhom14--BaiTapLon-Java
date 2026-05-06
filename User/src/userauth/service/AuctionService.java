@@ -11,7 +11,6 @@ import userauth.exception.ValidationException;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 import userauth.model.BidTransaction;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,19 +18,22 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-// File note: Tầng nghiệp vụ chính của auction: bid, anti-sniping, đóng phiên và settlement.
-// Trung tÃ¢m nghiá»‡p vá»¥ auction: táº¡o phiÃªn, Ä‘áº·t bid, Ä‘Ã³ng phiÃªn, settlement vÃ  anti-sniping.
+// Ghi chu file: File service; chua nghiep vu chinh va phoi hop giua controller, DAO va event.
+// Khai bao lop AuctionService; chua xu ly nghiep vu va cac quy tac chinh cua he thong.
 public class AuctionService {
+    // Thuoc tinh: giu tham chieu den AuctionDAO de phoi hop xu ly.
     private final AuctionDAO auctionDAO;
     // Váº«n giá»¯ wallet service cÅ© Ä‘á»ƒ reserve/capture/refund khÃ´ng bá»‹ máº¥t behavior.
+    // Thuoc tinh: giu tham chieu den WalletService de phoi hop xu ly.
     private final WalletService walletService;
     // Lock theo auction Ä‘á»ƒ xá»­ lÃ½ bid vÃ  settlement an toÃ n hÆ¡n khi cÃ³ cáº¡nh tranh.
     private final ConcurrentHashMap<Integer, ReentrantLock> auctionLocks;
     // Tráº¡ng thÃ¡i Ä‘áº¿m ngÆ°á»£c Ä‘Ã³ng sá»›m cá»§a admin.
     private final ConcurrentHashMap<Integer, AdminEarlyCloseState> adminEarlyCloseStates;
     // KÃªnh phÃ¡t sá»± kiá»‡n cho cÃ¡c dashboard Ä‘ang má»Ÿ.
+    // Thuoc tinh: giu tham chieu den AuctionEventBus de phoi hop xu ly.
     private final AuctionEventBus eventBus;
-
+    // Ham tao: khoi tao doi tuong AuctionService voi cac phu thuoc can thiet.
     public AuctionService(AuctionDAO auctionDAO, WalletService walletService) {
         this.auctionDAO = auctionDAO;
         this.walletService = walletService;
@@ -39,18 +41,20 @@ public class AuctionService {
         this.adminEarlyCloseStates = new ConcurrentHashMap<>();
         this.eventBus = AuctionEventBus.getInstance();
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac get lock for auction.
     private ReentrantLock getLockForAuction(int auctionId) {
         return auctionLocks.computeIfAbsent(auctionId, ignored -> new ReentrantLock());
     }
 
     // Giá»¯ overload cÅ© Ä‘á»ƒ khÃ´ng lÃ m gÃ£y nÆ¡i gá»i chÆ°a truyá»n imageData.
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac create auction.
     public void createAuction(String name, String desc, double startPrice, long startTime, long endTime, String category, String imageSource, int sellerId)
             throws ValidationException {
         createAuction(name, desc, startPrice, startTime, endTime, category, imageSource, null, sellerId);
     }
 
     // ÄÆ°á»ng táº¡o má»›i Ä‘áº§y Ä‘á»§ cho schema seller/database má»›i.
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac create auction.
     public void createAuction(String name, String desc, double startPrice, long startTime, long endTime, String category, String imageSource, byte[] imageData, int sellerId)
             throws ValidationException {
         validateAuctionDraft(name, startPrice, startTime, endTime);
@@ -61,12 +65,14 @@ public class AuctionService {
     }
 
     // Giá»¯ overload cÅ© cho luá»“ng update khÃ´ng cÃ³ áº£nh binary.
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update auction.
     public void updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice, long startTime, long endTime, String category, String imageSource)
             throws ItemNotFoundException, UnauthorizedException, ValidationException {
         updateAuction(auctionId, sellerId, name, desc, startPrice, startTime, endTime, category, imageSource, null);
     }
 
     // Update Ä‘áº§y Ä‘á»§: reset anti-sniping vÃ  cáº­p nháº­t láº¡i bytes áº£nh náº¿u seller thay Ä‘á»•i.
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update auction.
     public void updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice, long startTime, long endTime, String category, String imageSource, byte[] imageData)
             throws ItemNotFoundException, UnauthorizedException, ValidationException {
         AuctionItem item = requireOwnedAuction(auctionId, sellerId);
@@ -97,6 +103,7 @@ public class AuctionService {
     }
 
     // Náº¿u chÆ°a cÃ³ bid thÃ¬ xÃ³a háº³n; náº¿u Ä‘Ã£ cÃ³ bid thÃ¬ chuyá»ƒn sang CANCEL Ä‘á»ƒ giá»¯ lá»‹ch sá»­.
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac delete auction.
     public void deleteAuction(int auctionId, int sellerId) throws ItemNotFoundException, UnauthorizedException {
         AuctionItem item = requireOwnedAuction(auctionId, sellerId);
 
@@ -112,26 +119,27 @@ public class AuctionService {
         }
         adminEarlyCloseStates.remove(auctionId);
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac get auctions by seller.
     public List<AuctionItem> getAuctionsBySeller(int sellerId) {
         return auctionDAO.findAllAuctions().stream()
                 .filter(item -> item.getSellerId() == sellerId)
                 .collect(Collectors.toList());
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac get all auctions.
     public List<AuctionItem> getAllAuctions() {
         return auctionDAO.findAllAuctions();
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac get bids for auction.
     public List<BidTransaction> getBidsForAuction(int auctionId) {
         return auctionDAO.findBidsByAuction(auctionId);
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac get all bids.
     public List<BidTransaction> getAllBids() {
         return auctionDAO.findAllBids();
     }
 
     // Luá»“ng Ä‘áº·t bid hiá»‡n váº«n dá»±a vÃ o trigger DB cho auto-bid/reserve, sau Ä‘Ã³ Java xá»­ lÃ½ anti-sniping vÃ  event.
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac place bid.
     public void placeBid(int auctionId, int bidderId, double amount)
             throws ItemNotFoundException, AuctionClosedException, InvalidBidException {
         ReentrantLock lock = getLockForAuction(auctionId);
@@ -188,6 +196,7 @@ public class AuctionService {
     }
 
     // Seller Ä‘Ã³ng tay vÃ  dÃ¹ng cÃ¹ng luá»“ng settlement chung vá»›i scheduler/admin.
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac close auction manually.
     public void closeAuctionManually(int auctionId, int sellerId)
             throws ItemNotFoundException, UnauthorizedException, AuctionClosedException {
         AuctionItem item = requireOwnedAuction(auctionId, sellerId);
@@ -200,7 +209,7 @@ public class AuctionService {
         closeAuctionAndSettle(item, System.currentTimeMillis(), "Auction closed manually.");
         adminEarlyCloseStates.remove(auctionId);
     }
-
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh start admin early close countdown.
     public void startAdminEarlyCloseCountdown(int auctionId)
             throws ItemNotFoundException, AuctionClosedException, ValidationException {
         ReentrantLock lock = getLockForAuction(auctionId);
@@ -223,7 +232,7 @@ public class AuctionService {
             lock.unlock();
         }
     }
-
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac cancel admin early close countdown.
     public void cancelAdminEarlyCloseCountdown(int auctionId) throws ItemNotFoundException, ValidationException {
         ReentrantLock lock = getLockForAuction(auctionId);
         lock.lock();
@@ -247,6 +256,7 @@ public class AuctionService {
     }
 
     // DÃ nh cho flow má»›i: seller capture thá»§ cÃ´ng khi auction Ä‘ang á»Ÿ FINISHED.
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac mark auction as paid.
     public void markAuctionAsPaid(int auctionId, int sellerId)
             throws ItemNotFoundException, UnauthorizedException, ValidationException {
         ReentrantLock lock = getLockForAuction(auctionId);
@@ -274,6 +284,7 @@ public class AuctionService {
     }
 
     // DÃ nh cho flow má»›i: seller há»§y káº¿t quáº£ sau khi FINISHED hoáº·c cáº£ khi Ä‘Ã£ PAID.
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac cancel finished auction.
     public void cancelFinishedAuction(int auctionId, int sellerId)
             throws ItemNotFoundException, UnauthorizedException, ValidationException {
         ReentrantLock lock = getLockForAuction(auctionId);
@@ -298,6 +309,7 @@ public class AuctionService {
     }
 
     // Scheduler gá»i Ä‘á»‹nh ká»³ Ä‘á»ƒ Ä‘áº©y tráº¡ng thÃ¡i OPEN/RUNNING/FINISHED vÃ  xá»­ lÃ½ Ä‘Ã³ng phiÃªn.
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac refresh auction statuses.
     public void refreshAuctionStatuses() {
         long now = System.currentTimeMillis();
         for (AuctionItem item : auctionDAO.findAllAuctions()) {
@@ -330,6 +342,7 @@ public class AuctionService {
     }
 
     // Má»—i nhá»‹p sáº½ giáº£m countdown Ä‘Ã³ng sá»›m náº¿u auction khÃ´ng phÃ¡t sinh bid má»›i.
+    // Phuong thuc: thuc hien chuc nang tick admin early close countdowns trong lop AuctionService.
     private void tickAdminEarlyCloseCountdowns(long now) {
         for (Map.Entry<Integer, AdminEarlyCloseState> entry : new HashMap<>(adminEarlyCloseStates).entrySet()) {
             int auctionId = entry.getKey();
@@ -367,7 +380,7 @@ public class AuctionService {
             }
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac refresh early close snapshot.
     private void refreshEarlyCloseSnapshot(int auctionId, AuctionItem item, long now) {
         AdminEarlyCloseState state = adminEarlyCloseStates.get(auctionId);
         if (state == null) {
@@ -379,6 +392,7 @@ public class AuctionService {
     }
 
     // DÃ¹ng chung cho má»i action seller Ä‘á»ƒ kiá»ƒm tra auction tá»“n táº¡i vÃ  Ä‘Ãºng chá»§ sá»Ÿ há»¯u.
+    // Phuong thuc: thuc hien chuc nang require owned auction trong lop AuctionService.
     private AuctionItem requireOwnedAuction(int auctionId, int sellerId) throws ItemNotFoundException, UnauthorizedException {
         AuctionItem item = auctionDAO.findAuctionById(auctionId);
         if (item == null) {
@@ -391,6 +405,7 @@ public class AuctionService {
     }
 
     // Gom validate cÆ¡ báº£n cho create/update Ä‘á»ƒ trÃ¡nh láº·p.
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac validate auction draft.
     private void validateAuctionDraft(String name, double startPrice, long startTime, long endTime) throws ValidationException {
         if (name == null || name.trim().isEmpty()) {
             throw new ValidationException("Product name cannot be empty.");
@@ -405,7 +420,7 @@ public class AuctionService {
             throw new ValidationException("Cannot create an expired auction.");
         }
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find latest bid timestamp.
     private long findLatestBidTimestamp(List<BidTransaction> bids) {
         long latestTimestamp = -1;
         for (BidTransaction bid : bids) {
@@ -417,6 +432,7 @@ public class AuctionService {
     }
 
     // Náº¿u bid tá»›i sÃ¡t giá» Ä‘Ã³ng thÃ¬ kÃ©o dÃ i thÃªm má»™t khoáº£ng cá»‘ Ä‘á»‹nh.
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply anti sniping.
     private boolean applyAntiSniping(AuctionItem item, long now) {
         if (item.getStatus() != AuctionStatus.RUNNING) {
             return false;
@@ -441,7 +457,7 @@ public class AuctionService {
         item.setUpdatedAt(Math.max(item.getUpdatedAt() + 1, now));
         return true;
     }
-
+    // Phuong thuc: thuc hien chuc nang normalize optional text trong lop AuctionService.
     private String normalizeOptionalText(String value) {
         if (value == null) {
             return null;
@@ -451,6 +467,7 @@ public class AuctionService {
     }
 
     // Cháº·n áº£nh quÃ¡ lá»›n ngay tá»« service trÆ°á»›c khi ghi DB.
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac validate image.
     private void validateImage(byte[] imageData) throws ValidationException {
         if (imageData != null && imageData.length > AuctionRules.MAX_IMAGE_BYTES) {
             throw new ValidationException("Image file is too large. Maximum supported size is 5 MB.");
@@ -458,6 +475,7 @@ public class AuctionService {
     }
 
     // Há»§y settlement theo Ä‘Ãºng tráº¡ng thÃ¡i hiá»‡n táº¡i: release reserve hoáº·c refund sá»‘ dÆ° Ä‘Ã£ capture.
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac cancel settlement for item.
     private void cancelSettlementForItem(AuctionItem item) {
         if (item.getWinnerId() <= 0 || item.getCurrentHighestBid() <= 0) {
             return;
@@ -475,6 +493,7 @@ public class AuctionService {
     }
 
     // Luá»“ng Ä‘Ã³ng phiÃªn chung: cá»‘ capture tá»± Ä‘á»™ng, náº¿u khÃ´ng Ä‘Æ°á»£c thÃ¬ Ä‘á»ƒ FINISHED cho seller xá»­ lÃ½ sau.
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac close auction and settle.
     private void closeAuctionAndSettle(AuctionItem item, long now, String summary) {
         AuctionStatus finalStatus = AuctionStatus.FINISHED;
         if (item.getWinnerId() > 0 && item.getCurrentHighestBid() > 0) {
@@ -495,6 +514,7 @@ public class AuctionService {
     }
 
     // Chuáº©n hÃ³a ná»™i dung event Ä‘á»ƒ UI/debug Ä‘á»c dá»… hÆ¡n.
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac build settlement summary.
     private String buildSettlementSummary(AuctionItem item, AuctionStatus finalStatus, String baseSummary) {
         if (finalStatus == AuctionStatus.PAID) {
             return baseSummary + " Winning funds were captured automatically.";
@@ -538,4 +558,3 @@ public class AuctionService {
         }
     }
 }
-

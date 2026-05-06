@@ -7,35 +7,45 @@ import javafx.scene.layout.VBox;
 import userauth.model.AuctionItem;
 import userauth.model.HomepageAnnouncement;
 
-// File note: Controller card announcement hiển thị từng thông báo ở trang chủ.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop HomeAnnouncementCardController; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 public class HomeAnnouncementCardController {
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl title.
     private Label lblTitle;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl status chip.
     private Label lblStatusChip;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl summary.
     private Label lblSummary;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl schedule.
     private Label lblSchedule;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho linked auction box.
     private VBox linkedAuctionBox;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl linked auction title.
     private Label lblLinkedAuctionTitle;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl linked auction schedule.
     private Label lblLinkedAuctionSchedule;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl details.
     private Label lblDetails;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl updated at.
     private Label lblUpdatedAt;
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set announcement.
     public void setAnnouncement(HomepageAnnouncement announcement, AuctionItem linkedAuction) {
         if (announcement == null) {
             return;
@@ -59,7 +69,7 @@ public class HomeAnnouncementCardController {
             lblLinkedAuctionSchedule.setText(UiText.text("Schedule") + ": " + AuctionViewFormatter.formatScheduleRange(linkedAuction));
         }
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set status chip.
     private void setStatusChip(String text, String extraStyleClass) {
         lblStatusChip.setText(UiText.text(text));
         lblStatusChip.getStyleClass().removeAll("status-chip-live", "status-chip-upcoming", "status-chip-admin");
@@ -68,14 +78,13 @@ public class HomeAnnouncementCardController {
         }
         lblStatusChip.getStyleClass().add(extraStyleClass);
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set visible state.
     private void setVisibleState(Node node, boolean visible) {
         node.setVisible(visible);
         node.setManaged(visible);
     }
-
+    // Phuong thuc: thuc hien chuc nang safe value trong lop HomeAnnouncementCardController.
     private String safeValue(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
     }
 }
-

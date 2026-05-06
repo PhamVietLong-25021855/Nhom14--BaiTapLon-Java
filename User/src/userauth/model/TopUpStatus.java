@@ -1,10 +1,10 @@
 package userauth.model;
 
-// File note: Enum trạng thái của giao dịch nạp tiền vào ví.
+// Ghi chu file: File model; luu cau truc du lieu va thuoc tinh cua doi tuong nghiep vu.
+// Khai bao enum TopUpStatus; mo ta cau truc du lieu cua doi tuong nghiep vu.
 public enum TopUpStatus {
     PENDING,
     SUCCESS,
     FAILED,
     CANCELLED
 }
-

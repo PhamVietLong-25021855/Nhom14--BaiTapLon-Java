@@ -6,7 +6,6 @@ import userauth.model.Bidder;
 import userauth.model.Role;
 import userauth.model.Seller;
 import userauth.model.User;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -15,27 +14,33 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-// File note: Triển khai PostgreSQL cho DAO của module này.
+// Ghi chu file: File DAO; dinh nghia hoac trien khai cac thao tac doc ghi du lieu voi database.
+// Khai bao lop UserDAOImpl; phu trach hop dong hoac truy cap du lieu cho database.
 public class UserDAOImpl implements UserDAO {
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String INSERT_SQL = """
             INSERT INTO users (username, password, full_name, email, role, status, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String UPDATE_SQL = """
             UPDATE users
             SET username = ?, password = ?, full_name = ?, email = ?, role = ?, status = ?, updated_at = ?
             WHERE id = ?
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_BY_USERNAME_SQL = """
             SELECT id, username, password, full_name, email, role, status, created_at, updated_at
             FROM users
             WHERE LOWER(username) = LOWER(?)
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_BY_EMAIL_SQL = """
             SELECT id, username, password, full_name, email, role, status, created_at, updated_at
             FROM users
             WHERE LOWER(email) = LOWER(?)
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_ALL_SQL = """
             SELECT id, username, password, full_name, email, role, status, created_at, updated_at
             FROM users
@@ -43,6 +48,7 @@ public class UserDAOImpl implements UserDAO {
             """;
 
     @Override
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac save.
     public void save(User user) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(INSERT_SQL, Statement.RETURN_GENERATED_KEYS)) {
@@ -67,6 +73,7 @@ public class UserDAOImpl implements UserDAO {
     }
 
     @Override
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update.
     public void update(User user) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(UPDATE_SQL)) {
@@ -85,6 +92,7 @@ public class UserDAOImpl implements UserDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find by username.
     public User findByUsername(String username) {
         if (username == null || username.isBlank()) {
             return null;
@@ -105,6 +113,7 @@ public class UserDAOImpl implements UserDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find by email.
     public User findByEmail(String email) {
         if (email == null || email.isBlank()) {
             return null;
@@ -125,6 +134,7 @@ public class UserDAOImpl implements UserDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find all.
     public List<User> findAll() {
         List<User> users = new ArrayList<>();
 
@@ -140,7 +150,7 @@ public class UserDAOImpl implements UserDAO {
 
         return users;
     }
-
+    // Phuong thuc: bien doi du lieu cho thao tac map user.
     private User mapUser(ResultSet resultSet) throws SQLException {
         int id = resultSet.getInt("id");
         String username = resultSet.getString("username");
@@ -159,4 +169,3 @@ public class UserDAOImpl implements UserDAO {
         };
     }
 }
-

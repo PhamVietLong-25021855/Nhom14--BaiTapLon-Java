@@ -2,7 +2,6 @@ package userauth.dao;
 
 import userauth.database.DatabaseConnection;
 import userauth.model.HomepageAnnouncement;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -12,25 +11,31 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
-// File note: Triển khai PostgreSQL cho DAO của module này.
+// Ghi chu file: File DAO; dinh nghia hoac trien khai cac thao tac doc ghi du lieu voi database.
+// Khai bao lop HomepageAnnouncementDAOImpl; phu trach hop dong hoac truy cap du lieu cho database.
 public class HomepageAnnouncementDAOImpl implements HomepageAnnouncementDAO {
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String INSERT_SQL = """
             INSERT INTO homepage_announcements (
                 title, summary, details, schedule_text, linked_auction_id, author_id, created_at, updated_at
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String UPDATE_SQL = """
             UPDATE homepage_announcements
             SET title = ?, summary = ?, details = ?, schedule_text = ?, linked_auction_id = ?, author_id = ?, updated_at = ?
             WHERE id = ?
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String DELETE_SQL = "DELETE FROM homepage_announcements WHERE id = ?";
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_BY_ID_SQL = """
             SELECT id, title, summary, details, schedule_text, linked_auction_id, author_id, created_at, updated_at
             FROM homepage_announcements
             WHERE id = ?
             """;
+    // Thuoc tinh/hang so: luu cau hinh hoac gia tri dung chung cho sql.
     private static final String FIND_ALL_SQL = """
             SELECT id, title, summary, details, schedule_text, linked_auction_id, author_id, created_at, updated_at
             FROM homepage_announcements
@@ -38,6 +43,7 @@ public class HomepageAnnouncementDAOImpl implements HomepageAnnouncementDAO {
             """;
 
     @Override
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac save.
     public void save(HomepageAnnouncement announcement) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(INSERT_SQL, Statement.RETURN_GENERATED_KEYS)) {
@@ -55,6 +61,7 @@ public class HomepageAnnouncementDAOImpl implements HomepageAnnouncementDAO {
     }
 
     @Override
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update.
     public void update(HomepageAnnouncement announcement) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(UPDATE_SQL)) {
@@ -66,6 +73,7 @@ public class HomepageAnnouncementDAOImpl implements HomepageAnnouncementDAO {
     }
 
     @Override
+    // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac delete.
     public void delete(int id) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(DELETE_SQL)) {
@@ -77,6 +85,7 @@ public class HomepageAnnouncementDAOImpl implements HomepageAnnouncementDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find by id.
     public HomepageAnnouncement findById(int id) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(FIND_BY_ID_SQL)) {
@@ -93,6 +102,7 @@ public class HomepageAnnouncementDAOImpl implements HomepageAnnouncementDAO {
     }
 
     @Override
+    // Phuong thuc: lay hoac doc du lieu cho thao tac find all.
     public List<HomepageAnnouncement> findAll() {
         List<HomepageAnnouncement> announcements = new ArrayList<>();
 
@@ -108,7 +118,7 @@ public class HomepageAnnouncementDAOImpl implements HomepageAnnouncementDAO {
 
         return announcements;
     }
-
+    // Phuong thuc: thuc hien chuc nang bind for insert trong lop HomepageAnnouncementDAOImpl.
     private void bindForInsert(PreparedStatement statement, HomepageAnnouncement announcement) throws SQLException {
         statement.setString(1, announcement.getTitle());
         statement.setString(2, announcement.getSummary());
@@ -123,7 +133,7 @@ public class HomepageAnnouncementDAOImpl implements HomepageAnnouncementDAO {
         statement.setLong(7, announcement.getCreatedAt());
         statement.setLong(8, announcement.getUpdatedAt());
     }
-
+    // Phuong thuc: thuc hien chuc nang bind for update trong lop HomepageAnnouncementDAOImpl.
     private void bindForUpdate(PreparedStatement statement, HomepageAnnouncement announcement) throws SQLException {
         statement.setString(1, announcement.getTitle());
         statement.setString(2, announcement.getSummary());
@@ -138,7 +148,7 @@ public class HomepageAnnouncementDAOImpl implements HomepageAnnouncementDAO {
         statement.setLong(7, announcement.getUpdatedAt());
         statement.setInt(8, announcement.getId());
     }
-
+    // Phuong thuc: bien doi du lieu cho thao tac map announcement.
     private HomepageAnnouncement mapAnnouncement(ResultSet resultSet) throws SQLException {
         Object linkedAuctionValue = resultSet.getObject("linked_auction_id");
         int linkedAuctionId = linkedAuctionValue == null ? -1 : ((Number) linkedAuctionValue).intValue();
@@ -156,4 +166,3 @@ public class HomepageAnnouncementDAOImpl implements HomepageAnnouncementDAO {
         );
     }
 }
-

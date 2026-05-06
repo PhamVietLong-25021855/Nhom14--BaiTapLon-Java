@@ -1,9 +1,9 @@
 package userauth.event;
-
-// File note: Contract listener cho các thành phần muốn nghe sự kiện auction.
-// Contract tá»‘i giáº£n cho cÃ¡c mÃ n hÃ¬nh muá»‘n nghe thay Ä‘á»•i cá»§a auction theo kiá»ƒu pub/sub.
 @FunctionalInterface
+
+// Ghi chu file: File ho tro co che su kien; dung de phat va nhan cap nhat trang thai dau gia.
+// Khai bao giao dien AuctionEventListener; phuc vu co che observer cho cac cap nhat dau gia.
 public interface AuctionEventListener {
+    // Phuong thuc: dinh nghia hop dong xu ly cho thao tac on auction event.
     void onAuctionEvent(AuctionEvent event);
 }
-

@@ -22,34 +22,41 @@ import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 import userauth.model.HomepageAnnouncement;
 import userauth.model.User;
-
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-// File note: Controller JavaFX cho khu vực admin quản lý nội dung trang chủ.
+// Ghi chu file: File controller JavaFX; dieu khien hanh vi cua man hinh, hop thoai hoac thanh phan UI.
+// Khai bao lop AdminHomepageViewController; dieu khien mot man hinh hoac thanh phan JavaFX cu the.
 public class AdminHomepageViewController {
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt announcement title.
     private TextField txtAnnouncementTitle;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt announcement schedule.
     private TextField txtAnnouncementSchedule;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt announcement summary.
     private TextArea txtAnnouncementSummary;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho txt announcement details.
     private TextArea txtAnnouncementDetails;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho cb linked auction.
     private ComboBox<AuctionItem> cbLinkedAuction;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho btn save announcement.
     private Button btnSaveAnnouncement;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho table announcements.
     private TableView<HomepageAnnouncement> tableAnnouncements;
 
     @FXML
@@ -68,6 +75,7 @@ public class AdminHomepageViewController {
     private TableColumn<HomepageAnnouncement, String> colAnnouncementUpdatedAt;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho table upcoming auctions.
     private TableView<AuctionItem> tableUpcomingAuctions;
 
     @FXML
@@ -83,50 +91,68 @@ public class AdminHomepageViewController {
     private TableColumn<AuctionItem, String> colUpcomingStatus;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl cms sidebar.
     private Label lblCmsSidebar;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl cms admin name.
     private Label lblCmsAdminName;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl announcement count.
     private Label lblAnnouncementCount;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl linked count.
     private Label lblLinkedCount;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl upcoming count.
     private Label lblUpcomingCount;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview title.
     private Label lblPreviewTitle;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview schedule.
     private Label lblPreviewSchedule;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview summary.
     private Label lblPreviewSummary;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview linked auction.
     private Label lblPreviewLinkedAuction;
 
     @FXML
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho lbl preview details.
     private Label lblPreviewDetails;
 
     private final Timeline refreshTimeline = new Timeline(
+    // Phuong thuc: thuc hien chuc nang key frame trong lop AdminHomepageViewController.
             new KeyFrame(Duration.seconds(5), event -> refreshData())
     );
 
     private final Map<Integer, AuctionItem> auctionLookup = new HashMap<>();
-
+    // Thuoc tinh: giu tham chieu den AuthFrame de phoi hop xu ly.
     private AuthFrame frame;
+    // Thuoc tinh: giu tham chieu den AuctionController de phoi hop xu ly.
     private AuctionController auctionController;
+    // Thuoc tinh: giu tham chieu den HomepageController de phoi hop xu ly.
     private HomepageController homepageController;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho current user.
     private User currentUser;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho editing announcement id.
     private int editingAnnouncementId = -1;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho refresh ticket.
     private long refreshTicket;
+    // Thuoc tinh: luu trang thai hoac du lieu tam cho action in progress.
     private boolean actionInProgress;
 
     @FXML
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh initialize.
     private void initialize() {
         initializeAnnouncementTable();
         initializeUpcomingAuctionTable();
@@ -135,19 +161,19 @@ public class AdminHomepageViewController {
         refreshTimeline.setCycleCount(Animation.INDEFINITE);
         updatePreview();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set frame.
     public void setFrame(AuthFrame frame) {
         this.frame = frame;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set auction controller.
     public void setAuctionController(AuctionController auctionController) {
         this.auctionController = auctionController;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set homepage controller.
     public void setHomepageController(HomepageController homepageController) {
         this.homepageController = homepageController;
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set user.
     public void setUser(User user) {
         this.currentUser = user;
         String name = user == null ? UiText.text("Admin CMS") : user.getFullName() + " (" + user.getUsername() + ")";
@@ -155,19 +181,19 @@ public class AdminHomepageViewController {
         lblCmsSidebar.setText(name);
         resetForm();
     }
-
+    // Phuong thuc: thuc hien chuc nang activate trong lop AdminHomepageViewController.
     public void activate() {
         refreshData();
         if (refreshTimeline.getStatus() != Animation.Status.RUNNING) {
             refreshTimeline.play();
         }
     }
-
+    // Phuong thuc: thuc hien chuc nang deactivate trong lop AdminHomepageViewController.
     public void deactivate() {
         refreshTicket++;
         refreshTimeline.stop();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac refresh data.
     public void refreshData() {
         if (auctionController == null || homepageController == null) {
             return;
@@ -196,6 +222,7 @@ public class AdminHomepageViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle save announcement.
     private void handleSaveAnnouncement() {
         if (!hasManagementContext()) {
             return;
@@ -236,6 +263,7 @@ public class AdminHomepageViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle edit selected announcement.
     private void handleEditSelectedAnnouncement() {
         HomepageAnnouncement selected = tableAnnouncements.getSelectionModel().getSelectedItem();
         if (selected == null) {
@@ -254,6 +282,7 @@ public class AdminHomepageViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle delete selected announcement.
     private void handleDeleteSelectedAnnouncement() {
         if (!hasManagementContext()) {
             return;
@@ -287,6 +316,7 @@ public class AdminHomepageViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle use selected auction schedule.
     private void handleUseSelectedAuctionSchedule() {
         AuctionItem selected = cbLinkedAuction.getValue();
         if (selected == null) {
@@ -306,16 +336,19 @@ public class AdminHomepageViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle refresh data.
     private void handleRefreshData() {
         refreshData();
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle clear form.
     private void handleClearForm() {
         resetForm();
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle back to dashboard.
     private void handleBackToDashboard() {
         deactivate();
         if (frame != null) {
@@ -324,6 +357,7 @@ public class AdminHomepageViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle change password.
     private void handleChangePassword() {
         if (currentUser == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Current admin information is unavailable.");
@@ -338,16 +372,19 @@ public class AdminHomepageViewController {
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle switch to english.
     private void handleSwitchToEnglish() {
         switchLanguage(AppLanguage.ENGLISH);
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle switch to vietnamese.
     private void handleSwitchToVietnamese() {
         switchLanguage(AppLanguage.VIETNAMESE);
     }
 
     @FXML
+    // Phuong thuc: xu ly nghiep vu chinh cho thao tac handle logout.
     private void handleLogout() {
         currentUser = null;
         deactivate();
@@ -355,7 +392,7 @@ public class AdminHomepageViewController {
             frame.showLogin();
         }
     }
-
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh initialize announcement table.
     private void initializeAnnouncementTable() {
         colAnnouncementId.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
         colAnnouncementTitle.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getTitle()));
@@ -363,14 +400,14 @@ public class AdminHomepageViewController {
         colAnnouncementSchedule.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getScheduleText()));
         colAnnouncementUpdatedAt.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatDateTime(data.getValue().getUpdatedAt())));
     }
-
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh initialize upcoming auction table.
     private void initializeUpcomingAuctionTable() {
         colUpcomingId.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
         colUpcomingName.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getName()));
         colUpcomingSchedule.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatScheduleRange(data.getValue())));
         colUpcomingStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(UiText.auctionStatus(data.getValue().getStatus())));
     }
-
+    // Phuong thuc: khoi dong hoac khoi tao tien trinh initialize auction combo box.
     private void initializeAuctionComboBox() {
         cbLinkedAuction.setConverter(new StringConverter<>() {
             @Override
@@ -388,7 +425,7 @@ public class AdminHomepageViewController {
         });
         cbLinkedAuction.setPromptText(UiText.text("No linked auction"));
     }
-
+    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac register preview listeners.
     private void registerPreviewListeners() {
         txtAnnouncementTitle.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtAnnouncementSchedule.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
@@ -396,14 +433,14 @@ public class AdminHomepageViewController {
         txtAnnouncementDetails.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         cbLinkedAuction.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update metrics.
     private void updateMetrics(List<HomepageAnnouncement> announcements, List<AuctionItem> displayAuctions) {
         long linked = announcements.stream().filter(item -> item.getLinkedAuctionId() > 0).count();
         lblAnnouncementCount.setText(String.valueOf(announcements.size()));
         lblLinkedCount.setText(String.valueOf(linked));
         lblUpcomingCount.setText(String.valueOf(displayAuctions.size()));
     }
-
+    // Phuong thuc: lay hoac doc du lieu cho thao tac load homepage snapshot.
     private HomepageSnapshot loadHomepageSnapshot() {
         List<AuctionItem> allAuctions = auctionController.getAllAuctions().stream()
                 .sorted(Comparator.comparingLong(AuctionItem::getStartTime))
@@ -414,7 +451,7 @@ public class AdminHomepageViewController {
                 .toList();
         return new HomepageSnapshot(allAuctions, announcements, displayAuctions);
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply homepage snapshot.
     private void applyHomepageSnapshot(
             HomepageSnapshot snapshot,
             Integer selectedLinkedAuctionId,
@@ -440,7 +477,7 @@ public class AdminHomepageViewController {
         updateMetrics(snapshot.announcements(), snapshot.displayAuctions());
         updatePreview();
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update preview.
     private void updatePreview() {
         String title = txtAnnouncementTitle.getText() == null || txtAnnouncementTitle.getText().isBlank()
                 ? UiText.text("Announcement Title")
@@ -464,7 +501,7 @@ public class AdminHomepageViewController {
                 ? UiText.text("Not linked")
                 : linkedAuction.getName() + " | " + AuctionViewFormatter.formatScheduleRange(linkedAuction));
     }
-
+    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac has management context.
     private boolean hasManagementContext() {
         if (homepageController == null || auctionController == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Required controllers have not been assigned to the homepage management screen.");
@@ -476,7 +513,7 @@ public class AdminHomepageViewController {
         }
         return true;
     }
-
+    // Phuong thuc: thuc hien chuc nang reset form trong lop AdminHomepageViewController.
     private void resetForm() {
         editingAnnouncementId = -1;
         txtAnnouncementTitle.clear();
@@ -487,7 +524,7 @@ public class AdminHomepageViewController {
         btnSaveAnnouncement.setText(UiText.text("PUBLISH TO HOMEPAGE"));
         updatePreview();
     }
-
+    // Phuong thuc: thuc hien chuc nang resolve auction name trong lop AdminHomepageViewController.
     private String resolveAuctionName(int auctionId) {
         if (auctionId <= 0) {
             return UiText.text("Not linked");
@@ -496,22 +533,22 @@ public class AdminHomepageViewController {
         AuctionItem auction = auctionLookup.get(auctionId);
         return auction == null ? UiText.text("Auction #") + auctionId : auction.getName();
     }
-
+    // Phuong thuc: thuc hien chuc nang selected linked auction id trong lop AdminHomepageViewController.
     private Integer selectedLinkedAuctionId() {
         AuctionItem selected = cbLinkedAuction.getValue();
         return selected == null ? null : selected.getId();
     }
-
+    // Phuong thuc: thuc hien chuc nang selected announcement id trong lop AdminHomepageViewController.
     private int selectedAnnouncementId() {
         HomepageAnnouncement selected = tableAnnouncements.getSelectionModel().getSelectedItem();
         return selected == null ? -1 : selected.getId();
     }
-
+    // Phuong thuc: thuc hien chuc nang selected preview auction id trong lop AdminHomepageViewController.
     private int selectedPreviewAuctionId() {
         AuctionItem selected = tableUpcomingAuctions.getSelectionModel().getSelectedItem();
         return selected == null ? -1 : selected.getId();
     }
-
+    // Phuong thuc: thuc hien chuc nang restore linked auction selection trong lop AdminHomepageViewController.
     private void restoreLinkedAuctionSelection(Integer auctionId) {
         if (auctionId == null || auctionId <= 0) {
             if (editingAnnouncementId < 0) {
@@ -521,7 +558,7 @@ public class AdminHomepageViewController {
         }
         selectLinkedAuction(auctionId);
     }
-
+    // Phuong thuc: thuc hien chuc nang select linked auction trong lop AdminHomepageViewController.
     private void selectLinkedAuction(int auctionId) {
         if (auctionId <= 0) {
             cbLinkedAuction.getSelectionModel().clearSelection();
@@ -533,7 +570,7 @@ public class AdminHomepageViewController {
                 .findFirst()
                 .ifPresent(item -> cbLinkedAuction.getSelectionModel().select(item));
     }
-
+    // Phuong thuc: thuc hien chuc nang reselect announcement trong lop AdminHomepageViewController.
     private void reselectAnnouncement(int announcementId) {
         if (announcementId < 0) {
             return;
@@ -544,7 +581,7 @@ public class AdminHomepageViewController {
                 .findFirst()
                 .ifPresent(item -> tableAnnouncements.getSelectionModel().select(item));
     }
-
+    // Phuong thuc: thuc hien chuc nang reselect preview auction trong lop AdminHomepageViewController.
     private void reselectPreviewAuction(int auctionId) {
         if (auctionId < 0) {
             return;
@@ -555,11 +592,11 @@ public class AdminHomepageViewController {
                 .findFirst()
                 .ifPresent(item -> tableUpcomingAuctions.getSelectionModel().select(item));
     }
-
+    // Phuong thuc: thuc hien chuc nang owner window trong lop AdminHomepageViewController.
     private javafx.stage.Window ownerWindow() {
         return frame == null ? null : frame.getWindow();
     }
-
+    // Phuong thuc: thuc hien chuc nang switch language trong lop AdminHomepageViewController.
     private void switchLanguage(AppLanguage language) {
         if (frame == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Language settings are unavailable.");
@@ -572,7 +609,7 @@ public class AdminHomepageViewController {
         updatePreview();
         NotificationUtil.success(ownerWindow(), "Notification", "Language updated.");
     }
-
+    // Phuong thuc: thuc hien chuc nang run action async trong lop AdminHomepageViewController.
     private void runActionAsync(Supplier<String> action, String successMessage, Runnable successAction) {
         actionInProgress = true;
         setActionBusy(true);
@@ -595,7 +632,7 @@ public class AdminHomepageViewController {
                 }
         );
     }
-
+    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set action busy.
     private void setActionBusy(boolean busy) {
         if (txtAnnouncementTitle != null) {
             txtAnnouncementTitle.setDisable(busy);
@@ -622,7 +659,7 @@ public class AdminHomepageViewController {
             tableUpcomingAuctions.setDisable(busy);
         }
     }
-
+    // Phuong thuc: thuc hien chuc nang homepage snapshot trong lop AdminHomepageViewController.
     private record HomepageSnapshot(
             List<AuctionItem> allAuctions,
             List<HomepageAnnouncement> announcements,
@@ -630,4 +667,3 @@ public class AdminHomepageViewController {
     ) {
     }
 }
-
