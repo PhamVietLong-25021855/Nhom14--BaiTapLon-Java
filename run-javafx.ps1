@@ -1,3 +1,4 @@
+# File note: Script PowerShell hỗ trợ chạy ứng dụng JavaFX trong môi trường local.
 param(
     [string]$DbUrl,
     [string]$DbAdminUrl,
@@ -97,3 +98,4 @@ $javaArgs += @("-cp", "$outputDir;$postgresJar", "userauth.Main")
 
 & java @javaArgs
 exit $LASTEXITCODE
+

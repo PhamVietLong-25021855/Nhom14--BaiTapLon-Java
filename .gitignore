@@ -1,5 +1,6 @@
-out/
+﻿# File note: Khai báo file và thư mục không đưa vào git của dự án.`r`nout/
 tmp/
 User/bin/
 User/sources.txt
 *.class
+
