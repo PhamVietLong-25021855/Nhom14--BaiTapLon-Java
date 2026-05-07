@@ -36,6 +36,40 @@ class AuctionServiceLifecycleTest {
     }
 
     @Test
+    void createAuctionPersistsAllSubmittedProductFields() throws Exception {
+        long start = System.currentTimeMillis() + 1000;
+        long end = start + 60_000;
+        byte[] imageData = new byte[]{1, 3, 5, 7};
+
+        service.createAuction(
+                "Laptop Pro",
+                "Clean condition",
+                1200.0,
+                start,
+                end,
+                "Electronics",
+                "laptop.png",
+                imageData,
+                7
+        );
+
+        AuctionItem saved = auctionDao.findAllAuctions().get(0);
+        assertEquals("Laptop Pro", saved.getName());
+        assertEquals("Clean condition", saved.getDescription());
+        assertEquals(1200.0, saved.getStartPrice());
+        assertEquals(1200.0, saved.getCurrentHighestBid());
+        assertEquals(start, saved.getStartTime());
+        assertEquals(end, saved.getEndTime());
+        assertEquals("Electronics", saved.getCategory());
+        assertEquals("laptop.png", saved.getImageSource());
+        org.junit.jupiter.api.Assertions.assertArrayEquals(imageData, saved.getImageData());
+        assertEquals(7, saved.getSellerId());
+        assertEquals(-1, saved.getWinnerId());
+        assertEquals(AuctionStatus.OPEN, saved.getStatus());
+        assertEquals(0, saved.getAntiSnipingExtensionCount());
+    }
+
+    @Test
     void createAuctionRejectsOversizedImage() {
         long now = System.currentTimeMillis();
         byte[] image = new byte[AuctionRules.MAX_IMAGE_BYTES + 1];

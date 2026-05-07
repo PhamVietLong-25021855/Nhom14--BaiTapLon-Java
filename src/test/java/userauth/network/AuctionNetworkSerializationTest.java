@@ -38,6 +38,33 @@ class AuctionNetworkSerializationTest {
     }
 
     @Test
+    void auctionCreatePayloadKeepsAllSubmittedFieldsAcrossSocketSerialization() throws Exception {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("name", "Laptop Pro");
+        params.put("desc", "Clean condition");
+        params.put("startPrice", 1200.0);
+        params.put("startTime", 1000L);
+        params.put("endTime", 7000L);
+        params.put("category", "Electronics");
+        params.put("imageSource", "laptop.png");
+        params.put("imageData", new byte[]{9, 8, 7, 6});
+        params.put("sellerId", 42);
+
+        AuctionRequest restored = roundTrip(new AuctionRequest(NetworkActions.AUCTION_CREATE, params));
+
+        assertEquals(NetworkActions.AUCTION_CREATE, restored.getAction());
+        assertEquals("Laptop Pro", restored.get("name"));
+        assertEquals("Clean condition", restored.get("desc"));
+        assertEquals(1200.0, restored.get("startPrice"));
+        assertEquals(1000L, restored.get("startTime"));
+        assertEquals(7000L, restored.get("endTime"));
+        assertEquals("Electronics", restored.get("category"));
+        assertEquals("laptop.png", restored.get("imageSource"));
+        assertArrayEquals(new byte[]{9, 8, 7, 6}, (byte[]) restored.get("imageData"));
+        assertEquals(42, restored.get("sellerId"));
+    }
+
+    @Test
     void okResponseCanCarryHomepageAnnouncementAcrossSocketSerialization() throws Exception {
         HomepageAnnouncement announcement = new HomepageAnnouncement(
                 1,

@@ -19,8 +19,8 @@
     -app-copy-soft: #000000;
     -app-copy-muted: #000000;
 
-    -app-border: rgba(122, 144, 169, 0.18);
-    -app-border-strong: rgba(88, 111, 140, 0.24);
+    -app-border: #7a90a92e;
+    -app-border-strong: #586f8c3d;
     -app-surface: rgba(255, 255, 255, 0.95);
     -app-surface-strong: rgba(255, 255, 255, 0.98);
     -app-surface-muted: rgba(245, 249, 253, 0.96);
@@ -179,7 +179,7 @@
 .toast-root {
     -fx-background-color: linear-gradient(to bottom right, rgba(255, 255, 255, 0.98), rgba(246, 250, 253, 0.96));
     -fx-background-radius: 24;
-    -fx-border-color: -app-border;
+    -fx-border-color: #7a90a92e;
     -fx-border-radius: 24;
     -fx-border-width: 1;
     -fx-effect: dropshadow(gaussian, rgba(16, 32, 52, 0.08), 22, 0.16, 0, 10);
