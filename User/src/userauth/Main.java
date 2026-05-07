@@ -9,7 +9,7 @@ import userauth.controller.HomepageController;
 import userauth.client.remote.*;
 import userauth.dao.*;
 import userauth.database.DatabaseInitializer;
-import userauth.gui.fxml.AuthFrame;
+import userauth.gui.fxml.shell.AuthFrame;
 import userauth.service.*;
 
 public class Main extends Application {
