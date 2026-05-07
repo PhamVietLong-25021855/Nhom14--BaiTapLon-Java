@@ -16,6 +16,10 @@ public class AuthController {
     }
 
     public String registerGUI(String username, String password, String fullName, String email, Role role) {
+        if (role == Role.ADMIN) {
+            return "Admin accounts cannot be created from the registration screen.";
+        }
+
         try {
             authService.register(username, password, fullName, email, role);
             return "SUCCESS";
