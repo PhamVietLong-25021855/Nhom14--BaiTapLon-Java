@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Main" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="userauth.Launcher" />
+    <module name="auction-house" />
+    <option name="VM_PARAMETERS" value="-Dapp.client.mode=remote -Dapp.server.host=172.104.50.54 -Dapp.server.port=5050" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

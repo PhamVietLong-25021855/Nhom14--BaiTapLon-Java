@@ -1,0 +1,16 @@
+out/
+tmp/
+User/bin/
+User/sources.txt
+*.class
+target/
+dist/
+javafx-sdk/
+lib/
+.env
+*.env
+!.env.example
+*.log
+*.iml
+.idea/workspace.xml
+.idea/libraries/
