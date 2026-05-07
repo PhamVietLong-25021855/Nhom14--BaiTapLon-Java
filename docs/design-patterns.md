@@ -1,33 +1,33 @@
-# Design Patterns
+# Các design pattern đang dùng
 
 ## Singleton
 
-`userauth.event.AuctionEventBus` is implemented as a singleton through `getInstance()`.
+`userauth.event.AuctionEventBus` được triển khai theo Singleton thông qua `getInstance()`.
 
-- The application shares one event hub for all auction updates.
-- Controllers subscribe while active and unsubscribe when the screen is deactivated.
+- Ứng dụng dùng chung một event hub cho toàn bộ cập nhật đấu giá.
+- Controller đăng ký lắng nghe khi màn hình được kích hoạt và hủy đăng ký khi màn hình bị tắt.
 
 ## Factory Method
 
-`userauth.service.AuctionSettlementHandlerFactory` creates the terminal-state handler for a finished auction.
+`userauth.service.AuctionSettlementHandlerFactory` tạo handler xử lý trạng thái cuối của một phiên đấu giá đã kết thúc.
 
-- `PAID` uses a dedicated settlement handler.
-- `CANCELED` uses a separate handler with different validation and state mutation.
-- `AuctionService` delegates `FINISHED -> PAID/CANCELED` to the factory output instead of hard-coding both branches inline.
+- `PAID` dùng handler riêng cho trạng thái đã thanh toán.
+- `CANCELED` dùng handler riêng với logic validate và cập nhật trạng thái khác.
+- `AuctionService` ủy quyền luồng `FINISHED -> PAID/CANCELED` cho handler do factory tạo ra, thay vì viết cứng nhiều nhánh xử lý trong cùng một hàm.
 
 ## Observer
 
-The observer flow is centered on:
+Luồng Observer xoay quanh các lớp:
 
 - `AuctionEventBus`
 - `AuctionEventListener`
 - `AuctionEvent`
 
-Current observers:
+Các observer hiện tại:
 
 - `BidderDashboardViewController`
 - `SellerDashboardViewController`
 
-Current publishers:
+Các publisher hiện tại:
 
-- `AuctionService` when bids arrive, anti-sniping extends time, statuses change, and finished auctions are settled.
+- `AuctionService` phát sự kiện khi có bid mới, khi anti-sniping kéo dài thời gian, khi trạng thái phiên thay đổi và khi phiên đã kết thúc được xử lý thanh toán/hủy.

@@ -1,18 +1,20 @@
-# Nhom14 - Hệ thống đấu giá trực tuyến
+# Nhóm 14 - Hệ thống đấu giá trực tuyến
 
-Bản nâng cấp này bổ sung kiến trúc Client-Server, hỗ trợ Akamai MySQL, và thêm JUnit test cho các logic quan trọng.
+Dự án sử dụng Java 25, JavaFX 25.0.2 và Maven. Bản nâng cấp hiện tại bổ sung kiến trúc Client-Server, hỗ trợ database MySQL trên Akamai/VPS và có bộ kiểm thử JUnit cho các logic quan trọng.
 
-## Cấu trúc quan trọng
+## Cấu trúc chính
 
 ```text
-User/src/userauth/                 Source chính của project
-User/src/userauth/server/          Server socket chạy trên VPS
-User/src/userauth/client/remote/   Client remote service, không truy cập DB
-User/src/userauth/network/         Request/Response giao tiếp client-server
-client/                            Hướng dẫn/script chạy client
-server/                            Hướng dẫn/script chạy server
-docs/client-server-upgrade.md      Mô tả nâng cấp kiến trúc
-src/test/java/                     JUnit test
+User/src/userauth/                 Mã nguồn chính của dự án
+User/src/userauth/server/          Socket server chạy trên VPS hoặc máy host
+User/src/userauth/client/remote/   Remote service phía client, không truy cập database trực tiếp
+User/src/userauth/network/         Request/Response cho giao tiếp client-server
+User/src/userauth/gui/fxml/        Controller JavaFX đã chia theo từng nhóm màn hình
+User/resources/userauth/gui/fxml/  FXML/CSS đã chia theo từng nhóm giao diện
+client/                            Script và hướng dẫn chạy client
+server/                            Script và hướng dẫn chạy server
+docs/                              Tài liệu kỹ thuật
+src/test/java/                     Bộ kiểm thử JUnit
 ```
 
 ## Chạy server trên VPS
@@ -24,7 +26,7 @@ mvn dependency:copy-dependencies -DincludeScope=runtime
 java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -cp "target/classes:target/dependency/*" userauth.server.AuctionServerMain
 ```
 
-## Chạy server trên Windows (PowerShell)
+## Chạy server trên Windows
 
 ```powershell
 .\server\run-server.ps1 -DbPassword "mat_khau_database_cua_ban" -ServerPort 5050
@@ -36,23 +38,23 @@ java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -cp "target/classes:t
 mvn javafx:run "-Dapp.client.mode=remote" "-Dapp.server.host=172.104.50.54" "-Dapp.server.port=5050"
 ```
 
-Mac dinh `userauth.Launcher` chay remote client va tro toi `172.104.50.54:5050`. Neu doi VPS/domain, truyen lai `-Dapp.server.host=...` hoac bien moi truong `APP_SERVER_HOST`.
+Mặc định `userauth.Launcher` chạy ở chế độ remote client và trỏ tới `172.104.50.54:5050`. Nếu đổi VPS hoặc domain, truyền lại `-Dapp.server.host=...` hoặc đặt biến môi trường `APP_SERVER_HOST`.
 
-Neu VPS chi mo SSH port `22`, khong doi app sang listen port `22`. Chay app server tren VPS o port `5050`, roi chay client qua SSH tunnel:
+Nếu VPS chỉ mở cổng SSH `22`, không chạy ứng dụng trực tiếp trên cổng `22`. Hãy chạy app server trên VPS ở cổng `5050`, sau đó chạy client qua SSH tunnel:
 
 ```powershell
 .\client\run-client-via-ssh.ps1
 ```
 
-## Tach client/server de deploy 2 may
+## Tách client/server để deploy trên 2 máy
 
 ```powershell
 .\scripts\split-client-server.ps1
 ```
 
-Huong dan chi tiet: `docs/split-client-server.md`
+Hướng dẫn chi tiết: `docs/split-client-server.md`
 
-## Chạy test
+## Chạy kiểm thử
 
 ```bash
 mvn test

@@ -1,13 +1,13 @@
-﻿# NĂ¢ng cáº¥p Client-Server
+# Nâng cấp Client-Server
 
-## Má»¥c tiĂªu
+## Mục tiêu
 
-- TĂ¡ch tiáº¿n trĂ¬nh cháº¡y thĂ nh `Server` vĂ  `Client`.
-- Chá»‰ server Ä‘Æ°á»£c má»Ÿ káº¿t ná»‘i JDBC tá»›i database.
-- Client JavaFX cháº¡y `remote mode` vĂ  gá»i server qua Socket.
-- Bá»• sung test JUnit cho logic Ä‘Äƒng kĂ½/Ä‘Äƒng nháº­p vĂ  logic Ä‘áº¥u giĂ¡ Ä‘á»“ng thá»i.
+- Tách tiến trình chạy thành `Server` và `Client`.
+- Chỉ server được mở kết nối JDBC tới database.
+- Client JavaFX chạy ở `remote mode` và gọi server qua Socket.
+- Bổ sung kiểm thử JUnit cho logic đăng ký, đăng nhập và đấu giá đồng thời.
 
-## Luá»“ng cháº¡y má»›i
+## Luồng chạy mới
 
 ```text
 JavaFX Client
@@ -20,15 +20,15 @@ AuctionServerMain
 Controller -> Service -> DAO -> Akamai MySQL
 ```
 
-## CĂ¡c entry point chĂ­nh
+## Entry point chính
 
-- `userauth.server.AuctionServerMain`: cháº¡y server trĂªn VPS.
-- `userauth.Launcher`: cháº¡y JavaFX client; thĂªm `-Dapp.client.mode=remote` Ä‘á»ƒ báº­t cháº¿ Ä‘á»™ client-server.
-- `userauth.client.remote.*`: cĂ¡c service remote Ä‘á»ƒ client khĂ´ng truy cáº­p database.
-- `userauth.network.*`: request/response dĂ¹ng cho giao tiáº¿p socket.
+- `userauth.server.AuctionServerMain`: chạy server trên VPS hoặc máy host.
+- `userauth.Launcher`: chạy JavaFX client. Thêm `-Dapp.client.mode=remote` để bật chế độ client-server.
+- `userauth.client.remote.*`: các service remote giúp client không truy cập database trực tiếp.
+- `userauth.network.*`: request/response dùng cho giao tiếp socket.
 
-## Test Ä‘Ă£ thĂªm
+## Kiểm thử đã thêm
 
-- `AuthServiceTest`: kiá»ƒm thá»­ Ä‘Äƒng kĂ½, Ä‘Äƒng nháº­p, trĂ¹ng username, sai máº­t kháº©u.
-- `AuctionServiceTest`: kiá»ƒm thá»­ bid khĂ´ng há»£p lá»‡ vĂ  nhiá»u bidder Ä‘áº·t giĂ¡ Ä‘á»“ng thá»i.
-
+- `AuthServiceTest`: kiểm thử đăng ký, đăng nhập, trùng username và sai mật khẩu.
+- `AuctionServiceTest`: kiểm thử bid không hợp lệ và nhiều bidder đặt giá đồng thời.
+- Các test service khác kiểm tra lifecycle phiên đấu giá, auto-bid, settlement và validation.

@@ -1,33 +1,33 @@
-# Tach client va server thanh 2 bo deploy rieng
+# Tách client và server thành 2 bộ deploy riêng
 
-Script `scripts/split-client-server.ps1` se tao:
+Script `scripts/split-client-server.ps1` sẽ tạo:
 
-- `dist/server`: dung de copy len may chay server.
-- `dist/client`: dung de copy sang may nguoi dung.
+- `dist/server`: dùng để copy lên máy chạy server.
+- `dist/client`: dùng để copy sang máy người dùng.
 
-## 1) Tao goi tach rieng
+## 1. Tạo gói tách riêng
 
 ```powershell
 .\scripts\split-client-server.ps1
 ```
 
-## 2) Chay server (tren may host)
+## 2. Chạy server trên máy host
 
-Vao thu muc `dist/server`:
+Vào thư mục `dist/server`:
 
 ```powershell
 .\run-server.ps1 -DbPassword "mat_khau_db" -ServerPort 5050
 ```
 
-## 3) Chay client (tren may khac)
+## 3. Chạy client trên máy khác
 
-Vao thu muc `dist/client`:
+Vào thư mục `dist/client`:
 
 ```powershell
 .\run-client.ps1 -ServerHost "IP_PUBLIC_CUA_SERVER" -ServerPort 5050
 ```
 
-## Ghi chu
+## Ghi chú
 
-- Neu client o mang khac, can mo firewall/port forwarding TCP 5050 tren may server.
-- Khong commit mat khau that vao source code.
+- Nếu client ở mạng khác, cần mở firewall hoặc port forwarding TCP `5050` trên máy server.
+- Không commit mật khẩu thật vào source code.

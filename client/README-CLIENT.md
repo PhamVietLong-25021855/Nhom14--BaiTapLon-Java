@@ -1,38 +1,38 @@
-# Client JavaFX rieng
+# Client JavaFX riêng
 
-Client khong truy cap database truc tiep. Mac dinh `userauth.Launcher` chay remote mode va goi server qua Socket.
+Client không truy cập database trực tiếp. Mặc định `userauth.Launcher` chạy ở chế độ remote và gọi server qua Socket.
 
-## Chay client tren may nguoi dung
+## Chạy client trên máy người dùng
 
-Client mac dinh tro toi VPS `172.104.50.54:5050`:
+Client mặc định trỏ tới VPS `172.104.50.54:5050`:
 
 ```powershell
 .\client\run-client.ps1
 ```
 
-Neu doi VPS hoac dung domain server:
+Nếu đổi VPS hoặc dùng domain server:
 
 ```powershell
 .\client\run-client.ps1 -ServerHost "IP_PUBLIC_HOAC_DOMAIN" -ServerPort 5050
 ```
 
-Hoac truyen VM options trong IntelliJ:
+Hoặc truyền VM options trong IntelliJ:
 
 ```text
 -Dapp.server.host=172.104.50.54 -Dapp.server.port=5050
 ```
 
-## Chay qua SSH port 22
+## Chạy qua SSH port 22
 
-Khong chay `AuctionServerMain` truc tiep tren port `22` vi port nay dang dung cho SSH. Neu VPS chi mo port `22`, hay chay server app tren VPS o `127.0.0.1:5050` hoac `0.0.0.0:5050`, roi dung SSH tunnel:
+Không chạy `AuctionServerMain` trực tiếp trên cổng `22` vì cổng này đang dùng cho SSH. Nếu VPS chỉ mở cổng `22`, hãy chạy app server trên VPS ở `127.0.0.1:5050` hoặc `0.0.0.0:5050`, rồi dùng SSH tunnel:
 
 ```powershell
 .\client\run-client-via-ssh.ps1
 ```
 
-Khi cua so SSH hien ra, dang nhap va giu cua so do mo. Client se ket noi toi `127.0.0.1:5050`, con duong mang that se di qua SSH port `22`.
+Khi cửa sổ SSH hiện ra, đăng nhập và giữ cửa sổ đó mở. Client sẽ kết nối tới `127.0.0.1:5050`, còn đường mạng thật sẽ đi qua SSH port `22`.
 
-Neu can chay lai che do local DB cu, them:
+Nếu cần chạy lại chế độ local DB cũ, thêm:
 
 ```text
 -Dapp.client.mode=local
