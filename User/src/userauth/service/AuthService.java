@@ -70,6 +70,29 @@ public class AuthService {
         userDAO.update(user);
     }
 
+    public User updateProfile(String username, String fullName, String email)
+            throws ValidationException, UnauthorizedException {
+        User user = requireExistingUser(username);
+        if (user.getRole() != Role.BIDDER && user.getRole() != Role.SELLER) {
+            throw new ValidationException("Only bidders and sellers can update profile information here.");
+        }
+
+        String normalizedFullName = fullName == null ? "" : fullName.trim();
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
+        validateProfileInput(normalizedFullName, normalizedEmail);
+
+        User emailOwner = userDAO.findByEmail(normalizedEmail);
+        if (emailOwner != null && emailOwner.getId() != user.getId()) {
+            throw new ValidationException("Email already exists.");
+        }
+
+        user.setFullName(normalizedFullName);
+        user.setEmail(normalizedEmail);
+        user.setUpdatedAt(System.currentTimeMillis());
+        userDAO.update(user);
+        return user;
+    }
+
     public void toggleUserStatus(String adminUsername, int targetUserId)
             throws UnauthorizedException, ValidationException {
         User admin = requireExistingUser(adminUsername);
@@ -124,6 +147,15 @@ public class AuthService {
         }
         if (fullName == null || fullName.trim().isEmpty()) {
             throw new ValidationException("Full name cannot be empty.");
+        }
+    }
+
+    private void validateProfileInput(String fullName, String email) throws ValidationException {
+        if (fullName == null || fullName.isBlank()) {
+            throw new ValidationException("Full name cannot be empty.");
+        }
+        if (!UserValidator.isValidEmail(email)) {
+            throw new ValidationException("Invalid email.");
         }
     }
 

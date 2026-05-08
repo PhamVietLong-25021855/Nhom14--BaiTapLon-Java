@@ -68,6 +68,9 @@
                                         </VBox>
                                         <MenuButton mnemonicParsing="false" styleClass="button settings-menu-button" text="SETTINGS">
                                             <items>
+                                                <MenuItem mnemonicParsing="false" onAction="#handleEditProfile" text="EDIT PROFILE" />
+                                                <MenuItem mnemonicParsing="false" onAction="#handleChangePassword" text="CHANGE PASSWORD" />
+                                                <SeparatorMenuItem />
                                                 <MenuItem mnemonicParsing="false" onAction="#handleSwitchToEnglish" text="English" />
                                                 <MenuItem mnemonicParsing="false" onAction="#handleSwitchToVietnamese" text="Vietnamese" />
                                                 <SeparatorMenuItem />

@@ -53,6 +53,20 @@ public class RemoteAuthService extends AuthService {
     }
 
     @Override
+    public User updateProfile(String username, String fullName, String email)
+            throws ValidationException, UnauthorizedException {
+        try {
+            return (User) client.call(NetworkActions.AUTH_UPDATE_PROFILE,
+                    "username", username, "fullName", fullName, "email", email);
+        } catch (RemoteServerException ex) {
+            if ("UnauthorizedException".equals(ex.getErrorType())) {
+                throw new UnauthorizedException(ex.getMessage());
+            }
+            throw new ValidationException(ex.getMessage());
+        }
+    }
+
+    @Override
     public void toggleUserStatus(String adminUsername, int targetUserId)
             throws UnauthorizedException, ValidationException {
         String result = (String) client.call(NetworkActions.AUTH_TOGGLE_STATUS,

@@ -45,6 +45,27 @@ public class AuthController {
         }
     }
 
+    public User updateProfile(String username, String fullName, String email)
+            throws ValidationException, UnauthorizedException {
+        return authService.updateProfile(username, fullName, email);
+    }
+
+    public String updateProfileGUI(User currentUser, String fullName, String email) {
+        if (currentUser == null) {
+            return "Current user information is unavailable.";
+        }
+
+        try {
+            User updatedUser = updateProfile(currentUser.getUsername(), fullName, email);
+            currentUser.setFullName(updatedUser.getFullName());
+            currentUser.setEmail(updatedUser.getEmail());
+            currentUser.setUpdatedAt(updatedUser.getUpdatedAt());
+            return "SUCCESS";
+        } catch (ValidationException | UnauthorizedException e) {
+            return e.getMessage();
+        }
+    }
+
     public String toggleUserStatus(String adminUsername, int targetUserId) {
         try {
             authService.toggleUserStatus(adminUsername, targetUserId);

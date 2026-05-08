@@ -83,4 +83,17 @@ class AuthControllerTest {
         assertNotNull(loggedIn);
         assertEquals("bidder01", loggedIn.getUsername());
     }
+
+    @Test
+    void updateProfileGuiMutatesCurrentSessionUser() throws Exception {
+        controller.registerGUI("seller01", "abc123", "Seller One", "seller01@example.com", Role.SELLER);
+        User currentUser = controller.login("seller01", "abc123");
+
+        String result = controller.updateProfileGUI(currentUser, "  Seller Updated  ", "  Seller.New@Example.COM  ");
+
+        assertEquals("SUCCESS", result);
+        assertEquals("Seller Updated", currentUser.getFullName());
+        assertEquals("seller.new@example.com", currentUser.getEmail());
+        assertEquals("seller.new@example.com", userDao.findByUsername("seller01").getEmail());
+    }
 }

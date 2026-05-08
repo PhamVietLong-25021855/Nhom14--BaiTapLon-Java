@@ -7,6 +7,7 @@ import userauth.gui.fxml.auth.RegisterViewController;
 import userauth.gui.fxml.bidder.BidderDashboardViewController;
 import userauth.gui.fxml.dialog.BidHistoryDialogController;
 import userauth.gui.fxml.dialog.ChangePasswordDialogController;
+import userauth.gui.fxml.dialog.ProfileDialogController;
 import userauth.gui.fxml.home.HomeViewController;
 import userauth.gui.fxml.seller.SellerDashboardViewController;
 import userauth.gui.fxml.shared.AppLanguage;
@@ -28,6 +29,7 @@ import userauth.model.BidTransaction;
 import userauth.model.User;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class AuthFrame {
     private static final double DEFAULT_WIDTH = 1280;
@@ -157,11 +159,26 @@ public class AuthFrame {
 
     public void showChangePasswordDialog(User user) {
         LoadedView<ChangePasswordDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "dialog/change-password-dialog.fxml", "dialog");
-        Stage dialog = FxmlRuntime.createModalDialog(stage, "CHANGE PASSWORD", view.root(), 440, 320);
+        Stage dialog = FxmlRuntime.createModalDialog(stage, "CHANGE PASSWORD", view.root(), 480, 430);
         view.controller().setDialogStage(dialog);
         view.controller().setAuthController(authController);
         view.controller().setUser(user);
         view.controller().setSuccessHandler(message -> NotificationUtil.success(stage, "NOTIFICATION", message));
+        dialog.showAndWait();
+    }
+
+    public void showProfileDialog(User user, Consumer<User> profileUpdatedHandler) {
+        LoadedView<ProfileDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "dialog/profile-dialog.fxml", "dialog");
+        Stage dialog = FxmlRuntime.createModalDialog(stage, "EDIT PROFILE", view.root(), 460, 390);
+        view.controller().setDialogStage(dialog);
+        view.controller().setAuthController(authController);
+        view.controller().setUser(user);
+        view.controller().setSuccessHandler(updatedUser -> {
+            if (profileUpdatedHandler != null) {
+                profileUpdatedHandler.accept(updatedUser);
+            }
+            NotificationUtil.success(stage, "NOTIFICATION", "Profile updated successfully.");
+        });
         dialog.showAndWait();
     }
 

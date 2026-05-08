@@ -10,6 +10,7 @@ public final class NetworkActions {
     public static final String AUTH_LOGIN = "AUTH_LOGIN";
     public static final String AUTH_ALL_USERS = "AUTH_ALL_USERS";
     public static final String AUTH_CHANGE_PASSWORD = "AUTH_CHANGE_PASSWORD";
+    public static final String AUTH_UPDATE_PROFILE = "AUTH_UPDATE_PROFILE";
     public static final String AUTH_TOGGLE_STATUS = "AUTH_TOGGLE_STATUS";
     public static final String AUTH_DELETE_USER = "AUTH_DELETE_USER";
 

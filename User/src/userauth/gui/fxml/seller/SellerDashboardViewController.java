@@ -441,6 +441,34 @@ public class SellerDashboardViewController {
     }
 
     @FXML
+    private void handleChangePassword() {
+        if (currentUser == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current user information is unavailable.");
+            return;
+        }
+        if (frame == null) {
+            NotificationUtil.info(ownerWindow(), "Notification", "The change-password action is prepared. Connect this controller to AuthFrame when integrating.");
+            return;
+        }
+
+        frame.showChangePasswordDialog(currentUser);
+    }
+
+    @FXML
+    private void handleEditProfile() {
+        if (currentUser == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current user information is unavailable.");
+            return;
+        }
+        if (frame == null) {
+            NotificationUtil.info(ownerWindow(), "Notification", "Profile settings are unavailable.");
+            return;
+        }
+
+        frame.showProfileDialog(currentUser, this::setUser);
+    }
+
+    @FXML
     private void handleSwitchToVietnamese() {
         switchLanguage(AppLanguage.VIETNAMESE);
     }

@@ -65,6 +65,21 @@ class AuctionNetworkSerializationTest {
     }
 
     @Test
+    void profileUpdatePayloadKeepsSubmittedFieldsAcrossSocketSerialization() throws Exception {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("username", "seller01");
+        params.put("fullName", "Seller Updated");
+        params.put("email", "seller.updated@example.com");
+
+        AuctionRequest restored = roundTrip(new AuctionRequest(NetworkActions.AUTH_UPDATE_PROFILE, params));
+
+        assertEquals(NetworkActions.AUTH_UPDATE_PROFILE, restored.getAction());
+        assertEquals("seller01", restored.get("username"));
+        assertEquals("Seller Updated", restored.get("fullName"));
+        assertEquals("seller.updated@example.com", restored.get("email"));
+    }
+
+    @Test
     void okResponseCanCarryHomepageAnnouncementAcrossSocketSerialization() throws Exception {
         HomepageAnnouncement announcement = new HomepageAnnouncement(
                 1,

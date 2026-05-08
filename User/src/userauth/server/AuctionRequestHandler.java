@@ -34,6 +34,8 @@ public final class AuctionRequestHandler {
             case NetworkActions.AUTH_ALL_USERS -> context.getAuthController().getAllUsersList();
             case NetworkActions.AUTH_CHANGE_PASSWORD -> context.getAuthController().changePassword(
                     str(request, "username"), str(request, "oldPassword"), str(request, "newPassword"));
+            case NetworkActions.AUTH_UPDATE_PROFILE -> context.getAuthController().updateProfile(
+                    str(request, "username"), str(request, "fullName"), str(request, "email"));
             case NetworkActions.AUTH_TOGGLE_STATUS -> context.getAuthController().toggleUserStatus(
                     str(request, "adminUsername"), integer(request, "targetUserId"));
             case NetworkActions.AUTH_DELETE_USER -> context.getAuthController().deleteUserAccount(

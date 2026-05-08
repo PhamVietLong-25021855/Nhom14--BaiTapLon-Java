@@ -11,6 +11,7 @@ import userauth.support.TestDaos;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuthServiceAdminActionsTest {
     private TestDaos.InMemoryUserDao userDao;
@@ -69,5 +70,34 @@ class AuthServiceAdminActionsTest {
 
         assertThrows(UnauthorizedException.class, () -> authService.login("bidder01", "abc123"));
         assertEquals("bidder01", authService.login("bidder01", "new123").getUsername());
+    }
+
+    @Test
+    void updateProfileTrimsFieldsAndRejectsDuplicateEmail() throws Exception {
+        authService.register("bidder01", "abc123", "Bidder One", "bidder01@example.com", Role.BIDDER);
+        authService.register("seller01", "abc123", "Seller One", "seller01@example.com", Role.SELLER);
+
+        User updated = authService.updateProfile("bidder01", "  Bidder Updated  ", "  Updated@Example.COM  ");
+
+        assertEquals("Bidder Updated", updated.getFullName());
+        assertEquals("updated@example.com", updated.getEmail());
+        assertEquals("updated@example.com", userDao.findByUsername("bidder01").getEmail());
+        assertThrows(ValidationException.class,
+                () -> authService.updateProfile("seller01", "Seller Updated", "updated@example.com"));
+    }
+
+    @Test
+    void updateProfileRejectsInvalidDataAndAdminAccounts() throws Exception {
+        authService.register("admin01", "abc123", "Admin One", "admin01@example.com", Role.ADMIN);
+        authService.register("bidder01", "abc123", "Bidder One", "bidder01@example.com", Role.BIDDER);
+
+        assertThrows(ValidationException.class,
+                () -> authService.updateProfile("bidder01", " ", "bidder01@example.com"));
+        assertThrows(ValidationException.class,
+                () -> authService.updateProfile("bidder01", "Bidder One", "not-an-email"));
+        ValidationException adminError = assertThrows(ValidationException.class,
+                () -> authService.updateProfile("admin01", "Admin Updated", "admin-updated@example.com"));
+
+        assertTrue(adminError.getMessage().toLowerCase().contains("bidders and sellers"));
     }
 }

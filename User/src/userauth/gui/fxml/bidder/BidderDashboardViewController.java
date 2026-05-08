@@ -457,6 +457,20 @@ public class BidderDashboardViewController {
     }
 
     @FXML
+    private void handleEditProfile() {
+        if (currentUser == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current user information is unavailable.");
+            return;
+        }
+        if (frame == null) {
+            NotificationUtil.info(ownerWindow(), "Notification", "Profile settings are unavailable.");
+            return;
+        }
+
+        frame.showProfileDialog(currentUser, this::setUser);
+    }
+
+    @FXML
     private void handleSwitchToEnglish() {
         switchLanguage(AppLanguage.ENGLISH);
     }

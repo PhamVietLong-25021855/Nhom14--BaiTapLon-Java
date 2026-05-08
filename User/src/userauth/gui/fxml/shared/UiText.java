@@ -361,6 +361,7 @@ public final class UiText {
         put(values, "CONFIRM", "XÁC NHẬN");
         put(values, "Cancel", "Hủy");
         put(values, "CANCEL", "HỦY");
+        put(values, "UPDATE", "CẬP NHẬT");
         put(values, "Close", "Đóng");
         put(values, "CLOSE", "ĐÓNG");
         put(values, "Input", "Nhập");
@@ -376,8 +377,10 @@ public final class UiText {
         put(values, "Updated", "Cập nhật");
         put(values, "ID", "MÃ");
         put(values, "Username", "Tên đăng nhập");
+        put(values, "Full Name", "Họ và tên");
         put(values, "Email", "Email");
         put(values, "Role", "Vai trò");
+        put(values, "Role: -", "Vai trò: -");
         put(values, "Product", "Sản phẩm");
         put(values, "Product Name", "Tên sản phẩm");
         put(values, "Product Image", "Ảnh sản phẩm");
@@ -445,6 +448,8 @@ public final class UiText {
         put(values, "Bidder #", "Người đấu giá #");
         put(values, "Account:", "Tài khoản:");
         put(values, "Account: -", "Tài khoản: -");
+        put(values, "EDIT PROFILE", "CẬP NHẬT HỒ SƠ");
+        put(values, "UPDATE PROFILE", "LƯU HỒ SƠ");
         put(values, "Seller ID", "ID người bán");
         put(values, "User ID", "ID người dùng");
         put(values, "Price", "Giá");
@@ -673,9 +678,13 @@ public final class UiText {
         put(values, "A dedicated password recovery flow is not available in this version.", "Phiên bản này chưa có luồng khôi phục mật khẩu riêng.");
         put(values, "Please contact an admin for password assistance.", "Vui lòng liên hệ quản trị viên để được hỗ trợ mật khẩu.");
         put(values, "Not enough information to change the password.", "Không đủ thông tin để đổi mật khẩu.");
+        put(values, "Not enough information to update the profile.", "Không đủ thông tin để cập nhật hồ sơ.");
         put(values, "Please enter both the current password and the new password.", "Vui lòng nhập cả mật khẩu hiện tại và mật khẩu mới.");
+        put(values, "Please enter your full name and email.", "Vui lòng nhập họ tên và email.");
         put(values, "Password changed successfully.", "Đổi mật khẩu thành công.");
+        put(values, "Profile updated successfully.", "Cập nhật hồ sơ thành công.");
         put(values, "Unable to change the password right now.", "Hiện không thể đổi mật khẩu.");
+        put(values, "Unable to update the profile right now.", "Hiện không thể cập nhật hồ sơ.");
         put(values, "Unable to load admin data.", "Không thể tải dữ liệu quản trị.");
         put(values, "Unable to load auction data.", "Không thể tải dữ liệu phiên đấu giá.");
         put(values, "Unable to load homepage data", "Không thể tải dữ liệu trang chủ");
@@ -688,6 +697,7 @@ public final class UiText {
         put(values, "The early-close countdown has been cancelled.", "Đã hủy đếm ngược đóng sớm.");
         put(values, "AuthController has not been assigned to the admin screen.", "AuthController chưa được gán cho màn hình quản trị.");
         put(values, "Current user information is unavailable.", "Thông tin người dùng hiện không khả dụng.");
+        put(values, "Profile settings are unavailable.", "Chức năng cập nhật hồ sơ hiện chưa khả dụng.");
         put(values, "Please select an account.", "Vui lòng chọn một tài khoản.");
         put(values, "Account status updated successfully.", "Đã cập nhật trạng thái tài khoản thành công.");
         put(values, "Current user is unavailable.", "Người dùng hiện không khả dụng.");
@@ -755,6 +765,7 @@ public final class UiText {
         put(values, "Item not found.", "Không tìm thấy mục.");
         put(values, "New password must be at least 6 characters and include letters and numbers.", "Mật khẩu mới phải có ít nhất 6 ký tự và gồm cả chữ lẫn số.");
         put(values, "Only admins can lock or unlock accounts.", "Chỉ quản trị viên mới được khóa hoặc mở khóa tài khoản.");
+        put(values, "Only bidders and sellers can update profile information here.", "Chỉ người đấu giá và người bán mới được cập nhật hồ sơ tại đây.");
         put(values, "Only the creator can delete or cancel this item.", "Chỉ người tạo mới được xóa hoặc hủy mục này.");
         put(values, "Only the creator can edit this item.", "Chỉ người tạo mới được chỉnh sửa mục này.");
         put(values, "Please enter your username and password.", "Vui lòng nhập tên đăng nhập và mật khẩu.");
