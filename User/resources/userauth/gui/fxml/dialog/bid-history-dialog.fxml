@@ -2,27 +2,61 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
-           prefHeight="500.0" prefWidth="760.0"
+           prefHeight="720.0" prefWidth="1040.0"
            fx:controller="userauth.gui.fxml.dialog.BidHistoryDialogController"
            styleClass="dialog-root"
            stylesheets="@../shared/auth-theme.css"
            xmlns="http://javafx.com/javafx/25"
            xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox maxWidth="712.0" prefWidth="712.0" spacing="16.0" styleClass="dialog-card">
+        <VBox maxWidth="980.0" prefWidth="980.0" spacing="14.0" styleClass="dialog-card">
             <children>
                 <Label text="BID HISTORY" styleClass="section-title"/>
-                <Label fx:id="lblAuctionName" text="Product: -" wrapText="true" styleClass="body-text"/>
-                <Label fx:id="lblSummary" text="Total transactions: 0" styleClass="secondary-text"/>
-                <TextArea fx:id="txtHistory" editable="false" prefHeight="330.0" wrapText="true" VBox.vgrow="ALWAYS"/>
+                <Label fx:id="lblBidderName" text="Bidder: -" wrapText="true" styleClass="body-text"/>
+                <Label fx:id="lblSummary" text="Total transactions: 0 | Won products: 0" styleClass="secondary-text"/>
+
+                <VBox spacing="8.0" VBox.vgrow="ALWAYS">
+                    <children>
+                        <Label text="Transaction History" styleClass="panel-title"/>
+                        <TableView fx:id="tableTransactions" prefHeight="340.0" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="colTransactionTime" prefWidth="150.0" text="Time"/>
+                                <TableColumn fx:id="colTransactionProduct" prefWidth="230.0" text="Product"/>
+                                <TableColumn fx:id="colTransactionCategory" prefWidth="145.0" text="Category"/>
+                                <TableColumn fx:id="colTransactionAmount" prefWidth="145.0" text="Bid Amount"/>
+                                <TableColumn fx:id="colTransactionStatus" prefWidth="120.0" text="Status"/>
+                                <TableColumn fx:id="colTransactionResult" prefWidth="150.0" text="Result"/>
+                            </columns>
+                        </TableView>
+                    </children>
+                </VBox>
+
+                <VBox spacing="8.0" VBox.vgrow="ALWAYS">
+                    <children>
+                        <Label text="Won Products" styleClass="panel-title"/>
+                        <TableView fx:id="tableWonProducts" prefHeight="210.0" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="colWonProduct" prefWidth="285.0" text="Product"/>
+                                <TableColumn fx:id="colWonCategory" prefWidth="180.0" text="Category"/>
+                                <TableColumn fx:id="colWonPrice" prefWidth="170.0" text="Winning Price"/>
+                                <TableColumn fx:id="colWonStatus" prefWidth="135.0" text="Status"/>
+                                <TableColumn fx:id="colWonEndedAt" prefWidth="170.0" text="Ended At"/>
+                            </columns>
+                        </TableView>
+                    </children>
+                </VBox>
+
                 <HBox spacing="10.0" styleClass="dialog-actions">
                     <children>
+                        <Region HBox.hgrow="ALWAYS"/>
                         <Button mnemonicParsing="false" onAction="#handleClose" text="CLOSE" styleClass="button primary-button"/>
                     </children>
                 </HBox>

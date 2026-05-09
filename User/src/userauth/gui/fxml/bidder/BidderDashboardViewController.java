@@ -185,6 +185,7 @@ public class BidderDashboardViewController {
     private User currentUser;
     private Timeline timeline;
     private final PauseTransition filterRefreshDebounce = new PauseTransition(Duration.millis(220));
+    private List<AuctionItem> allAuctionsSnapshot = List.of();
     private Map<Integer, List<BidTransaction>> bidsByAuction = Map.of();
     private int lastSelectedAuctionId = -1;
     private int lastSelectedWinnerId = -1;
@@ -427,9 +428,8 @@ public class BidderDashboardViewController {
             return;
         }
 
-        AuctionItem selected = tableAuctions.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            NotificationUtil.warning(ownerWindow(), "Notification", "Please select an auction.");
+        if (currentUser == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current user information is unavailable.");
             return;
         }
 
@@ -438,8 +438,13 @@ public class BidderDashboardViewController {
             return;
         }
 
-        List<BidTransaction> bids = bidsByAuction.getOrDefault(selected.getId(), List.of());
-        frame.showBidHistoryDialog(selected, bids);
+        List<AuctionItem> auctions = allAuctionsSnapshot.isEmpty()
+                ? auctionController.getAllAuctions()
+                : allAuctionsSnapshot;
+        List<BidTransaction> bids = bidsByAuction.isEmpty()
+                ? auctionController.getAllBids()
+                : bidsByAuction.values().stream().flatMap(List::stream).toList();
+        frame.showBidHistoryDialog(currentUser, auctions, bids);
     }
 
     @FXML
@@ -830,6 +835,7 @@ public class BidderDashboardViewController {
     }
 
     private void applyBidderSnapshot(BidderSnapshot snapshot, int selectedId) {
+        allAuctionsSnapshot = snapshot.allAuctions();
         bidsByAuction = snapshot.groupedBids();
         updateMetrics(snapshot.allAuctions());
 

@@ -34,7 +34,7 @@
                             <children>
                                 <Label styleClass="sidebar-nav-title" text="MODULES" />
                                 <Label maxWidth="Infinity" styleClass="sidebar-nav-item sidebar-nav-item-active" text="Live Auctions" />
-                                <Label maxWidth="Infinity" styleClass="sidebar-nav-item" text="Bid History" />
+                                <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleShowHistory" styleClass="sidebar-nav-item" text="Bid History" />
                             </children>
                         </VBox>
                         <Region VBox.vgrow="ALWAYS" />

@@ -182,12 +182,11 @@ public class AuthFrame {
         dialog.showAndWait();
     }
 
-    public void showBidHistoryDialog(AuctionItem auctionItem, List<BidTransaction> bids) {
+    public void showBidHistoryDialog(User bidder, List<AuctionItem> auctions, List<BidTransaction> bids) {
         LoadedView<BidHistoryDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "dialog/bid-history-dialog.fxml", "dialog");
-        Stage dialog = FxmlRuntime.createModalDialog(stage, "BID HISTORY", view.root(), 720, 460);
+        Stage dialog = FxmlRuntime.createModalDialog(stage, "BID HISTORY", view.root(), 1040, 720);
         view.controller().setDialogStage(dialog);
-        view.controller().setAuction(auctionItem);
-        view.controller().setBids(bids);
+        view.controller().setBidderHistory(bidder, auctions, bids);
         dialog.showAndWait();
     }
 
