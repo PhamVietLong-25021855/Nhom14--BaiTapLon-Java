@@ -6,6 +6,8 @@ Dự án sử dụng Java 25, JavaFX 25.0.2 và Maven. Bản nâng cấp hiện 
 
 ```text
 User/src/userauth/                 Mã nguồn chính của dự án
+User/src/userauth/api/             Interface nghiệp vụ dùng chung cho client và server
+User/src/userauth/common/          Hằng số/logic dùng chung, không phụ thuộc database
 User/src/userauth/server/          Socket server chạy trên VPS hoặc máy host
 User/src/userauth/client/remote/   Remote service phía client, không truy cập database trực tiếp
 User/src/userauth/network/         Request/Response cho giao tiếp client-server
@@ -35,10 +37,10 @@ java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -cp "target/classes:t
 ## Chạy client JavaFX
 
 ```powershell
-mvn javafx:run "-Dapp.client.mode=remote" "-Dapp.server.host=172.104.50.54" "-Dapp.server.port=5050"
+.\client\run-client.ps1 -ServerHost "172.104.50.54" -ServerPort 5050
 ```
 
-Mặc định `userauth.Launcher` chạy ở chế độ remote client và trỏ tới `172.104.50.54:5050`. Nếu đổi VPS hoặc domain, truyền lại `-Dapp.server.host=...` hoặc đặt biến môi trường `APP_SERVER_HOST`.
+Client dùng entry point `userauth.ClientLauncher`, chỉ gọi server qua Socket và không khởi tạo DAO/database. Nếu đổi VPS hoặc domain, truyền lại `-ServerHost ...` hoặc đặt biến môi trường `APP_SERVER_HOST`.
 
 Nếu VPS chỉ mở cổng SSH `22`, không chạy ứng dụng trực tiếp trên cổng `22`. Hãy chạy app server trên VPS ở cổng `5050`, sau đó chạy client qua SSH tunnel:
 
@@ -53,6 +55,8 @@ Nếu VPS chỉ mở cổng SSH `22`, không chạy ứng dụng trực tiếp t
 ```
 
 Hướng dẫn chi tiết: `docs/split-client-server.md`
+
+Gói `dist/client` được kiểm tra để không chứa `userauth/server`, `userauth/database`, `userauth/dao`, `userauth/service`, `database.properties` hoặc MySQL driver.
 
 ## Chạy kiểm thử
 

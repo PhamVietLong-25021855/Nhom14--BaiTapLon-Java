@@ -5,6 +5,8 @@ Script `scripts/split-client-server.ps1` sẽ tạo:
 - `dist/server`: dùng để copy lên máy chạy server.
 - `dist/client`: dùng để copy sang máy người dùng.
 
+Script copy theo danh sách package được phép thay vì copy toàn bộ `target/classes`.
+
 ## 1. Tạo gói tách riêng
 
 ```powershell
@@ -31,3 +33,5 @@ Vào thư mục `dist/client`:
 
 - Nếu client ở mạng khác, cần mở firewall hoặc port forwarding TCP `5050` trên máy server.
 - Không commit mật khẩu thật vào source code.
+- `dist/client` không chứa package server, DAO, database, service implementation, `database.properties` hoặc MySQL driver.
+- `dist/server` không chứa JavaFX GUI/client và không copy dependency JavaFX.

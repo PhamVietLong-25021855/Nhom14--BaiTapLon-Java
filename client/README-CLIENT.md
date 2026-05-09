@@ -1,6 +1,6 @@
 # Client JavaFX riêng
 
-Client không truy cập database trực tiếp. Mặc định `userauth.Launcher` chạy ở chế độ remote và gọi server qua Socket.
+Client không truy cập database trực tiếp. Script client dùng `userauth.ClientLauncher`, chỉ khởi tạo remote service và gọi server qua Socket.
 
 ## Chạy client trên máy người dùng
 
@@ -32,8 +32,8 @@ Không chạy `AuctionServerMain` trực tiếp trên cổng `22` vì cổng nà
 
 Khi cửa sổ SSH hiện ra, đăng nhập và giữ cửa sổ đó mở. Client sẽ kết nối tới `127.0.0.1:5050`, còn đường mạng thật sẽ đi qua SSH port `22`.
 
-Nếu cần chạy lại chế độ local DB cũ, thêm:
+Nếu cần chạy lại chế độ local DB cũ trong source project, dùng script gốc ở thư mục root:
 
-```text
--Dapp.client.mode=local
+```powershell
+.\run-javafx.ps1 -LocalMode
 ```
