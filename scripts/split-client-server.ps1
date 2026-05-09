@@ -1,7 +1,7 @@
 param(
-    [string]$OutputDir = ".",
-    [string]$ServerFolderName = "server-app",
-    [string]$ClientFolderName = "client-app"
+    [string]$OutputDir = "dist",
+    [string]$ServerFolderName = "server",
+    [string]$ClientFolderName = "client"
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,6 +10,7 @@ $root = Split-Path -Parent $PSScriptRoot
 $distRoot = Join-Path $root $OutputDir
 $serverDir = Join-Path $distRoot $ServerFolderName
 $clientDir = Join-Path $distRoot $ClientFolderName
+$classesRoot = Join-Path $root "target\classes"
 
 function Assert-UnderPath {
     param(
@@ -65,14 +66,50 @@ function Copy-DependenciesByPattern {
     }
 }
 
+function Copy-RuntimePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RelativePath,
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationRoot
+    )
+
+    $sourcePath = Join-Path $classesRoot $RelativePath
+    if (-not (Test-Path -LiteralPath $sourcePath)) {
+        throw "Runtime path not found: $sourcePath"
+    }
+
+    $destinationClasses = Join-Path $DestinationRoot "target\classes"
+    $destinationPath = Join-Path $destinationClasses $RelativePath
+    $destinationParent = Split-Path -Parent $destinationPath
+    New-Item -ItemType Directory -Force $destinationParent | Out-Null
+    Copy-Item -LiteralPath $sourcePath -Destination $destinationParent -Recurse -Force
+}
+
+function Assert-MissingPaths {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PackageRoot,
+        [Parameter(Mandatory = $true)]
+        [string[]]$RelativePaths
+    )
+
+    foreach ($relativePath in $RelativePaths) {
+        $path = Join-Path $PackageRoot $relativePath
+        if (Test-Path $path) {
+            throw "Forbidden runtime content found: $path"
+        }
+    }
+}
+
 Assert-UnderPath -Path $distRoot -ParentPath $root
 
-Write-Host "[1/4] Building project..."
+Write-Host "[1/5] Building project..."
 Push-Location $root
 mvn -DskipTests package
 if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
 
-Write-Host "[2/4] Copying runtime dependencies..."
+Write-Host "[2/5] Copying runtime dependencies..."
 $targetDependencyDir = Join-Path $root "target\dependency"
 if (Test-Path -LiteralPath $targetDependencyDir) {
     Assert-UnderPath -Path $targetDependencyDir -ParentPath $root
@@ -82,7 +119,7 @@ mvn dependency:copy-dependencies -DincludeScope=runtime
 if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
 Pop-Location
 
-Write-Host "[3/4] Creating split directories..."
+Write-Host "[3/5] Creating split directories..."
 Reset-Directory -Path $serverDir -ParentPath $distRoot
 Reset-Directory -Path $clientDir -ParentPath $distRoot
 New-Item -ItemType Directory -Force (Join-Path $serverDir "target\classes") | Out-Null
@@ -90,9 +127,48 @@ New-Item -ItemType Directory -Force (Join-Path $serverDir "target\dependency") |
 New-Item -ItemType Directory -Force (Join-Path $clientDir "target\classes") | Out-Null
 New-Item -ItemType Directory -Force (Join-Path $clientDir "target\dependency") | Out-Null
 
-Write-Host "[4/4] Copying files..."
-Copy-Item -Path (Join-Path $root "target\classes\*") -Destination (Join-Path $serverDir "target\classes") -Recurse -Force
-Copy-Item -Path (Join-Path $root "target\classes\*") -Destination (Join-Path $clientDir "target\classes") -Recurse -Force
+Write-Host "[4/5] Copying server and client runtime classes..."
+$serverRuntimePaths = @(
+    "userauth\api",
+    "userauth\common",
+    "userauth\controller",
+    "userauth\dao",
+    "userauth\database",
+    "userauth\database.properties",
+    "userauth\event",
+    "userauth\exception",
+    "userauth\model",
+    "userauth\network",
+    "userauth\server",
+    "userauth\service",
+    "userauth\util",
+    "userauth\validation"
+)
+
+$clientRuntimePaths = @(
+    "userauth\ClientLauncher.class",
+    "userauth\ClientMain.class",
+    "userauth\api",
+    "userauth\common",
+    "userauth\client",
+    "userauth\controller",
+    "userauth\event",
+    "userauth\exception",
+    "userauth\gui",
+    "userauth\model",
+    "userauth\network",
+    "userauth\util",
+    "userauth\validation"
+)
+
+foreach ($relativePath in $serverRuntimePaths) {
+    Copy-RuntimePath -RelativePath $relativePath -DestinationRoot $serverDir
+}
+
+foreach ($relativePath in $clientRuntimePaths) {
+    Copy-RuntimePath -RelativePath $relativePath -DestinationRoot $clientDir
+}
+
 Copy-DependenciesByPattern -Destination (Join-Path $serverDir "target\dependency") -Patterns @(
     "mysql-connector-j-*.jar",
     "protobuf-java-*.jar"
@@ -101,11 +177,7 @@ Copy-DependenciesByPattern -Destination (Join-Path $clientDir "target\dependency
     "javafx-*.jar"
 )
 
-$clientDatabaseConfig = Join-Path $clientDir "target\classes\userauth\database.properties"
-if (Test-Path -LiteralPath $clientDatabaseConfig) {
-    Remove-Item -LiteralPath $clientDatabaseConfig -Force
-}
-
+Write-Host "[5/5] Writing launch scripts and validating package boundaries..."
 $serverRun = @'
 param(
     [Parameter(Mandatory = $false)]
@@ -148,7 +220,7 @@ if (-not $ServerHost) {
     $ServerHost = "172.104.50.54"
 }
 
-java -Dapp.client.mode=remote -Dapp.server.host="$ServerHost" -Dapp.server.port="$ServerPort" -cp "target/classes;target/dependency/*" userauth.Launcher
+java -Dapp.server.host="$ServerHost" -Dapp.server.port="$ServerPort" -cp "target/classes;target/dependency/*" userauth.ClientLauncher
 '@
 
 $clientTunnelRun = @'
@@ -182,7 +254,7 @@ if (-not $ready) {
     throw "SSH tunnel is not ready. Keep the SSH tunnel window open and sign in if it asks for a password."
 }
 
-java -Dapp.client.mode=remote -Dapp.server.host="$LocalHost" -Dapp.server.port="$LocalPort" -cp "target/classes;target/dependency/*" userauth.Launcher
+java -Dapp.server.host="$LocalHost" -Dapp.server.port="$LocalPort" -cp "target/classes;target/dependency/*" userauth.ClientLauncher
 '@
 
 Set-Content -Path (Join-Path $serverDir "run-server.ps1") -Value $serverRun -Encoding UTF8
@@ -191,6 +263,28 @@ Set-Content -Path (Join-Path $clientDir "run-client-via-ssh.ps1") -Value $client
 
 Set-Content -Path (Join-Path $serverDir ".env.example") -Value "DB_PASSWORD=your_database_password`nAPP_SERVER_PORT=5050`nAPP_SERVER_BIND_HOST=0.0.0.0`n" -Encoding UTF8
 Set-Content -Path (Join-Path $clientDir ".env.example") -Value "APP_SERVER_HOST=172.104.50.54`nAPP_SERVER_PORT=5050`n" -Encoding UTF8
+
+Assert-MissingPaths -PackageRoot $clientDir -RelativePaths @(
+    "target\classes\userauth\dao",
+    "target\classes\userauth\database",
+    "target\classes\userauth\database.properties",
+    "target\classes\userauth\server",
+    "target\classes\userauth\service",
+    "target\classes\userauth\Launcher.class",
+    "target\classes\userauth\Main.class",
+    "target\dependency\mysql-connector-j-*.jar",
+    "target\dependency\protobuf-java-*.jar"
+)
+
+Assert-MissingPaths -PackageRoot $serverDir -RelativePaths @(
+    "target\classes\userauth\ClientLauncher.class",
+    "target\classes\userauth\ClientMain.class",
+    "target\classes\userauth\client",
+    "target\classes\userauth\gui",
+    "target\classes\userauth\Launcher.class",
+    "target\classes\userauth\Main.class",
+    "target\dependency\javafx-*.jar"
+)
 
 Write-Host ""
 Write-Host "Split package created successfully:"
