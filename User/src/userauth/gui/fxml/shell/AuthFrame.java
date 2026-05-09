@@ -34,7 +34,7 @@ import java.util.function.Consumer;
 public class AuthFrame {
     private static final double DEFAULT_WIDTH = 1280;
     private static final double DEFAULT_HEIGHT = 840;
-    private static final boolean OPEN_FULLSCREEN = true;
+    private static final boolean OPEN_FULLSCREEN = false;
 
     private final Stage stage;
     private final AuthController authController;

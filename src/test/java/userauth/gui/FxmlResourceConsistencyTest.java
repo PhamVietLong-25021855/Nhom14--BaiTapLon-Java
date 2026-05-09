@@ -86,6 +86,15 @@ class FxmlResourceConsistencyTest {
         assertFalse(content.contains("fx:value=\"ADMIN\""));
     }
 
+    @Test
+    void authFrameDoesNotOpenFullscreenByDefault() throws Exception {
+        var openFullscreen = Class.forName("userauth.gui.fxml.shell.AuthFrame")
+                .getDeclaredField("OPEN_FULLSCREEN");
+        openFullscreen.setAccessible(true);
+
+        assertFalse(openFullscreen.getBoolean(null));
+    }
+
     private static List<Path> listFiles(Path root, String suffix) throws IOException {
         try (Stream<Path> paths = Files.walk(root)) {
             return paths
