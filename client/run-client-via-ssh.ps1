@@ -28,4 +28,4 @@ if (-not $ready) {
     throw "SSH tunnel is not ready. Keep the SSH tunnel window open and sign in if it asks for a password."
 }
 
-mvn javafx:run "-Dapp.client.mode=remote" "-Dapp.server.host=$LocalHost" "-Dapp.server.port=$LocalPort"
+mvn javafx:run "-Dmain.class=userauth.ClientLauncher" "-Dapp.server.host=$LocalHost" "-Dapp.server.port=$LocalPort"

@@ -23,6 +23,11 @@ if ($LocalMode) {
 }
 
 $mvnArgs = @("javafx:run")
+$mainClass = "userauth.ClientLauncher"
+if ($ClientMode -ieq "local") {
+    $mainClass = "userauth.Launcher"
+}
+$mvnArgs += "-Dmain.class=$mainClass"
 $mvnArgs += "-Dapp.client.mode=$ClientMode"
 
 if (-not $ServerHost -and $ClientMode -ieq "remote") {
