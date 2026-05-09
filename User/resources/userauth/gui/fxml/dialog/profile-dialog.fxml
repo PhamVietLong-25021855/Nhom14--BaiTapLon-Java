@@ -4,39 +4,60 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
-           prefHeight="390.0" prefWidth="460.0"
+           prefHeight="590.0" prefWidth="760.0"
            fx:controller="userauth.gui.fxml.dialog.ProfileDialogController"
            styleClass="dialog-root"
            stylesheets="@../shared/auth-theme.css"
            xmlns="http://javafx.com/javafx/25"
            xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox maxWidth="416.0" prefWidth="416.0" spacing="16.0" styleClass="dialog-card">
+        <VBox maxWidth="680.0" prefWidth="680.0" spacing="20.0" styleClass="dialog-card dialog-pro">
             <children>
-                <Label text="EDIT PROFILE" styleClass="section-title"/>
-                <VBox spacing="4.0">
+                <VBox spacing="6.0">
                     <children>
-                        <Label fx:id="lblUsername" text="Account: -" styleClass="body-text"/>
-                        <Label fx:id="lblRole" text="Role: -" styleClass="secondary-text"/>
+                        <Label text="ACCOUNT INFORMATION" styleClass="dialog-kicker"/>
+                        <Label text="Edit Profile" styleClass="section-title dialog-title"/>
+                        <Label text="Keep your contact details up to date to receive auction notifications and account updates." wrapText="true" styleClass="secondary-text dialog-subtitle"/>
                     </children>
                 </VBox>
-                <VBox spacing="10.0">
+
+                <HBox spacing="10.0">
+                    <children>
+                        <VBox spacing="4.0" styleClass="dialog-inline-info">
+                            <children>
+                                <Label text="Account" styleClass="caption-text"/>
+                                <Label fx:id="lblUsername" text="Account: -" styleClass="body-text dialog-account"/>
+                            </children>
+                        </VBox>
+                        <VBox spacing="4.0" styleClass="dialog-inline-info">
+                            <children>
+                                <Label text="Role" styleClass="caption-text"/>
+                                <Label fx:id="lblRole" text="Role: -" styleClass="body-text dialog-account"/>
+                            </children>
+                        </VBox>
+                    </children>
+                </HBox>
+
+                <VBox spacing="12.0">
                     <children>
                         <Label text="Full Name" styleClass="field-label"/>
                         <TextField fx:id="txtFullName" promptText="Enter your full name"/>
                         <Label text="Email" styleClass="field-label"/>
-                        <TextField fx:id="txtEmail" onAction="#handleSubmit" promptText="Enter email address"/>
+                        <TextField fx:id="txtEmail" onAction="#handleSubmit" promptText="name@example.com"/>
                     </children>
                 </VBox>
-                <Label fx:id="lblError" managed="false" text="Error message" visible="false" wrapText="true" styleClass="error-text"/>
-                <HBox spacing="10.0" styleClass="dialog-actions">
+                <Label fx:id="lblError" managed="false" text="Error message" visible="false" wrapText="true" styleClass="error-text dialog-error"/>
+                <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="dialog-actions">
                     <children>
-                        <Button mnemonicParsing="false" onAction="#handleCancel" text="CANCEL" styleClass="button ghost-button"/>
-                        <Button mnemonicParsing="false" onAction="#handleSubmit" text="UPDATE PROFILE" styleClass="button primary-button"/>
+                        <Label text="Changes are saved to your account immediately." styleClass="caption-text"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button mnemonicParsing="false" onAction="#handleCancel" text="Cancel" styleClass="button ghost-button dialog-action-secondary"/>
+                        <Button mnemonicParsing="false" onAction="#handleSubmit" text="Save Changes" styleClass="button primary-button dialog-action-primary"/>
                     </children>
                 </HBox>
             </children>

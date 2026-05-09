@@ -159,7 +159,7 @@ public class AuthFrame {
 
     public void showChangePasswordDialog(User user) {
         LoadedView<ChangePasswordDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "dialog/change-password-dialog.fxml", "dialog");
-        Stage dialog = FxmlRuntime.createModalDialog(stage, "CHANGE PASSWORD", view.root(), 480, 430);
+        Stage dialog = FxmlRuntime.createModalDialog(stage, "CHANGE PASSWORD", view.root(), 820, 700);
         view.controller().setDialogStage(dialog);
         view.controller().setAuthController(authController);
         view.controller().setUser(user);
@@ -169,7 +169,7 @@ public class AuthFrame {
 
     public void showProfileDialog(User user, Consumer<User> profileUpdatedHandler) {
         LoadedView<ProfileDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "dialog/profile-dialog.fxml", "dialog");
-        Stage dialog = FxmlRuntime.createModalDialog(stage, "EDIT PROFILE", view.root(), 460, 390);
+        Stage dialog = FxmlRuntime.createModalDialog(stage, "EDIT PROFILE", view.root(), 820, 670);
         view.controller().setDialogStage(dialog);
         view.controller().setAuthController(authController);
         view.controller().setUser(user);
