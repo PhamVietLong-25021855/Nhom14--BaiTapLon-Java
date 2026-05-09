@@ -1,5 +1,6 @@
 package userauth.service;
 
+import userauth.api.AuthApi;
 import userauth.dao.UserDAO;
 import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
@@ -13,7 +14,7 @@ import userauth.validation.UserValidator;
 
 import java.util.List;
 
-public class AuthService {
+public class AuthService implements AuthApi {
     private final UserDAO userDAO;
 
     public AuthService(UserDAO userDAO) {

@@ -2,6 +2,7 @@ package userauth.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import userauth.common.AuctionRules;
 import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
 import userauth.model.AuctionItem;

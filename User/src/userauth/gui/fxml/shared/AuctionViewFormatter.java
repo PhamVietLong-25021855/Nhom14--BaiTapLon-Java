@@ -2,7 +2,7 @@ package userauth.gui.fxml.shared;
 
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
-import userauth.service.AuctionRules;
+import userauth.common.AuctionRules;
 
 import java.time.Instant;
 import java.time.ZoneId;

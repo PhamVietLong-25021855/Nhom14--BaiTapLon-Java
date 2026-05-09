@@ -1,5 +1,6 @@
 package userauth.service;
 
+import userauth.api.AutobidApi;
 import userauth.dao.AutoBidDAO;
 import userauth.exception.ItemNotFoundException;
 import userauth.exception.UnauthorizedException;
@@ -8,7 +9,7 @@ import userauth.model.AutoBid;
 
 import java.util.List;
 
-public class AutobidService {
+public class AutobidService implements AutobidApi {
 
     private final AutoBidDAO autoBidDAO;
 

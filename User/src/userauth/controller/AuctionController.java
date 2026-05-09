@@ -1,5 +1,6 @@
 package userauth.controller;
 
+import userauth.api.AuctionApi;
 import userauth.exception.AuctionClosedException;
 import userauth.exception.InvalidBidException;
 import userauth.exception.ItemNotFoundException;
@@ -9,15 +10,14 @@ import userauth.model.AuctionItem;
 import userauth.model.BidTransaction;
 import userauth.model.Role;
 import userauth.model.User;
-import userauth.service.AuctionService;
 
 import java.util.List;
 import java.util.Map;
 
 public class AuctionController {
-    private final AuctionService auctionService;
+    private final AuctionApi auctionService;
 
-    public AuctionController(AuctionService auctionService) {
+    public AuctionController(AuctionApi auctionService) {
         this.auctionService = auctionService;
     }
 

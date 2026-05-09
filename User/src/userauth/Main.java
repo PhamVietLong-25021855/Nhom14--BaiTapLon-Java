@@ -2,6 +2,10 @@ package userauth;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
+import userauth.api.AuctionApi;
+import userauth.api.AuthApi;
+import userauth.api.AutobidApi;
+import userauth.api.HomepageContentApi;
 import userauth.controller.AuctionController;
 import userauth.controller.AuthController;
 import userauth.controller.AutobidController;
@@ -22,10 +26,10 @@ public class Main extends Application {
     public void start(Stage stage) {
         boolean remoteMode = isRemoteClientMode();
 
-        AuthService authService;
-        AuctionService auctionService;
-        AutobidService autobidService;
-        HomepageContentService homepageContentService;
+        AuthApi authService;
+        AuctionApi auctionService;
+        AutobidApi autobidService;
+        HomepageContentApi homepageContentService;
 
         if (remoteMode) {
             RemoteAuctionClient remoteClient = new RemoteAuctionClient();
@@ -42,12 +46,13 @@ public class Main extends Application {
 
             AuctionDAO auctionDAO = new AuctionDAOImpl();
             AutoBidDAO autoBidDAO = new AutoBidDAOImpl();
-            auctionService = new AuctionService(auctionDAO, autoBidDAO);
+            AuctionService localAuctionService = new AuctionService(auctionDAO, autoBidDAO);
+            auctionService = localAuctionService;
             autobidService = new AutobidService(autoBidDAO);
             homepageContentService = new HomepageContentService();
 
             if (isSchedulerEnabled()) {
-                scheduler = new AuctionScheduler(auctionService);
+                scheduler = new AuctionScheduler(localAuctionService);
                 scheduler.start();
             }
         }

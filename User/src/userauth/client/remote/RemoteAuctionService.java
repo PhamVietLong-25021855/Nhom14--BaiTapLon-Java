@@ -1,20 +1,19 @@
 package userauth.client.remote;
 
+import userauth.api.AuctionApi;
 import userauth.exception.*;
 import userauth.model.AuctionItem;
 import userauth.model.BidTransaction;
 import userauth.network.NetworkActions;
-import userauth.service.AuctionService;
 
 import java.util.List;
 import java.util.Map;
 
 /** AuctionService chạy ở client: chuyển toàn bộ logic đấu giá sang Server. */
-public class RemoteAuctionService extends AuctionService {
+public class RemoteAuctionService implements AuctionApi {
     private final RemoteAuctionClient client;
 
     public RemoteAuctionService(RemoteAuctionClient client) {
-        super(new NoOpDaos.AuctionDao(), new NoOpDaos.AutoBidDao());
         this.client = client;
     }
 

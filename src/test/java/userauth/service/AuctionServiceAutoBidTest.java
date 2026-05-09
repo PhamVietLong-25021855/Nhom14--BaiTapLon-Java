@@ -2,6 +2,7 @@ package userauth.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import userauth.common.AuctionRules;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 import userauth.model.AutoBid;

@@ -1,18 +1,17 @@
 package userauth.client.remote;
 
+import userauth.api.HomepageContentApi;
 import userauth.exception.ValidationException;
 import userauth.model.HomepageAnnouncement;
 import userauth.network.NetworkActions;
-import userauth.service.HomepageContentService;
 
 import java.util.List;
 
 /** HomepageContentService chạy ở client: gọi Server thay vì DAO. */
-public class RemoteHomepageContentService extends HomepageContentService {
+public class RemoteHomepageContentService implements HomepageContentApi {
     private final RemoteAuctionClient client;
 
     public RemoteHomepageContentService(RemoteAuctionClient client) {
-        super(new NoOpDaos.HomepageDao());
         this.client = client;
     }
 

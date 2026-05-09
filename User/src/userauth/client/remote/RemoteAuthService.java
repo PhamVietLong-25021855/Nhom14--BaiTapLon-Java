@@ -1,20 +1,19 @@
 package userauth.client.remote;
 
+import userauth.api.AuthApi;
 import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
 import userauth.model.Role;
 import userauth.model.User;
 import userauth.network.NetworkActions;
-import userauth.service.AuthService;
 
 import java.util.List;
 
 /** AuthService chạy ở client: mọi thao tác được chuyển sang Server qua Socket. */
-public class RemoteAuthService extends AuthService {
+public class RemoteAuthService implements AuthApi {
     private final RemoteAuctionClient client;
 
     public RemoteAuthService(RemoteAuctionClient client) {
-        super(new NoOpDaos.UserDao());
         this.client = client;
     }
 

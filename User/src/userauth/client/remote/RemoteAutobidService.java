@@ -1,20 +1,19 @@
 package userauth.client.remote;
 
+import userauth.api.AutobidApi;
 import userauth.exception.ItemNotFoundException;
 import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
 import userauth.model.AutoBid;
 import userauth.network.NetworkActions;
-import userauth.service.AutobidService;
 
 import java.util.List;
 
 /** AutobidService chạy ở client: gọi Server thay vì DAO. */
-public class RemoteAutobidService extends AutobidService {
+public class RemoteAutobidService implements AutobidApi {
     private final RemoteAuctionClient client;
 
     public RemoteAutobidService(RemoteAuctionClient client) {
-        super(new NoOpDaos.AutoBidDao());
         this.client = client;
     }
 

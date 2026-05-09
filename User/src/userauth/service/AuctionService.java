@@ -1,5 +1,7 @@
 package userauth.service;
 
+import userauth.api.AuctionApi;
+import userauth.common.AuctionRules;
 import userauth.dao.AuctionDAO;
 import userauth.dao.AutoBidDAO;
 import userauth.event.AuctionEvent;
@@ -34,7 +36,7 @@ import java.util.stream.Collectors;
  * Các thao tác nhạy cảm như đặt giá, chốt phiên, đếm ngược đóng sớm được khóa theo từng auctionId
  * bằng ReentrantLock để tránh lỗi khi nhiều người thao tác cùng lúc.
  */
-public class AuctionService {
+public class AuctionService implements AuctionApi {
     private final AuctionDAO auctionDAO;
     private final AutoBidDAO autoBidDAO;
     private final ConcurrentHashMap<Integer, ReentrantLock> auctionLocks;

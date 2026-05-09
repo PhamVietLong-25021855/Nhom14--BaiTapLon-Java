@@ -1,17 +1,17 @@
 package userauth.controller;
 
+import userauth.api.AuthApi;
 import userauth.model.Role;
 import userauth.model.User;
-import userauth.service.AuthService;
 import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
 
 import java.util.List;
 
 public class AuthController {
-    private final AuthService authService;
+    private final AuthApi authService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthApi authService) {
         this.authService = authService;
     }
 

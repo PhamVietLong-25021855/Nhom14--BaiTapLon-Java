@@ -1,5 +1,6 @@
 package userauth.service;
 
+import userauth.api.HomepageContentApi;
 import userauth.dao.HomepageAnnouncementDAO;
 import userauth.dao.HomepageAnnouncementDAOImpl;
 import userauth.exception.ValidationException;
@@ -8,7 +9,7 @@ import userauth.model.HomepageAnnouncement;
 import java.util.Comparator;
 import java.util.List;
 
-public class HomepageContentService {
+public class HomepageContentService implements HomepageContentApi {
     private final HomepageAnnouncementDAO announcementDAO;
 
     public HomepageContentService() {

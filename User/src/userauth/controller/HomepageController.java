@@ -1,17 +1,17 @@
 package userauth.controller;
 
+import userauth.api.HomepageContentApi;
 import userauth.exception.ValidationException;
 import userauth.model.HomepageAnnouncement;
 import userauth.model.Role;
 import userauth.model.User;
-import userauth.service.HomepageContentService;
 
 import java.util.List;
 
 public class HomepageController {
-    private final HomepageContentService homepageContentService;
+    private final HomepageContentApi homepageContentService;
 
-    public HomepageController(HomepageContentService homepageContentService) {
+    public HomepageController(HomepageContentApi homepageContentService) {
         this.homepageContentService = homepageContentService;
     }
 
