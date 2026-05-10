@@ -140,7 +140,8 @@ public final class UiInput {
                     change.getControlText(),
                     change.getRangeStart(),
                     change.getRangeEnd(),
-                    change.getText()
+                    change.getText(),
+                    change.getControlCaretPosition()
             );
             if (edit == null) {
                 return null;
@@ -216,10 +217,15 @@ public final class UiInput {
     }
 
     static MoneyEdit formatMoneyEdit(String controlText, int rangeStart, int rangeEnd, String replacement) {
+        return formatMoneyEdit(controlText, rangeStart, rangeEnd, replacement, rangeEnd);
+    }
+
+    static MoneyEdit formatMoneyEdit(String controlText, int rangeStart, int rangeEnd, String replacement, int controlCaret) {
         String currentText = controlText == null ? "" : controlText;
         String replacementText = replacement == null ? "" : replacement;
         int safeStart = Math.min(Math.max(rangeStart, 0), currentText.length());
         int safeEnd = Math.min(Math.max(rangeEnd, safeStart), currentText.length());
+        int safeControlCaret = Math.min(Math.max(controlCaret, 0), currentText.length());
 
         String replacementDigits = digitsOnly(replacementText);
         if (!replacementText.isEmpty() && replacementDigits.isEmpty()) {
@@ -229,6 +235,14 @@ public final class UiInput {
         String currentDigits = digitsOnly(currentText);
         int startDigit = countDigitsBeforeCaret(currentText, safeStart);
         int endDigit = countDigitsBeforeCaret(currentText, safeEnd);
+        if (replacementText.isEmpty() && safeStart < safeEnd && startDigit == endDigit) {
+            if (safeEnd <= safeControlCaret) {
+                startDigit = Math.max(0, startDigit - 1);
+            } else {
+                endDigit = Math.min(currentDigits.length(), endDigit + 1);
+            }
+        }
+
         String editedDigits = currentDigits.substring(0, startDigit)
                 + replacementDigits
                 + currentDigits.substring(endDigit);

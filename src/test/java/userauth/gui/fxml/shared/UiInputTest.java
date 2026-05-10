@@ -56,6 +56,30 @@ class UiInputTest {
         assertNull(UiInput.formatMoneyEdit("1.000", 5, 5, "a"));
     }
 
+    @Test
+    void formatMoneyEditHandlesBackspaceAtEndOfGroupedText() {
+        UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 4, 5, "", 5);
+
+        assertEquals("100", edit.text());
+        assertEquals(3, edit.caretPosition());
+    }
+
+    @Test
+    void formatMoneyEditHandlesBackspaceNextToGroupingDot() {
+        UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 1, 2, "", 2);
+
+        assertEquals("0", edit.text());
+        assertEquals(0, edit.caretPosition());
+    }
+
+    @Test
+    void formatMoneyEditHandlesDeleteNextToGroupingDot() {
+        UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 1, 2, "", 1);
+
+        assertEquals("100", edit.text());
+        assertEquals(1, edit.caretPosition());
+    }
+
     private MoneyTyping typeMoney(String initialText, String typedCharacters) {
         String text = initialText;
         int caretPosition = text.length();
