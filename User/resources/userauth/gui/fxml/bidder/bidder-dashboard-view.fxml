@@ -95,7 +95,7 @@
                                 </FlowPane>
                             </children>
                         </VBox>
-                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" pannable="true" styleClass="dashboard-scroll" VBox.vgrow="ALWAYS">
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" pannable="true" styleClass="dashboard-scroll" vvalue="1.0" VBox.vgrow="ALWAYS">
                             <content>
                                 <VBox spacing="20.0">
                                     <children>
@@ -277,7 +277,7 @@
                                           <VBox spacing="12.0" styleClass="panel-card chart-card">
                                              <children>
                                                 <Label styleClass="panel-title" text="Auto Bidding (Current auction)" />
-                                                <TextField fx:id="idAutobid" editable="false" promptText="Select an auto-bid rule to edit" />
+                                                <TextField fx:id="idAutobid" promptText="Select an auto-bid rule to edit" />
                                                 <TextField fx:id="maxPrice" promptText="Enter max price" />
                                                 <TextField fx:id="incrementAutobid" promptText="Enter increment" />
                                                 <HBox spacing="10.0">

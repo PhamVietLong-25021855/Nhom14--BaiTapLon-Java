@@ -301,7 +301,6 @@ public class BidderDashboardViewController {
         }
 
         long ticket = ++refreshTicket;
-        int selectedId = selectedAuctionId();
         String keyword = txtSearch.getText() == null ? "" : txtSearch.getText().trim().toLowerCase(Locale.ROOT);
         String statusFilter = cbStatusFilter.getValue();
 
@@ -311,7 +310,7 @@ public class BidderDashboardViewController {
                     if (ticket != refreshTicket) {
                         return;
                     }
-                    applyBidderSnapshot(snapshot, selectedId);
+                    applyBidderSnapshot(snapshot, selectedAuctionId());
                 },
                 error -> {
                 }
@@ -862,9 +861,6 @@ public class BidderDashboardViewController {
         int selectedId = selectedAutobidId();
         tableAutoBid.setItems(FXCollections.observableArrayList(snapshot.allAutobids()));
         reselectAutobid(selectedId);
-        if (tableAutoBid.getSelectionModel().getSelectedItem() == null) {
-            clearAutobidForm();
-        }
         tableAutoBid.refresh();
     }
 
