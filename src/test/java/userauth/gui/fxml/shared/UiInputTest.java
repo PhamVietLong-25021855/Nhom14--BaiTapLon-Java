@@ -3,6 +3,7 @@ package userauth.gui.fxml.shared;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class UiInputTest {
@@ -32,4 +33,44 @@ class UiInputTest {
         assertEquals("1.500.000", UiInput.formatMoneyInputText("1500000"));
         assertEquals("1.500.000", UiInput.formatMoneyInputText("1,500,000"));
     }
+
+    @Test
+    void formatMoneyEditKeepsDigitsStableWhenTypingFromKeyboard() {
+        MoneyTyping typing = typeMoney("", "1000000");
+
+        assertEquals("1.000.000", typing.text());
+        assertEquals("1000000", typing.text().replace(".", ""));
+        assertEquals(typing.text().length(), typing.caretPosition());
+    }
+
+    @Test
+    void formatMoneyEditHandlesTypingAfterGroupedText() {
+        UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 5, 5, "0");
+
+        assertEquals("10.000", edit.text());
+        assertEquals(6, edit.caretPosition());
+    }
+
+    @Test
+    void formatMoneyEditRejectsNonDigitKeyboardInput() {
+        assertNull(UiInput.formatMoneyEdit("1.000", 5, 5, "a"));
+    }
+
+    private MoneyTyping typeMoney(String initialText, String typedCharacters) {
+        String text = initialText;
+        int caretPosition = text.length();
+        for (int i = 0; i < typedCharacters.length(); i++) {
+            UiInput.MoneyEdit edit = UiInput.formatMoneyEdit(
+                    text,
+                    caretPosition,
+                    caretPosition,
+                    String.valueOf(typedCharacters.charAt(i))
+            );
+            text = edit.text();
+            caretPosition = edit.caretPosition();
+        }
+        return new MoneyTyping(text, caretPosition);
+    }
+
+    private record MoneyTyping(String text, int caretPosition) {}
 }
