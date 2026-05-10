@@ -261,9 +261,9 @@ public class BidderDashboardViewController {
         });
         yAxisBidTrend.setAutoRanging(true);
         updateAutobidModeLabel();
-        UiInput.installDecimalInput(txtBidAmount);
-        UiInput.installDecimalInput(maxPrice);
-        UiInput.installDecimalInput(incrementAutobid);
+        UiInput.installMoneyInput(txtBidAmount);
+        UiInput.installMoneyInput(maxPrice);
+        UiInput.installMoneyInput(incrementAutobid);
         registerAutobidFormListeners();
         tableAutoBid.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) ->
                 {

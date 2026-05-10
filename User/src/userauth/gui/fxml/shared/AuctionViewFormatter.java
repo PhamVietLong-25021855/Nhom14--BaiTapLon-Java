@@ -7,6 +7,7 @@ import userauth.common.AuctionRules;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 public final class AuctionViewFormatter {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
@@ -20,7 +21,7 @@ public final class AuctionViewFormatter {
     }
 
     public static String formatMoney(double amount) {
-        return String.format("%,.0f", amount);
+        return String.format(Locale.US, "%,.0f", amount).replace(',', '.');
     }
 
     public static String formatDuration(AuctionItem item) {

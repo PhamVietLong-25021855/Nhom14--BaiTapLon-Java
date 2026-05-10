@@ -25,4 +25,11 @@ class UiInputTest {
         assertThrows(NumberFormatException.class, () -> UiInput.parsePositiveDecimal("0", "Amount"));
         assertThrows(NumberFormatException.class, () -> UiInput.parsePositiveDecimal("-1", "Amount"));
     }
+
+    @Test
+    void formatMoneyInputTextAddsDotThousandsSeparators() {
+        assertEquals("1.000", UiInput.formatMoneyInputText("1000"));
+        assertEquals("1.500.000", UiInput.formatMoneyInputText("1500000"));
+        assertEquals("1.500.000", UiInput.formatMoneyInputText("1,500,000"));
+    }
 }

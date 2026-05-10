@@ -149,7 +149,7 @@ public class SellerDashboardViewController {
         if (spinDuration.getValueFactory() == null) {
             spinDuration.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 99999, 30));
         }
-        UiInput.installDecimalInput(txtPrice);
+        UiInput.installMoneyInput(txtPrice);
         UiInput.installPositiveIntegerInput(spinDuration.getEditor());
 
         AuctionImageUtil.installRoundedClip(imgPreviewImage, 32, 32);
