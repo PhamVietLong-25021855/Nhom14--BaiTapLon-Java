@@ -140,8 +140,7 @@ public final class UiInput {
                     change.getControlText(),
                     change.getRangeStart(),
                     change.getRangeEnd(),
-                    change.getText(),
-                    change.getControlCaretPosition()
+                    change.getText()
             );
             if (edit == null) {
                 return null;
@@ -200,63 +199,59 @@ public final class UiInput {
         return count;
     }
 
-    private static int caretPositionAfterDigits(String value, int digitCount) {
-        if (digitCount <= 0) {
-            return 0;
-        }
-        int seen = 0;
-        for (int i = 0; i < value.length(); i++) {
-            if (Character.isDigit(value.charAt(i))) {
-                seen++;
-                if (seen == digitCount) {
-                    return i + 1;
-                }
-            }
-        }
-        return value.length();
-    }
-
     static MoneyEdit formatMoneyEdit(String controlText, int rangeStart, int rangeEnd, String replacement) {
-        return formatMoneyEdit(controlText, rangeStart, rangeEnd, replacement, rangeEnd);
-    }
-
-    static MoneyEdit formatMoneyEdit(String controlText, int rangeStart, int rangeEnd, String replacement, int controlCaret) {
         String currentText = controlText == null ? "" : controlText;
         String replacementText = replacement == null ? "" : replacement;
         int safeStart = Math.min(Math.max(rangeStart, 0), currentText.length());
         int safeEnd = Math.min(Math.max(rangeEnd, safeStart), currentText.length());
-        int safeControlCaret = Math.min(Math.max(controlCaret, 0), currentText.length());
 
+        if (hasUnsupportedMoneyCharacter(replacementText)) {
+            return null;
+        }
         String replacementDigits = digitsOnly(replacementText);
         if (!replacementText.isEmpty() && replacementDigits.isEmpty()) {
             return null;
         }
 
         String currentDigits = digitsOnly(currentText);
-        int startDigit = countDigitsBeforeCaret(currentText, safeStart);
-        int endDigit = countDigitsBeforeCaret(currentText, safeEnd);
-        if (replacementText.isEmpty() && safeStart < safeEnd && startDigit == endDigit) {
-            if (safeEnd <= safeControlCaret) {
-                startDigit = Math.max(0, startDigit - 1);
-            } else {
-                endDigit = Math.min(currentDigits.length(), endDigit + 1);
-            }
+        boolean selectedAll = safeStart == 0 && safeEnd == currentText.length();
+        String editedDigits;
+        if (replacementText.isEmpty()) {
+            editedDigits = selectedAll || currentDigits.isEmpty()
+                    ? ""
+                    : currentDigits.substring(0, currentDigits.length() - 1);
+        } else if (selectedAll) {
+            editedDigits = replacementDigits;
+        } else if (safeStart < safeEnd) {
+            int startDigit = countDigitsBeforeCaret(currentText, safeStart);
+            int endDigit = countDigitsBeforeCaret(currentText, safeEnd);
+            editedDigits = currentDigits.substring(0, startDigit)
+                    + replacementDigits
+                    + currentDigits.substring(endDigit);
+        } else {
+            editedDigits = currentDigits + replacementDigits;
         }
 
-        String editedDigits = currentDigits.substring(0, startDigit)
-                + replacementDigits
-                + currentDigits.substring(endDigit);
         if (editedDigits.isEmpty()) {
             return new MoneyEdit("", 0);
         }
 
-        int caretDigit = startDigit + replacementDigits.length();
-        String strippedDigits = stripLeadingZeros(editedDigits);
-        int removedLeadingZeros = editedDigits.length() - strippedDigits.length();
-        int adjustedCaretDigit = Math.max(0, caretDigit - removedLeadingZeros);
-        String formatted = addThousandsDots(strippedDigits);
-        return new MoneyEdit(formatted, caretPositionAfterDigits(formatted, adjustedCaretDigit));
+        String formatted = formatMoneyInputText(editedDigits);
+        return new MoneyEdit(formatted, formatted.length());
     }
 
     record MoneyEdit(String text, int caretPosition) {}
+
+    private static boolean hasUnsupportedMoneyCharacter(String value) {
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            char ch = value.charAt(i);
+            if (!Character.isDigit(ch) && ch != '.' && ch != ',' && ch != ' ') {
+                return true;
+            }
+        }
+        return false;
+    }
 }

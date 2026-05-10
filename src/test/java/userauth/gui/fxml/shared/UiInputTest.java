@@ -44,10 +44,29 @@ class UiInputTest {
     }
 
     @Test
+    void formatMoneyEditAddsDotsOnlyAfterEveryThreeDigits() {
+        String[] expectedSteps = {"1", "10", "100", "1.000", "10.000", "100.000", "1.000.000"};
+        MoneyTyping typing = new MoneyTyping("", 0);
+
+        for (int i = 0; i < expectedSteps.length; i++) {
+            typing = typeMoney(typing.text(), String.valueOf("1000000".charAt(i)));
+            assertEquals(expectedSteps[i], typing.text());
+        }
+    }
+
+    @Test
     void formatMoneyEditHandlesTypingAfterGroupedText() {
         UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 5, 5, "0");
 
         assertEquals("10.000", edit.text());
+        assertEquals(6, edit.caretPosition());
+    }
+
+    @Test
+    void formatMoneyEditAppendsTypedDigitsEvenIfCaretIsMoved() {
+        UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 1, 1, "5");
+
+        assertEquals("10.005", edit.text());
         assertEquals(6, edit.caretPosition());
     }
 
@@ -58,26 +77,26 @@ class UiInputTest {
 
     @Test
     void formatMoneyEditHandlesBackspaceAtEndOfGroupedText() {
-        UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 4, 5, "", 5);
+        UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 4, 5, "");
 
         assertEquals("100", edit.text());
         assertEquals(3, edit.caretPosition());
     }
 
     @Test
-    void formatMoneyEditHandlesBackspaceNextToGroupingDot() {
-        UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 1, 2, "", 2);
+    void formatMoneyEditDeletesFromRightWhenBackspaceIsNextToGroupingDot() {
+        UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 1, 2, "");
 
-        assertEquals("0", edit.text());
-        assertEquals(0, edit.caretPosition());
+        assertEquals("100", edit.text());
+        assertEquals(3, edit.caretPosition());
     }
 
     @Test
-    void formatMoneyEditHandlesDeleteNextToGroupingDot() {
-        UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 1, 2, "", 1);
+    void formatMoneyEditDeletesFromRightWhenDeleteIsNextToGroupingDot() {
+        UiInput.MoneyEdit edit = UiInput.formatMoneyEdit("1.000", 1, 2, "");
 
         assertEquals("100", edit.text());
-        assertEquals(1, edit.caretPosition());
+        assertEquals(3, edit.caretPosition());
     }
 
     private MoneyTyping typeMoney(String initialText, String typedCharacters) {
