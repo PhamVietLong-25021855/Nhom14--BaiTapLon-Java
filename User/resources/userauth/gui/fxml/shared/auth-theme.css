@@ -431,11 +431,42 @@
     -fx-background-radius: 16;
 }
 
-.seller-preview-image-frame,
-.detail-image-frame {
+.seller-preview-image-frame {
     -fx-background-radius: 28;
     -fx-border-radius: 28;
     -fx-padding: 0;
+}
+
+.detail-image-frame {
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-padding: 0;
+}
+
+.clickable-image-frame {
+    -fx-cursor: hand;
+}
+
+.clickable-image-frame:hover {
+    -fx-border-color: rgba(18, 145, 124, 0.36);
+}
+
+.image-preview-overlay {
+    -fx-background-color: rgba(9, 18, 31, 0.88);
+    -fx-background-radius: 22;
+    -fx-border-color: rgba(255, 255, 255, 0.24);
+    -fx-border-radius: 22;
+    -fx-border-width: 1;
+}
+
+.image-preview-hint {
+    -fx-background-color: rgba(255, 255, 255, 0.90);
+    -fx-background-radius: 999;
+    -fx-padding: 8 14 8 14;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-text-background-color: #000000;
+    -fx-text-base-color: #000000;
 }
 
 .auction-product-image {
@@ -933,6 +964,9 @@
     -fx-border-radius: 18;
     -fx-border-width: 1.15;
     -fx-padding: 12 14 12 14;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-min-height: 46px;
     -fx-text-inner-color: -app-ink;
     -fx-prompt-text-fill: #7489a0;
 }
@@ -954,6 +988,7 @@
 .spinner .text-field {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
+    -fx-min-height: 34px;
     -fx-padding: 6 4 6 4;
 }
 
@@ -1000,6 +1035,9 @@
     -fx-border-radius: 16;
     -fx-border-width: 1;
     -fx-padding: 12 18 12 18;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-min-height: 42px;
 }
 
 .button:hover {
@@ -1213,6 +1251,19 @@
 
 .quick-bid-box {
     -fx-background-color: linear-gradient(to bottom right, rgba(18, 145, 124, 0.06), rgba(39, 77, 119, 0.05));
+}
+
+.autobid-mode-chip {
+    -fx-background-color: rgba(242, 247, 252, 0.96);
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(127, 148, 173, 0.22);
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 12 14 12 14;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-text-background-color: -app-ink;
+    -fx-text-base-color: -app-ink;
 }
 
 .activity-title {

@@ -95,7 +95,7 @@
                                 </FlowPane>
                             </children>
                         </VBox>
-                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" pannable="true" styleClass="dashboard-scroll" VBox.vgrow="ALWAYS">
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" pannable="false" styleClass="dashboard-scroll" VBox.vgrow="ALWAYS">
                             <content>
                                 <VBox spacing="20.0">
                                     <children>
@@ -203,7 +203,7 @@
                                                         <VBox spacing="14.0" styleClass="detail-card">
                                                             <children>
                                                                 <Label styleClass="detail-kicker" text="AUCTION DETAIL" />
-                                                                <StackPane maxWidth="Infinity" minHeight="220.0" prefHeight="220.0" styleClass="auction-image-panel detail-image-frame">
+                                                                <StackPane maxWidth="Infinity" minHeight="220.0" onMouseClicked="#handleShowLargeImage" prefHeight="220.0" styleClass="auction-image-panel detail-image-frame clickable-image-frame">
                                                                     <children>
                                                                         <ImageView fx:id="imgDetailAuction" fitHeight="220.0" fitWidth="376.0" pickOnBounds="true" preserveRatio="true" smooth="true" styleClass="auction-product-image" />
                                                                         <Label fx:id="lblDetailImageInitial" styleClass="auction-image-initial detail-image-initial" text="A" />
@@ -277,7 +277,7 @@
                                           <VBox spacing="12.0" styleClass="panel-card chart-card">
                                              <children>
                                                 <Label styleClass="panel-title" text="Auto Bidding (Current auction)" />
-                                                <TextField fx:id="idAutobid" editable="false" promptText="Select an auto-bid rule to edit" />
+                                                <Label fx:id="lblAutobidMode" maxWidth="Infinity" styleClass="autobid-mode-chip" text="New auto-bid rule" wrapText="true" />
                                                 <TextField fx:id="maxPrice" promptText="Enter max price" />
                                                 <TextField fx:id="incrementAutobid" promptText="Enter increment" />
                                                 <HBox spacing="10.0">

@@ -149,6 +149,8 @@ public class SellerDashboardViewController {
         if (spinDuration.getValueFactory() == null) {
             spinDuration.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 99999, 30));
         }
+        UiInput.installDecimalInput(txtPrice);
+        UiInput.installPositiveIntegerInput(spinDuration.getEditor());
 
         AuctionImageUtil.installRoundedClip(imgPreviewImage, 32, 32);
 
@@ -253,13 +255,13 @@ public class SellerDashboardViewController {
                 syncImageFromInput(true);
             }
 
-            String name = txtName.getText().trim();
-            String desc = txtDesc.getText().trim();
-            String category = txtCategory.getText().trim();
+            String name = textOf(txtName);
+            String desc = textOf(txtDesc);
+            String category = textOf(txtCategory);
             String imageSource = resolveImageSourceForSave(rawImageInput);
             byte[] imageData = workingImageData;
-            double price = Double.parseDouble(txtPrice.getText().trim());
-            int durationMinutes = spinDuration.getValue();
+            double price = UiInput.parsePositiveDecimal(txtPrice.getText(), "Starting price");
+            int durationMinutes = readDurationMinutes();
             long start = System.currentTimeMillis();
             long end = start + (long) durationMinutes * 60 * 1000;
             int sellerId = currentUser.getId();
@@ -506,6 +508,7 @@ public class SellerDashboardViewController {
         txtImageSource.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtPrice.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         spinDuration.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        spinDuration.getEditor().textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
     }
 
     private void updatePreview() {
@@ -521,13 +524,13 @@ public class SellerDashboardViewController {
                 : txtDesc.getText().trim();
         String category = txtCategory.getText() == null || txtCategory.getText().isBlank() ? UiText.text("Category") : txtCategory.getText().trim();
         String price = parsePricePreview();
-        Integer duration = spinDuration.getValue();
+        int duration = readDurationPreview();
 
         AuctionImageUtil.applyAuctionImage(imgPreviewImage, lblPreviewInitial, workingImageData, workingImagePreviewSource, name);
         lblPreviewName.setText(name);
         lblPreviewDescription.setText(description);
         lblPreviewCategory.setText(category);
-        lblPreviewDuration.setText((duration == null ? 30 : duration) + " " + UiText.text("minutes"));
+        lblPreviewDuration.setText(duration + " " + UiText.text("minutes"));
         lblPreviewPrice.setText(price);
         lblPreviewMode.setText(editingId == -1
                 ? UiText.text("Creating a new auction")
@@ -540,7 +543,7 @@ public class SellerDashboardViewController {
             if (value.isBlank()) {
                 return "0";
             }
-            return AuctionViewFormatter.formatMoney(Double.parseDouble(value));
+            return AuctionViewFormatter.formatMoney(UiInput.parseDecimal(value));
         } catch (NumberFormatException ex) {
             return UiText.text("Invalid price");
         }
@@ -631,6 +634,42 @@ public class SellerDashboardViewController {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String textOf(javafx.scene.control.TextInputControl control) {
+        if (control == null || control.getText() == null) {
+            return "";
+        }
+        return control.getText().trim();
+    }
+
+    private int readDurationMinutes() {
+        String editorText = spinDuration.getEditor() == null ? "" : spinDuration.getEditor().getText();
+        int duration;
+        if (editorText == null || editorText.isBlank()) {
+            Integer currentValue = spinDuration.getValue();
+            duration = currentValue == null ? 30 : currentValue;
+            if (duration <= 0) {
+                throw new NumberFormatException("Auction duration must be greater than 0.");
+            }
+        } else {
+            duration = UiInput.parsePositiveInteger(editorText, "Auction duration");
+        }
+        spinDuration.getValueFactory().setValue(duration);
+        return duration;
+    }
+
+    private int readDurationPreview() {
+        try {
+            String editorText = spinDuration.getEditor() == null ? "" : spinDuration.getEditor().getText();
+            if (editorText != null && !editorText.isBlank()) {
+                return UiInput.parsePositiveInteger(editorText, "Auction duration");
+            }
+        } catch (NumberFormatException ignored) {
+            return 30;
+        }
+        Integer value = spinDuration.getValue();
+        return value == null || value <= 0 ? 30 : value;
     }
 
     private String resolveImageSourceForSave(String rawImageInput) {

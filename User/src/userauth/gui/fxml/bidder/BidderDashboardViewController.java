@@ -12,6 +12,9 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
@@ -24,7 +27,13 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import userauth.controller.AuctionController;
@@ -168,7 +177,7 @@ public class BidderDashboardViewController {
     private NumberAxis yAxisBidTrend;
 
     @FXML
-    private TextField idAutobid;
+    private Label lblAutobidMode;
 
     @FXML
     private TextField maxPrice;
@@ -191,7 +200,12 @@ public class BidderDashboardViewController {
     private int lastSelectedWinnerId = -1;
     private double lastSelectedHighestBid = -1;
     private long refreshTicket;
+    private int editingAutobidId = -1;
     private boolean bidActionInProgress;
+    private boolean suppressAuctionSelectionSync;
+    private boolean autobidFormDirty;
+    private boolean autobidFormProgrammaticUpdate;
+    private boolean suppressAutobidSelectionSync;
     private final AuctionEventListener auctionEventListener = event -> Platform.runLater(() -> handleAuctionEvent(event));
     private boolean observerRegistered;
 
@@ -209,7 +223,7 @@ public class BidderDashboardViewController {
         colIncrementAB.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getIncrement()));
         colMaxPriceAB.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getMaxPrice()));
 
-        AuctionImageUtil.installRoundedClip(imgDetailAuction, 32, 32);
+        AuctionImageUtil.installRoundedClip(imgDetailAuction, 14, 14);
 
         cbStatusFilter.setItems(FXCollections.observableArrayList(
                 FILTER_ALL,
@@ -224,7 +238,11 @@ public class BidderDashboardViewController {
         txtSearch.textProperty().addListener((observable, oldValue, newValue) -> scheduleRefreshData());
 
         tableAuctions.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) ->
-                renderSelectedAuction(newValue, false));
+                {
+                    if (!suppressAuctionSelectionSync) {
+                        renderSelectedAuction(newValue, false);
+                    }
+                });
         tableAuctions.setRowFactory(this::createAuctionRow);
 
         chartBidTrend.setAnimated(false);
@@ -242,11 +260,19 @@ public class BidderDashboardViewController {
             }
         });
         yAxisBidTrend.setAutoRanging(true);
-        idAutobid.setEditable(false);
+        updateAutobidModeLabel();
+        UiInput.installDecimalInput(txtBidAmount);
+        UiInput.installDecimalInput(maxPrice);
+        UiInput.installDecimalInput(incrementAutobid);
+        registerAutobidFormListeners();
         tableAutoBid.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) ->
-                populateAutobidForm(newValue));
+                {
+                    if (!suppressAutobidSelectionSync) {
+                        populateAutobidForm(newValue);
+                    }
+                });
 
-        timeline = new Timeline(new KeyFrame(Duration.seconds(LIVE_REFRESH_INTERVAL_SECONDS), event -> refreshData()));
+        timeline = new Timeline(new KeyFrame(Duration.seconds(LIVE_REFRESH_INTERVAL_SECONDS), event -> refreshDataFromTimer()));
         timeline.setCycleCount(Animation.INDEFINITE);
 
         setBidStatus("Select an auction to view details.", false);
@@ -301,7 +327,7 @@ public class BidderDashboardViewController {
         }
 
         long ticket = ++refreshTicket;
-        int selectedId = selectedAuctionId();
+        int requestedSelectedId = selectedAuctionId();
         String keyword = txtSearch.getText() == null ? "" : txtSearch.getText().trim().toLowerCase(Locale.ROOT);
         String statusFilter = cbStatusFilter.getValue();
 
@@ -311,7 +337,7 @@ public class BidderDashboardViewController {
                     if (ticket != refreshTicket) {
                         return;
                     }
-                    applyBidderSnapshot(snapshot, selectedId);
+                    applyBidderSnapshot(snapshot, requestedSelectedId);
                 },
                 error -> {
                 }
@@ -319,6 +345,9 @@ public class BidderDashboardViewController {
         UiAsync.run(
                 () -> loadAutobidSnapshot(),
                 snapshot -> {
+                    if (ticket != refreshTicket) {
+                        return;
+                    }
                     applyAutobidSnapshot(snapshot);
                 },
                 error -> {
@@ -330,6 +359,9 @@ public class BidderDashboardViewController {
     private void handlePlaceBid() {
         if (auctionController == null || currentUser == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "AutoBid is not ready.");
+            return;
+        }
+        if (bidActionInProgress) {
             return;
         }
 
@@ -348,7 +380,7 @@ public class BidderDashboardViewController {
         }
 
         try {
-            double amount = Double.parseDouble(bidInput);
+            double amount = UiInput.parsePositiveDecimal(bidInput, "Bid amount");
             int auctionId = selected.getId();
             int bidderId = currentUser.getId();
             setBid(amount,auctionId,bidderId);
@@ -360,6 +392,10 @@ public class BidderDashboardViewController {
 
     @FXML
     private void handleAutobid(){
+        if (autobidController == null || currentUser == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "AutoBid is not ready.");
+            return;
+        }
         if (tableAuctions.getSelectionModel().getSelectedItem() == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Please select an auction.");
             return;
@@ -367,21 +403,21 @@ public class BidderDashboardViewController {
 
         String max = maxPrice.getText() == null ? "" : maxPrice.getText().trim();
         String increment = incrementAutobid.getText() == null ? "" : incrementAutobid.getText().trim();
-        String id = idAutobid.getText() == null ? "" : idAutobid.getText().trim();
         if (max.isBlank() || increment.isBlank()) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Please enter a bid amount and increment.");
             return;
         }
 
         try {
-            double maxAmount = Double.parseDouble(max);
+            double maxAmount = UiInput.parsePositiveDecimal(max, "Max price");
+            double incrementAmount = UiInput.parsePositiveDecimal(increment, "Increment");
             int auctionId = tableAuctions.getSelectionModel().getSelectedItem().getId();
             int bidderId = currentUser.getId();
             String result;
-            if (id.isBlank()){
-                result = autobidController.createAutobid(bidderId, auctionId, maxAmount, Double.parseDouble(increment));
+            if (editingAutobidId < 0){
+                result = autobidController.createAutobid(bidderId, auctionId, maxAmount, incrementAmount);
             }else {
-                result = autobidController.updateAutobid(bidderId, Integer.parseInt(id), maxAmount, Double.parseDouble(increment));
+                result = autobidController.updateAutobid(bidderId, editingAutobidId, maxAmount, incrementAmount);
             }
             if (!"SUCCESS".equals(result)) {
                 NotificationUtil.error(ownerWindow(), "Error", result);
@@ -396,14 +432,13 @@ public class BidderDashboardViewController {
 
     @FXML
     private void handleDeleteAutobid() {
-        String id = idAutobid.getText() == null ? "" : idAutobid.getText().trim();
-        if (id.isBlank()) {
+        if (editingAutobidId < 0) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Please select an auto-bid rule.");
             return;
         }
 
         try {
-            String result = autobidController.deleteAutoBid(currentUser.getId(), Integer.parseInt(id));
+            String result = autobidController.deleteAutoBid(currentUser.getId(), editingAutobidId);
             if (!"SUCCESS".equals(result)) {
                 NotificationUtil.error(ownerWindow(), "Error", result);
                 return;
@@ -419,6 +454,54 @@ public class BidderDashboardViewController {
     private void handleClearAutobidForm() {
         clearAutobidForm();
         tableAutoBid.getSelectionModel().clearSelection();
+    }
+
+    @FXML
+    private void handleShowLargeImage() {
+        if (imgDetailAuction == null || imgDetailAuction.getImage() == null || !imgDetailAuction.isVisible()) {
+            NotificationUtil.info(ownerWindow(), "Notification", "This auction does not have an image to preview.");
+            return;
+        }
+
+        ImageView enlargedImage = new ImageView(imgDetailAuction.getImage());
+        enlargedImage.setPreserveRatio(true);
+        enlargedImage.setSmooth(true);
+        enlargedImage.setFitWidth(840);
+        enlargedImage.setFitHeight(620);
+
+        Rectangle clip = new Rectangle();
+        clip.setArcWidth(18);
+        clip.setArcHeight(18);
+        clip.widthProperty().bind(enlargedImage.fitWidthProperty());
+        clip.heightProperty().bind(enlargedImage.fitHeightProperty());
+        enlargedImage.setClip(clip);
+
+        Label hint = createLabel(UiText.text("Click anywhere to close"), "image-preview-hint");
+        StackPane.setAlignment(hint, Pos.BOTTOM_CENTER);
+        StackPane.setMargin(hint, new Insets(0, 0, 18, 0));
+
+        StackPane root = new StackPane(enlargedImage, hint);
+        root.getStyleClass().add("image-preview-overlay");
+        root.setPadding(new Insets(28));
+
+        Stage dialog = new Stage(StageStyle.TRANSPARENT);
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        if (ownerWindow() != null) {
+            dialog.initOwner(ownerWindow());
+        }
+        dialog.setTitle(lblDetailName == null ? UiText.text("Product image") : lblDetailName.getText());
+
+        Scene scene = new Scene(root, 920, 700);
+        scene.setFill(Color.TRANSPARENT);
+        scene.getStylesheets().add(getClass().getResource("/userauth/gui/fxml/shared/auth-theme.css").toExternalForm());
+        dialog.setScene(scene);
+        root.setOnMouseClicked(event -> dialog.close());
+        scene.setOnKeyPressed(event -> {
+            if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                dialog.close();
+            }
+        });
+        dialog.showAndWait();
     }
 
     @FXML
@@ -807,6 +890,24 @@ public class BidderDashboardViewController {
         filterRefreshDebounce.playFromStart();
     }
 
+    private void refreshDataFromTimer() {
+        if (isUserTypingInBidderForm()) {
+            return;
+        }
+        refreshData();
+    }
+
+    private boolean isUserTypingInBidderForm() {
+        return isFocused(txtSearch)
+                || isFocused(txtBidAmount)
+                || isFocused(maxPrice)
+                || isFocused(incrementAutobid);
+    }
+
+    private boolean isFocused(javafx.scene.Node node) {
+        return node != null && node.isFocused();
+    }
+
     private void setBidControlsBusy(boolean busy) {
         if (txtBidAmount != null) {
             txtBidAmount.setDisable(busy);
@@ -839,10 +940,18 @@ public class BidderDashboardViewController {
         bidsByAuction = snapshot.groupedBids();
         updateMetrics(snapshot.allAuctions());
 
-        tableAuctions.setItems(FXCollections.observableArrayList(snapshot.filteredAuctions()));
-        reselectAuction(selectedId);
-        if (tableAuctions.getSelectionModel().getSelectedItem() == null && !tableAuctions.getItems().isEmpty()) {
-            tableAuctions.getSelectionModel().selectFirst();
+        int liveSelectedId = selectedAuctionId();
+        int selectionToRestore = liveSelectedId >= 0 ? liveSelectedId : selectedId;
+
+        suppressAuctionSelectionSync = true;
+        try {
+            tableAuctions.setItems(FXCollections.observableArrayList(snapshot.filteredAuctions()));
+            reselectAuction(selectionToRestore);
+            if (tableAuctions.getSelectionModel().getSelectedItem() == null && !tableAuctions.getItems().isEmpty()) {
+                tableAuctions.getSelectionModel().selectFirst();
+            }
+        } finally {
+            suppressAuctionSelectionSync = false;
         }
 
         AuctionItem selectedAuction = tableAuctions.getSelectionModel().getSelectedItem();
@@ -860,10 +969,23 @@ public class BidderDashboardViewController {
 
     private void applyAutobidSnapshot(AutobidSnapshot snapshot) {
         int selectedId = selectedAutobidId();
-        tableAutoBid.setItems(FXCollections.observableArrayList(snapshot.allAutobids()));
-        reselectAutobid(selectedId);
-        if (tableAutoBid.getSelectionModel().getSelectedItem() == null) {
+        boolean preserveDraft = shouldPreserveAutobidForm();
+        AutobidFormDraft draft = preserveDraft ? captureAutobidDraft() : null;
+
+        suppressAutobidSelectionSync = preserveDraft;
+        try {
+            tableAutoBid.setItems(FXCollections.observableArrayList(snapshot.allAutobids()));
+            reselectAutobid(selectedId);
+        } finally {
+            suppressAutobidSelectionSync = false;
+        }
+
+        if (preserveDraft) {
+            restoreAutobidDraft(draft);
+        } else if (tableAutoBid.getSelectionModel().getSelectedItem() == null) {
             clearAutobidForm();
+        } else {
+            populateAutobidForm(tableAutoBid.getSelectionModel().getSelectedItem());
         }
         tableAutoBid.refresh();
     }
@@ -935,15 +1057,23 @@ public class BidderDashboardViewController {
             clearAutobidForm();
             return;
         }
-        idAutobid.setText(String.valueOf(autoBid.getId()));
-        maxPrice.setText(String.valueOf(autoBid.getMaxPrice()));
-        incrementAutobid.setText(String.valueOf(autoBid.getIncrement()));
+        runAutobidFormProgrammatically(() -> {
+            editingAutobidId = autoBid.getId();
+            updateAutobidModeLabel();
+            maxPrice.setText(AuctionViewFormatter.formatMoney(autoBid.getMaxPrice()));
+            incrementAutobid.setText(AuctionViewFormatter.formatMoney(autoBid.getIncrement()));
+        });
+        autobidFormDirty = false;
     }
 
     private void clearAutobidForm() {
-        idAutobid.clear();
-        maxPrice.clear();
-        incrementAutobid.clear();
+        runAutobidFormProgrammatically(() -> {
+            editingAutobidId = -1;
+            updateAutobidModeLabel();
+            maxPrice.clear();
+            incrementAutobid.clear();
+        });
+        autobidFormDirty = false;
     }
 
     private int selectedAutobidId() {
@@ -1000,4 +1130,66 @@ public class BidderDashboardViewController {
 
         refreshData();
     }
+
+    private void registerAutobidFormListeners() {
+        maxPrice.textProperty().addListener((observable, oldValue, newValue) -> markAutobidFormDirty());
+        incrementAutobid.textProperty().addListener((observable, oldValue, newValue) -> markAutobidFormDirty());
+    }
+
+    private void markAutobidFormDirty() {
+        if (!autobidFormProgrammaticUpdate) {
+            autobidFormDirty = true;
+        }
+    }
+
+    private boolean shouldPreserveAutobidForm() {
+        return autobidFormDirty || maxPrice.isFocused() || incrementAutobid.isFocused();
+    }
+
+    private AutobidFormDraft captureAutobidDraft() {
+        return new AutobidFormDraft(
+                editingAutobidId,
+                maxPrice.getText(),
+                incrementAutobid.getText(),
+                autobidFormDirty
+        );
+    }
+
+    private void restoreAutobidDraft(AutobidFormDraft draft) {
+        if (draft == null) {
+            return;
+        }
+        runAutobidFormProgrammatically(() -> {
+            editingAutobidId = draft.id();
+            updateAutobidModeLabel();
+            maxPrice.setText(draft.maxPrice());
+            incrementAutobid.setText(draft.increment());
+        });
+        autobidFormDirty = draft.dirty();
+    }
+
+    private void runAutobidFormProgrammatically(Runnable update) {
+        autobidFormProgrammaticUpdate = true;
+        try {
+            update.run();
+        } finally {
+            autobidFormProgrammaticUpdate = false;
+        }
+    }
+
+    private void updateAutobidModeLabel() {
+        if (lblAutobidMode == null) {
+            return;
+        }
+        lblAutobidMode.setText(editingAutobidId < 0
+                ? UiText.text("New auto-bid rule")
+                : UiText.text("Editing auto-bid") + " #" + editingAutobidId);
+    }
+
+    private record AutobidFormDraft(
+            int id,
+            String maxPrice,
+            String increment,
+            boolean dirty
+    ) {}
 }
