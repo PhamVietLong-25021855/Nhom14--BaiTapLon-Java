@@ -1,7 +1,11 @@
 package userauth.gui.fxml.shared;
 
+import javafx.scene.control.IndexRange;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -21,7 +25,13 @@ public final class UiInput {
         if (textField == null) {
             return;
         }
-        textField.setTextFormatter(new TextFormatter<>(moneyGroupingFilter()));
+        textField.addEventFilter(KeyEvent.KEY_TYPED, event -> handleMoneyTyped(textField, event));
+        textField.addEventFilter(KeyEvent.KEY_PRESSED, event -> handleMoneyKeyPressed(textField, event));
+        textField.focusedProperty().addListener((observable, wasFocused, isFocused) -> {
+            if (isFocused) {
+                textField.positionCaret(textField.getText() == null ? 0 : textField.getText().length());
+            }
+        });
     }
 
     public static void installPositiveIntegerInput(TextField textField) {
@@ -130,30 +140,6 @@ public final class UiInput {
         return change -> change.getControlNewText().matches("[0-9., ]*") ? change : null;
     }
 
-    private static UnaryOperator<TextFormatter.Change> moneyGroupingFilter() {
-        return change -> {
-            if (!change.isContentChange()) {
-                return change;
-            }
-
-            MoneyEdit edit = formatMoneyEdit(
-                    change.getControlText(),
-                    change.getRangeStart(),
-                    change.getRangeEnd(),
-                    change.getText()
-            );
-            if (edit == null) {
-                return null;
-            }
-
-            change.setRange(0, change.getControlText().length());
-            change.setText(edit.text());
-            change.setCaretPosition(edit.caretPosition());
-            change.setAnchor(edit.caretPosition());
-            return change;
-        };
-    }
-
     private static UnaryOperator<TextFormatter.Change> integerFilter() {
         return change -> change.getControlNewText().matches("[0-9]*") ? change : null;
     }
@@ -241,6 +227,53 @@ public final class UiInput {
     }
 
     record MoneyEdit(String text, int caretPosition) {}
+
+    private static void handleMoneyTyped(TextField textField, KeyEvent event) {
+        if (event.isShortcutDown() || event.isAltDown() || event.isMetaDown()) {
+            return;
+        }
+
+        String typedText = event.getCharacter();
+        if (typedText == null || typedText.isEmpty() || typedText.charAt(0) < ' ') {
+            return;
+        }
+
+        applyMoneyEdit(textField, typedText);
+        event.consume();
+    }
+
+    private static void handleMoneyKeyPressed(TextField textField, KeyEvent event) {
+        if (event.isShortcutDown() && event.getCode() == KeyCode.V) {
+            String clipboardText = Clipboard.getSystemClipboard().getString();
+            if (clipboardText != null) {
+                applyMoneyEdit(textField, clipboardText);
+            }
+            event.consume();
+            return;
+        }
+
+        if (event.getCode() == KeyCode.BACK_SPACE || event.getCode() == KeyCode.DELETE) {
+            applyMoneyEdit(textField, "");
+            event.consume();
+        }
+    }
+
+    private static boolean applyMoneyEdit(TextField textField, String replacement) {
+        IndexRange selection = textField.getSelection();
+        MoneyEdit edit = formatMoneyEdit(
+                textField.getText(),
+                selection.getStart(),
+                selection.getEnd(),
+                replacement
+        );
+        if (edit == null) {
+            return false;
+        }
+
+        textField.setText(edit.text());
+        textField.positionCaret(edit.caretPosition());
+        return true;
+    }
 
     private static boolean hasUnsupportedMoneyCharacter(String value) {
         if (value == null || value.isEmpty()) {
