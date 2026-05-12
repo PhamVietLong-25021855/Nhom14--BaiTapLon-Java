@@ -38,6 +38,35 @@ class AuctionServiceAutoBidTest {
     }
 
     @Test
+    void schedulerStartsAutobidWhenAuctionMovesToRunning() {
+        long now = System.currentTimeMillis();
+        auctionDao.saveAuction(openAuction(1, now - 1000, now + 60_000));
+        autoBidDao.saveAutoBid(new AutoBid(0, 1, 20, 160.0, 20.0, now, now));
+
+        service.refreshAuctionStatuses();
+
+        AuctionItem updated = auctionDao.findAuctionById(1);
+        assertEquals(AuctionStatus.RUNNING, updated.getStatus());
+        assertEquals(120.0, updated.getCurrentHighestBid());
+        assertEquals(20, updated.getWinnerId());
+        assertEquals(1, auctionDao.findBidsByAuction(1).size());
+    }
+
+    @Test
+    void schedulerReconcilesRunningAutobidWithoutClientRequest() {
+        long now = System.currentTimeMillis();
+        auctionDao.saveAuction(runningAuction(1, now - 1000, now + 60_000, 0));
+        autoBidDao.saveAutoBid(new AutoBid(0, 1, 20, 160.0, 20.0, now, now));
+
+        service.refreshAuctionStatuses();
+
+        AuctionItem updated = auctionDao.findAuctionById(1);
+        assertEquals(120.0, updated.getCurrentHighestBid());
+        assertEquals(20, updated.getWinnerId());
+        assertEquals(1, auctionDao.findBidsByAuction(1).size());
+    }
+
+    @Test
     void bidNearEndExtendsAuctionOnceForAntiSniping() throws Exception {
         long now = System.currentTimeMillis();
         long originalEndTime = now + 10_000;
@@ -82,6 +111,28 @@ class AuctionServiceAutoBidTest {
                 -1,
                 AuctionStatus.RUNNING,
                 extensionCount
+        );
+    }
+
+    private AuctionItem openAuction(int id, long startTime, long endTime) {
+        long now = System.currentTimeMillis();
+        return new AuctionItem(
+                id,
+                "Laptop",
+                "Desc",
+                100.0,
+                100.0,
+                startTime,
+                endTime,
+                "Electronics",
+                null,
+                null,
+                now,
+                now,
+                7,
+                -1,
+                AuctionStatus.OPEN,
+                0
         );
     }
 }

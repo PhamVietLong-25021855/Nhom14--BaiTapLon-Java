@@ -14,33 +14,33 @@ import java.util.List;
 public class AutoBidDAOImpl implements AutoBidDAO {
     private static final String INSERT_AUTOBID_SQL = """
             INSERT INTO auto_bids (
-                auction_id, bidder_id, max_price, "increment", created_at, updated_at
+                auction_id, bidder_id, max_price, increment, created_at, updated_at
             )
             VALUES (?, ?, ?, ?, ?, ?)
             """;
     private static final String UPDATE_AUTOBID_SQL = """
             UPDATE auto_bids
-            SET max_price = ?, "increment" = ?, updated_at = ?
+            SET max_price = ?, increment = ?, updated_at = ?
             WHERE id = ?
             """;
     private static final String FIND_AUTOBID_BY_ID_SQL = """
-            SELECT id, bidder_id, auction_id, max_price , "increment", created_at, updated_at
+            SELECT id, bidder_id, auction_id, max_price, increment, created_at, updated_at
             FROM auto_bids
             WHERE id = ?
             """;
     private static final String FIND_AUTOBID_BY_AUCTION_BIDDER_SQL = """
-            SELECT id, bidder_id, auction_id, max_price , "increment", created_at, updated_at
+            SELECT id, bidder_id, auction_id, max_price, increment, created_at, updated_at
             FROM auto_bids
             WHERE auction_id = ? AND bidder_id = ?
             """;
     private static final String FIND_AUTOBIDS_BY_AUCTION_SQL = """
-            SELECT id, bidder_id, auction_id, max_price , "increment", created_at, updated_at
+            SELECT id, bidder_id, auction_id, max_price, increment, created_at, updated_at
             FROM auto_bids
             WHERE auction_id = ?
             ORDER BY created_at, id
             """;
     private static final String FIND_ALL_USER_AUTOBID_SQL = """
-            SELECT id, bidder_id, auction_id, max_price , "increment", created_at, updated_at
+            SELECT id, bidder_id, auction_id, max_price, increment, created_at, updated_at
             FROM auto_bids
             WHERE bidder_id = ?
             ORDER BY created_at, id
@@ -60,7 +60,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
                 }
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to save the auto bid to PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to save the auto bid to database: " + ex.getMessage(), ex);
         }
     }
 
@@ -71,7 +71,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
             bindAutoBidForUpdate(statement, item);
             statement.executeUpdate();
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to update the auto bid in PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to update the auto bid in database: " + ex.getMessage(), ex);
         }
     }
 
@@ -91,7 +91,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
                 connection.setAutoCommit(true);
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to delete the auto bid in PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to delete the auto bid in database: " + ex.getMessage(), ex);
         }
     }
 
@@ -107,7 +107,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
                 return mapAutobid(resultSet);
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to find the auto bid in PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to find the auto bid in database: " + ex.getMessage(), ex);
         }
     }
 
@@ -124,7 +124,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
                 return mapAutobid(resultSet);
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to find the auto bid in PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to find the auto bid in database: " + ex.getMessage(), ex);
         }
     }
 
@@ -140,7 +140,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
                 }
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to read auto bids by auction from PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to read auto bids by auction from database: " + ex.getMessage(), ex);
         }
         return autobids;
     }
@@ -157,7 +157,7 @@ public class AutoBidDAOImpl implements AutoBidDAO {
                 }
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to read all auto bids from PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to read all auto bids from database: " + ex.getMessage(), ex);
         }
         return autobids;
     }

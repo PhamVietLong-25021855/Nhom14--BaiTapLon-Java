@@ -12,9 +12,11 @@ import java.util.List;
 public class AutobidService implements AutobidApi {
 
     private final AutoBidDAO autoBidDAO;
+    private final AuctionService auctionService;
 
-    public AutobidService(AutoBidDAO autoBidDAO) {
+    public AutobidService(AutoBidDAO autoBidDAO, AuctionService auctionService) {
         this.autoBidDAO = autoBidDAO;
+        this.auctionService = auctionService;
     }
 
     public void createAutobid(int bidderId, int auctionId, double maxPrice, double increment)
@@ -34,6 +36,9 @@ public class AutobidService implements AutobidApi {
         long now = System.currentTimeMillis();
         AutoBid item = new AutoBid(0, auctionId, bidderId, maxPrice, increment, now, now);
         autoBidDAO.saveAutoBid(item);
+        if (auctionService != null) {
+            auctionService.triggerAutoBids(auctionId);
+        }
     }
 
     public void updateAutobid(int bidderId, int id,double maxPrice, double increment)
@@ -58,6 +63,9 @@ public class AutobidService implements AutobidApi {
         item.setIncrement(increment);
         item.setUpdatedAt(System.currentTimeMillis());
         autoBidDAO.updateAutoBid(item);
+        if (auctionService != null) {
+            auctionService.triggerAutoBids(item.getAuctionId());
+        }
     }
 
     public void deleteAutobid(int bidderId, int id) throws ItemNotFoundException, UnauthorizedException {

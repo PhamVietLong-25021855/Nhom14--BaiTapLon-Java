@@ -48,7 +48,7 @@ public class Main extends Application {
             AutoBidDAO autoBidDAO = new AutoBidDAOImpl();
             AuctionService localAuctionService = new AuctionService(auctionDAO, autoBidDAO);
             auctionService = localAuctionService;
-            autobidService = new AutobidService(autoBidDAO);
+            autobidService = new AutobidService(autoBidDAO, localAuctionService);
             homepageContentService = new HomepageContentService();
 
             if (isSchedulerEnabled()) {

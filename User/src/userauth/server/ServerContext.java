@@ -33,7 +33,7 @@ public final class ServerContext {
         this.auctionService = new AuctionService(auctionDAO, autoBidDAO);
         this.auctionController = new AuctionController(this.auctionService);
 
-        AutobidService autobidService = new AutobidService(autoBidDAO);
+        AutobidService autobidService = new AutobidService(autoBidDAO, this.auctionService);
         this.autobidController = new AutobidController(autobidService);
 
         this.homepageContentService = new HomepageContentService();

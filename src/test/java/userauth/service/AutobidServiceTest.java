@@ -16,7 +16,7 @@ class AutobidServiceTest {
     @Test
     void createAutobidRejectsIncrementGreaterThanMaxPrice() {
         InMemoryAutoBidDAO autoBidDAO = new InMemoryAutoBidDAO();
-        AutobidService service = new AutobidService(autoBidDAO);
+        AutobidService service = new AutobidService(autoBidDAO, null);
 
         assertThrows(ValidationException.class, () -> service.createAutobid(5, 10, 100.0, 120.0));
     }
@@ -26,7 +26,7 @@ class AutobidServiceTest {
         InMemoryAutoBidDAO autoBidDAO = new InMemoryAutoBidDAO();
         AutoBid autoBid = new AutoBid(1, 10, 5, 200.0, 20.0, 1_000L, 1_000L);
         autoBidDAO.autoBids.add(autoBid);
-        AutobidService service = new AutobidService(autoBidDAO);
+        AutobidService service = new AutobidService(autoBidDAO, null);
 
         assertThrows(ValidationException.class, () -> service.updateAutobid(5, 1, 150.0, 180.0));
         assertEquals(200.0, autoBidDAO.findAutoBidById(1).getMaxPrice());

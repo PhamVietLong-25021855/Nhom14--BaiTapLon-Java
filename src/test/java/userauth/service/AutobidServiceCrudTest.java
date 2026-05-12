@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
+import userauth.model.AuctionItem;
+import userauth.model.AuctionStatus;
 import userauth.model.AutoBid;
 import userauth.support.TestDaos;
 
@@ -19,7 +21,7 @@ class AutobidServiceCrudTest {
     @BeforeEach
     void setUp() {
         autoBidDao = new TestDaos.InMemoryAutoBidDao();
-        service = new AutobidService(autoBidDao);
+        service = new AutobidService(autoBidDao, null);
     }
 
     @Test
@@ -31,6 +33,38 @@ class AutobidServiceCrudTest {
         assertNotNull(saved);
         assertEquals(500.0, saved.getMaxPrice());
         assertEquals(25.0, saved.getIncrement());
+    }
+
+    @Test
+    void createAutobidTriggersRunningAuctionOnServerService() throws Exception {
+        long now = System.currentTimeMillis();
+        TestDaos.InMemoryAuctionDao auctionDao = new TestDaos.InMemoryAuctionDao();
+        auctionDao.saveAuction(new AuctionItem(
+                1,
+                "Laptop",
+                "Desc",
+                100.0,
+                100.0,
+                now - 1000,
+                now + 60_000,
+                "Electronics",
+                null,
+                null,
+                now,
+                now,
+                7,
+                -1,
+                AuctionStatus.RUNNING,
+                0
+        ));
+        AuctionService auctionService = new AuctionService(auctionDao, autoBidDao);
+        AutobidService serviceWithAuction = new AutobidService(autoBidDao, auctionService);
+
+        serviceWithAuction.createAutobid(10, 1, 500.0, 25.0);
+
+        assertEquals(125.0, auctionDao.findAuctionById(1).getCurrentHighestBid());
+        assertEquals(10, auctionDao.findAuctionById(1).getWinnerId());
+        assertEquals(1, auctionDao.findBidsByAuction(1).size());
     }
 
     @Test

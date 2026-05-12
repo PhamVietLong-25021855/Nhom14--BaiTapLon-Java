@@ -310,6 +310,24 @@ public class AuctionService implements AuctionApi {
     }
 
     /**
+     * Kích hoạt vòng lặp Auto-bid do có luật Auto-bid mới hoặc cập nhật.
+     */
+    public void triggerAutoBids(int auctionId) {
+        ReentrantLock lock = getLockForAuction(auctionId);
+        lock.lock();
+        try {
+            AuctionItem item = auctionDAO.findAuctionById(auctionId);
+            if (item == null || item.getStatus() != AuctionStatus.RUNNING) {
+                return;
+            }
+            long now = System.currentTimeMillis();
+            applyAutoBidsAndPublish(item, now);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Cho phép seller đóng phiên đấu giá thủ công.
      *
      * Hàm này chỉ dùng khi seller muốn kết thúc phiên trước thời điểm kết thúc tự nhiên.
@@ -456,34 +474,61 @@ public class AuctionService implements AuctionApi {
      */
     public void refreshAuctionStatuses() {
         long now = System.currentTimeMillis();
-        for (AuctionItem item : auctionDAO.findAllAuctions()) {
-            AuctionStatus currentStatus = item.getStatus();
+        for (AuctionItem snapshot : auctionDAO.findAllAuctions()) {
+            ReentrantLock lock = getLockForAuction(snapshot.getId());
+            lock.lock();
+            try {
+                AuctionItem item = auctionDAO.findAuctionById(snapshot.getId());
+                if (item == null) {
+                    continue;
+                }
+                AuctionStatus currentStatus = item.getStatus();
 
-            if (currentStatus == AuctionStatus.FINISHED ||
-                    currentStatus == AuctionStatus.PAID ||
-                    currentStatus == AuctionStatus.CANCELED) {
-                adminEarlyCloseStates.remove(item.getId());
-                continue;
-            }
+                if (currentStatus == AuctionStatus.FINISHED ||
+                        currentStatus == AuctionStatus.PAID ||
+                        currentStatus == AuctionStatus.CANCELED) {
+                    adminEarlyCloseStates.remove(item.getId());
+                    continue;
+                }
 
-            if (currentStatus == AuctionStatus.OPEN &&
-                    now >= item.getStartTime() &&
-                    now < item.getEndTime()) {
-                item.setStatus(AuctionStatus.RUNNING);
-                item.setUpdatedAt(now);
-                auctionDAO.updateAuction(item);
-                eventBus.publish(AuctionEvent.statusChanged(item, now, "Auction is now running."));
-                continue;
-            }
+                if (currentStatus == AuctionStatus.OPEN &&
+                        now >= item.getStartTime() &&
+                        now < item.getEndTime()) {
+                    item.setStatus(AuctionStatus.RUNNING);
+                    item.setUpdatedAt(now);
 
-            if ((currentStatus == AuctionStatus.OPEN || currentStatus == AuctionStatus.RUNNING) &&
-                    now >= item.getEndTime()) {
-                item.setStatus(AuctionStatus.FINISHED);
-                item.setEndTime(now);
-                item.setUpdatedAt(now);
-                auctionDAO.updateAuction(item);
-                adminEarlyCloseStates.remove(item.getId());
-                eventBus.publish(AuctionEvent.statusChanged(item, now, "Auction has finished."));
+                    long newEventTime = applyAutoBids(item, now);
+                    boolean autoBidPlaced = newEventTime > now;
+                    boolean antiSnipingExtended = autoBidPlaced && applyAntiSniping(item, now, newEventTime);
+
+                    auctionDAO.updateAuction(item);
+                    eventBus.publish(AuctionEvent.statusChanged(item, now, "Auction is now running."));
+                    if (autoBidPlaced) {
+                        refreshEarlyCloseSnapshot(item.getId(), item, item.getUpdatedAt());
+                        eventBus.publish(AuctionEvent.bidActivity(item, item.getUpdatedAt()));
+                    }
+                    if (antiSnipingExtended) {
+                        eventBus.publish(AuctionEvent.antiSnipingExtended(item, item.getUpdatedAt()));
+                    }
+                    continue;
+                }
+
+                if (currentStatus == AuctionStatus.RUNNING && now < item.getEndTime()) {
+                    applyAutoBidsAndPublish(item, now);
+                    continue;
+                }
+
+                if ((currentStatus == AuctionStatus.OPEN || currentStatus == AuctionStatus.RUNNING) &&
+                        now >= item.getEndTime()) {
+                    item.setStatus(AuctionStatus.FINISHED);
+                    item.setEndTime(now);
+                    item.setUpdatedAt(now);
+                    auctionDAO.updateAuction(item);
+                    adminEarlyCloseStates.remove(item.getId());
+                    eventBus.publish(AuctionEvent.statusChanged(item, now, "Auction has finished."));
+                }
+            } finally {
+                lock.unlock();
             }
         }
 
@@ -636,6 +681,22 @@ public class AuctionService implements AuctionApi {
                         .thenComparingInt(AutoBid::getId))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private boolean applyAutoBidsAndPublish(AuctionItem item, long now) {
+        long newEventTime = applyAutoBids(item, now);
+        if (newEventTime <= now) {
+            return false;
+        }
+
+        boolean antiSnipingExtended = applyAntiSniping(item, now, newEventTime);
+        auctionDAO.updateAuction(item);
+        refreshEarlyCloseSnapshot(item.getId(), item, item.getUpdatedAt());
+        eventBus.publish(AuctionEvent.bidActivity(item, item.getUpdatedAt()));
+        if (antiSnipingExtended) {
+            eventBus.publish(AuctionEvent.antiSnipingExtended(item, item.getUpdatedAt()));
+        }
+        return true;
     }
 
     /**

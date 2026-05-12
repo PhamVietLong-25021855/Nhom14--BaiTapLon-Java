@@ -396,7 +396,8 @@ public class BidderDashboardViewController {
             NotificationUtil.warning(ownerWindow(), "Notification", "AutoBid is not ready.");
             return;
         }
-        if (tableAuctions.getSelectionModel().getSelectedItem() == null) {
+        AuctionItem selectedAuction = tableAuctions.getSelectionModel().getSelectedItem();
+        if (selectedAuction == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Please select an auction.");
             return;
         }
@@ -411,13 +412,18 @@ public class BidderDashboardViewController {
         try {
             double maxAmount = UiInput.parsePositiveDecimal(max, "Max price");
             double incrementAmount = UiInput.parsePositiveDecimal(increment, "Increment");
-            int auctionId = tableAuctions.getSelectionModel().getSelectedItem().getId();
+            int auctionId = selectedAuction.getId();
             int bidderId = currentUser.getId();
+            AutoBid existingForAuction = findAutobidForAuction(auctionId);
+            AutoBid editingAutobid = findAutobidById(editingAutobidId);
+            int targetAutobidId = existingForAuction != null
+                    ? existingForAuction.getId()
+                    : editingAutobid != null && editingAutobid.getAuctionId() == auctionId ? editingAutobid.getId() : -1;
             String result;
-            if (editingAutobidId < 0){
+            if (targetAutobidId < 0){
                 result = autobidController.createAutobid(bidderId, auctionId, maxAmount, incrementAmount);
             }else {
-                result = autobidController.updateAutobid(bidderId, editingAutobidId, maxAmount, incrementAmount);
+                result = autobidController.updateAutobid(bidderId, targetAutobidId, maxAmount, incrementAmount);
             }
             if (!"SUCCESS".equals(result)) {
                 NotificationUtil.error(ownerWindow(), "Error", result);
@@ -651,6 +657,58 @@ public class BidderDashboardViewController {
         return selected == null ? -1 : selected.getId();
     }
 
+    private void syncAutobidFormToSelectedAuction() {
+        AuctionItem selected = tableAuctions.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            clearAutobidForm();
+            return;
+        }
+        syncAutobidFormToAuction(selected.getId());
+    }
+
+    private void syncAutobidFormToAuction(int auctionId) {
+        if (tableAutoBid == null || shouldPreserveAutobidForm()) {
+            return;
+        }
+
+        AutoBid existing = findAutobidForAuction(auctionId);
+        suppressAutobidSelectionSync = true;
+        try {
+            tableAutoBid.getSelectionModel().clearSelection();
+            if (existing != null) {
+                tableAutoBid.getSelectionModel().select(existing);
+            }
+        } finally {
+            suppressAutobidSelectionSync = false;
+        }
+
+        if (existing == null) {
+            clearAutobidForm();
+        } else {
+            populateAutobidForm(existing);
+        }
+    }
+
+    private AutoBid findAutobidForAuction(int auctionId) {
+        if (tableAutoBid == null || tableAutoBid.getItems() == null) {
+            return null;
+        }
+        return tableAutoBid.getItems().stream()
+                .filter(autoBid -> autoBid.getAuctionId() == auctionId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private AutoBid findAutobidById(int autoBidId) {
+        if (autoBidId < 0 || tableAutoBid == null || tableAutoBid.getItems() == null) {
+            return null;
+        }
+        return tableAutoBid.getItems().stream()
+                .filter(autoBid -> autoBid.getId() == autoBidId)
+                .findFirst()
+                .orElse(null);
+    }
+
     private void reselectAuction(int selectedId) {
         if (selectedId < 0) {
             return;
@@ -690,6 +748,7 @@ public class BidderDashboardViewController {
         applyTimeChip(auction);
         populateBidFeed(bids);
         updateBidTrend(bids);
+        syncAutobidFormToAuction(auction.getId());
 
         lastSelectedAuctionId = auction.getId();
         lastSelectedWinnerId = auction.getWinnerId();
@@ -982,10 +1041,8 @@ public class BidderDashboardViewController {
 
         if (preserveDraft) {
             restoreAutobidDraft(draft);
-        } else if (tableAutoBid.getSelectionModel().getSelectedItem() == null) {
-            clearAutobidForm();
         } else {
-            populateAutobidForm(tableAutoBid.getSelectionModel().getSelectedItem());
+            syncAutobidFormToSelectedAuction();
         }
         tableAutoBid.refresh();
     }
