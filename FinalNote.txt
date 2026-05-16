@@ -151,7 +151,7 @@ Vai trò:
 - `resources` trỏ vào `User/resources`
 - Dùng `maven-compiler-plugin`
 - Dùng `javafx-maven-plugin`
-- Main class là `userauth.Main`
+- Main class là `uet.auctionsystem.Main`
 
 Ý nghĩa:
 - Project không theo layout Maven mặc định `src/main/java`, `src/main/resources`
@@ -170,7 +170,7 @@ Những gì script này làm:
 - Copy resources sang output dir
 - Truyền các biến database qua `-D`
 - Có cờ `DisableScheduler`
-- Cuối cùng chạy `userauth.Main`
+- Cuối cùng chạy `uet.auctionsystem.Main`
 
 Ý nghĩa:
 - Script này là đường chạy thực tế quan trọng nếu máy không có Maven chạy sẵn

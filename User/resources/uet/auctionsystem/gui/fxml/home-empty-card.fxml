@@ -1,0 +1,21 @@
+<!-- Ghi chu file: File tai nguyen hoac cau hinh can thiet de ung dung nap va chay dung. -->
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="10.0"
+      fx:controller="uet.auctionsystem.gui.fxml.HomeEmptyCardController"
+      styleClass="landing-feed-card landing-feed-empty-card"
+      stylesheets="@auth-theme.css"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <Label fx:id="lblTitle"
+               text="Notification"
+               wrapText="true"
+               styleClass="feed-card-title"/>
+        <Label fx:id="lblBody"
+               text="Content will be updated later"
+               wrapText="true"
+               styleClass="feed-card-foot"/>
+    </children>
+</VBox>

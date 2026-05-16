@@ -94,7 +94,7 @@ if ($DisableScheduler) {
     $javaArgs += "-Dapp.scheduler.enabled=false"
 }
 
-$javaArgs += @("-cp", "$outputDir;$postgresJar", "userauth.Main")
+$javaArgs += @("-cp", "$outputDir;$postgresJar", "uet.auctionsystem.Main")
 
 & java @javaArgs
 exit $LASTEXITCODE
