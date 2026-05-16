@@ -62,7 +62,7 @@ function Copy-DependenciesByPattern {
     $source = Join-Path $root "target\dependency"
     foreach ($pattern in $Patterns) {
         Get-ChildItem -Path $source -Filter $pattern -File -ErrorAction SilentlyContinue |
-            Copy-Item -Destination $Destination -Force
+                Copy-Item -Destination $Destination -Force
     }
 }
 
@@ -129,36 +129,42 @@ New-Item -ItemType Directory -Force (Join-Path $clientDir "target\dependency") |
 
 Write-Host "[4/5] Copying server and client runtime classes..."
 $serverRuntimePaths = @(
-    "userauth\api",
-    "userauth\common",
-    "userauth\controller",
-    "userauth\dao",
-    "userauth\database",
-    "userauth\database.properties",
-    "userauth\event",
-    "userauth\exception",
-    "userauth\model",
-    "userauth\network",
-    "userauth\server",
-    "userauth\service",
-    "userauth\util",
-    "userauth\validation"
+# Compiled from core-common module:
+    "core-common\target\classes\userauth\api",
+    "core-common\target\classes\userauth\common",
+    "core-common\target\classes\userauth\network",
+    "core-common\target\classes\userauth\util",
+    "core-common\target\classes\userauth\validation",
+    "core-common\target\classes\userauth\event",
+    "core-common\target\classes\userauth\exception",
+    "core-common\target\classes\userauth\model",
+
+    # Compiled from server module:
+    "server\target\classes\userauth\controller", # Backend controllers only
+    "server\target\classes\userauth\dao",
+    "server\target\classes\userauth\database",
+    "server\target\classes\database.properties",  # Placed root-level in resources classpath
+    "server\target\classes\userauth\server",
+    "server\target\classes\userauth\service"
 )
 
 $clientRuntimePaths = @(
-    "userauth\ClientLauncher.class",
-    "userauth\ClientMain.class",
-    "userauth\api",
-    "userauth\common",
-    "userauth\client",
-    "userauth\controller",
-    "userauth\event",
-    "userauth\exception",
-    "userauth\gui",
-    "userauth\model",
-    "userauth\network",
-    "userauth\util",
-    "userauth\validation"
+# Compiled from core-common module:
+    "core-common\target\classes\userauth\api",
+    "core-common\target\classes\userauth\common",
+    "core-common\target\classes\userauth\network",
+    "core-common\target\classes\userauth\util",
+    "core-common\target\classes\userauth\validation",
+    "core-common\target\classes\userauth\event",
+    "core-common\target\classes\userauth\exception",
+    "core-common\target\classes\userauth\model",
+
+    # Compiled from client module:
+    "client\target\classes\userauth\ClientLauncher.class",
+    "client\target\classes\userauth\ClientMain.class",
+    "client\target\classes\userauth\client",
+    "client\target\classes\userauth\controller", # JavaFX UI controllers only
+    "client\target\classes\userauth\gui"          # Contains your loaded FXML resources
 )
 
 foreach ($relativePath in $serverRuntimePaths) {

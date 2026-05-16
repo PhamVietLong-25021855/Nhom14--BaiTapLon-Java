@@ -1,0 +1,108 @@
+package userauth;
+
+
+import javafx.application.Application;
+import javafx.stage.Stage;
+import userauth.api.AuctionApi;
+import userauth.api.AuthApi;
+import userauth.api.AutobidApi;
+import userauth.api.HomepageContentApi;
+import userauth.gui.fxml.controller.AuctionController;
+import userauth.gui.fxml.controller.AuthController;
+import userauth.gui.fxml.controller.AutobidController;
+import userauth.gui.fxml.controller.HomepageController;
+import userauth.client.remote.*;
+import userauth.dao.*;
+import userauth.database.DatabaseInitializer;
+import userauth.gui.fxml.shell.AuthFrame;
+import userauth.service.*;
+
+public class Main extends Application {
+    private static final String SCHEDULER_PROPERTY = "app.scheduler.enabled";
+    private static final String SCHEDULER_ENV = "APP_SCHEDULER_ENABLED";
+
+    private AuctionScheduler scheduler;
+
+    @Override
+    public void start(Stage stage) {
+        boolean remoteMode = isRemoteClientMode();
+
+        AuthApi authService;
+        AuctionApi auctionService;
+        AutobidApi autobidService;
+        HomepageContentApi homepageContentService;
+
+        if (remoteMode) {
+            RemoteAuctionClient remoteClient = new RemoteAuctionClient();
+            authService = new RemoteAuthService(remoteClient);
+            auctionService = new RemoteAuctionService(remoteClient);
+            autobidService = new RemoteAutobidService(remoteClient);
+            homepageContentService = new RemoteHomepageContentService(remoteClient);
+            System.out.println("[Client] Remote mode: using server " + RemoteClientConfig.host() + ":" + RemoteClientConfig.port());
+        } else {
+            DatabaseInitializer.initialize();
+
+            UserDAO userDAO = new UserDAOImpl();
+            AuctionDAO auctionDAO = new AuctionDAOImpl();
+            AutoBidDAO autoBidDAO = new AutoBidDAOImpl();
+
+            authService = new AuthService(userDAO, new AutoBidInitializer(autoBidDAO, auctionDAO));
+
+            AuctionService localAuctionService = new AuctionService(auctionDAO, autoBidDAO);
+            auctionService = localAuctionService;
+            autobidService = new AutobidService(autoBidDAO, localAuctionService);
+            homepageContentService = new HomepageContentService();
+
+            if (isSchedulerEnabled()) {
+                scheduler = new AuctionScheduler(localAuctionService);
+                scheduler.start();
+            }
+        }
+
+        AuthController authController = new AuthController(authService);
+        AuctionController auctionController = new AuctionController(auctionService);
+        AutobidController autobidController = new AutobidController(autobidService);
+        HomepageController homepageController = new HomepageController(homepageContentService);
+
+        AuthFrame frame = new AuthFrame(stage, authController, auctionController, homepageController, autobidController);
+        frame.show();
+        frame.showHome();
+    }
+
+    @Override
+    public void stop() {
+        if (scheduler != null) {
+            scheduler.stop();
+        }
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+    private static boolean isRemoteClientMode() {
+        String propertyValue = System.getProperty("app.client.mode");
+        if (propertyValue != null && !propertyValue.isBlank()) {
+            return !"local".equalsIgnoreCase(propertyValue.trim());
+        }
+        String envValue = System.getenv("APP_CLIENT_MODE");
+        if (envValue != null && !envValue.isBlank()) {
+            return !"local".equalsIgnoreCase(envValue.trim());
+        }
+        return true;
+    }
+
+    private static boolean isSchedulerEnabled() {
+        String propertyValue = System.getProperty(SCHEDULER_PROPERTY);
+        if (propertyValue != null && !propertyValue.isBlank()) {
+            return Boolean.parseBoolean(propertyValue.trim());
+        }
+
+        String envValue = System.getenv(SCHEDULER_ENV);
+        if (envValue != null && !envValue.isBlank()) {
+            return Boolean.parseBoolean(envValue.trim());
+        }
+
+        return true;
+    }
+}
