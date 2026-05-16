@@ -5,7 +5,6 @@ import javafx.stage.Stage;
 import uet.auctionsystem.controller.AuctionController;
 import uet.auctionsystem.controller.AuthController;
 import uet.auctionsystem.controller.AutobidController;
-import uet.auctionsystem.controller.HomepageController;
 import uet.auctionsystem.controller.WalletController;
 import uet.auctionsystem.dao.AuctionDAO;
 import uet.auctionsystem.dao.AuctionDAOImpl;
@@ -21,7 +20,6 @@ import uet.auctionsystem.service.AuctionScheduler;
 import uet.auctionsystem.service.AuctionService;
 import uet.auctionsystem.service.AuthService;
 import uet.auctionsystem.service.AutobidService;
-import uet.auctionsystem.service.HomepageContentService;
 import uet.auctionsystem.service.WalletService;
 
 // Ghi chu file: Diem vao cua ung dung; khoi tao database, service, controller, scheduler va mo giao dien JavaFX.
@@ -55,8 +53,6 @@ public class Main extends Application {
         AuctionService auctionService = new AuctionService(auctionDAO, walletService);
         AuctionController auctionController = new AuctionController(auctionService);
 
-        HomepageContentService homepageContentService = new HomepageContentService();
-        HomepageController homepageController = new HomepageController(homepageContentService);
 
         if (isSchedulerEnabled()) {
             scheduler = new AuctionScheduler(auctionService);
@@ -67,7 +63,6 @@ public class Main extends Application {
                 stage,
                 authController,
                 auctionController,
-                homepageController,
                 autobidController,
                 walletController
         );

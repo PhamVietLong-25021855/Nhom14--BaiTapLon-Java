@@ -7,7 +7,6 @@ import javafx.stage.Window;
 import uet.auctionsystem.controller.AuctionController;
 import uet.auctionsystem.controller.AuthController;
 import uet.auctionsystem.controller.AutobidController;
-import uet.auctionsystem.controller.HomepageController;
 import uet.auctionsystem.controller.WalletController;
 import uet.auctionsystem.model.AuctionItem;
 import uet.auctionsystem.model.BidTransaction;
@@ -34,7 +33,6 @@ public class AuthFrame {
     // Thuoc tinh: giu tham chieu den WalletController de phoi hop xu ly.
     private final WalletController walletController;
     // Thuoc tinh: giu tham chieu den HomepageController de phoi hop xu ly.
-    private final HomepageController homepageController;
     // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final Scene scene;
     // Thuoc tinh: giu tham chieu den AppShellController de phoi hop xu ly.
@@ -48,7 +46,6 @@ public class AuthFrame {
     // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<AdminDashboardViewController> adminView;
     // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
-    private final LoadedView<AdminHomepageViewController> adminHomepageView;
     // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<SellerDashboardViewController> sellerView;
     // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
@@ -58,7 +55,6 @@ public class AuthFrame {
             Stage stage,
             AuthController authController,
             AuctionController auctionController,
-            HomepageController homepageController,
             AutobidController autobidController,
             WalletController walletController
     ) {
@@ -67,7 +63,6 @@ public class AuthFrame {
         this.auctionController = auctionController;
         this.autobidController = autobidController;
         this.walletController = walletController;
-        this.homepageController = homepageController;
 
         stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
         stage.setMinWidth(980);
@@ -85,7 +80,6 @@ public class AuthFrame {
         loginView = FxmlRuntime.loadView(AuthFrame.class, "login-view.fxml", "view");
         registerView = FxmlRuntime.loadView(AuthFrame.class, "register-view.fxml", "view");
         adminView = FxmlRuntime.loadView(AuthFrame.class, "admin-dashboard-view.fxml", "view");
-        adminHomepageView = FxmlRuntime.loadView(AuthFrame.class, "admin-homepage-view.fxml", "view");
         sellerView = FxmlRuntime.loadView(AuthFrame.class, "seller-dashboard-view.fxml", "view");
         bidderView = FxmlRuntime.loadView(AuthFrame.class, "bidder-dashboard-view.fxml", "view");
 
@@ -114,7 +108,6 @@ public class AuthFrame {
         applyLanguage(loginView.root());
         applyLanguage(registerView.root());
         applyLanguage(adminView.root());
-        applyLanguage(adminHomepageView.root());
         applyLanguage(sellerView.root());
         applyLanguage(bidderView.root());
     }
@@ -162,9 +155,7 @@ public class AuthFrame {
     // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show admin homepage manager.
     public void showAdminHomepageManager(User user) {
         deactivateLiveViews();
-        adminHomepageView.controller().setUser(user);
-        switchView(adminHomepageView.root());
-        adminHomepageView.controller().activate();
+
     }
     // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show change password dialog.
     public void showChangePasswordDialog(User user) {
@@ -190,7 +181,6 @@ public class AuthFrame {
         homeView.controller().setShowLoginHandler(this::showLogin);
         homeView.controller().setShowRegisterHandler(this::showRegister);
         homeView.controller().setAuctionController(auctionController);
-        homeView.controller().setHomepageController(homepageController);
 
         loginView.controller().setAuthController(authController);
         loginView.controller().setShowHomeHandler(this::showHome);
@@ -209,11 +199,6 @@ public class AuthFrame {
         adminView.controller().setFrame(this);
         adminView.controller().setAuthController(authController);
         adminView.controller().setAuctionController(auctionController);
-        adminView.controller().setHomepageController(homepageController);
-
-        adminHomepageView.controller().setFrame(this);
-        adminHomepageView.controller().setAuctionController(auctionController);
-        adminHomepageView.controller().setHomepageController(homepageController);
 
         sellerView.controller().setFrame(this);
         sellerView.controller().setAuctionController(auctionController);
@@ -227,7 +212,6 @@ public class AuthFrame {
     private void deactivateLiveViews() {
         homeView.controller().deactivate();
         adminView.controller().deactivate();
-        adminHomepageView.controller().deactivate();
         bidderView.controller().deactivate();
         sellerView.controller().deactivate();
     }

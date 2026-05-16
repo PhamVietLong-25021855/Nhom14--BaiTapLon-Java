@@ -17,7 +17,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.util.Duration;
 import uet.auctionsystem.controller.AuctionController;
-import uet.auctionsystem.controller.HomepageController;
 import uet.auctionsystem.model.AuctionItem;
 import uet.auctionsystem.model.AuctionStatus;
 import uet.auctionsystem.model.BidTransaction;
@@ -79,16 +78,8 @@ public class HomeViewController {
     private Label statUpcomingValue;
 
     @FXML
-    // Thuoc tinh: luu trang thai hoac du lieu tam cho stat announcement value.
-    private Label statAnnouncementValue;
-
-    @FXML
     // Thuoc tinh: luu trang thai hoac du lieu tam cho upcoming auctions container.
     private VBox upcomingAuctionsContainer;
-
-    @FXML
-    // Thuoc tinh: luu trang thai hoac du lieu tam cho announcements container.
-    private VBox announcementsContainer;
 
     @FXML
     // Thuoc tinh: luu trang thai hoac du lieu tam cho feed section.
@@ -97,10 +88,6 @@ public class HomeViewController {
     @FXML
     // Thuoc tinh: luu trang thai hoac du lieu tam cho auction column.
     private VBox auctionColumn;
-
-    @FXML
-    // Thuoc tinh: luu trang thai hoac du lieu tam cho announcement column.
-    private VBox announcementColumn;
 
     private Runnable showLoginHandler = () -> {};
     private Runnable showRegisterHandler = () -> {};
@@ -120,7 +107,7 @@ public class HomeViewController {
     // Thuoc tinh: giu tham chieu den AuctionController de phoi hop xu ly.
     private AuctionController auctionController;
     // Thuoc tinh: giu tham chieu den HomepageController de phoi hop xu ly.
-    private HomepageController homepageController;
+//    private HomepageController homepageController;
 
     @FXML
     // Phuong thuc: khoi dong hoac khoi tao tien trinh initialize.
@@ -156,9 +143,9 @@ public class HomeViewController {
         this.auctionController = auctionController;
     }
     // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set homepage controller.
-    public void setHomepageController(HomepageController homepageController) {
-        this.homepageController = homepageController;
-    }
+//    public void setHomepageController(HomepageController homepageController) {
+//        this.homepageController = homepageController;
+//    }
     // Phuong thuc: thuc hien chuc nang activate trong lop HomeViewController.
     public void activate() {
         stopAnimations();
@@ -200,7 +187,6 @@ public class HomeViewController {
                     }
                     statRunningValue.setText("0");
                     statUpcomingValue.setText("0");
-                    statAnnouncementValue.setText("0");
                 }
         );
     }
@@ -228,29 +214,7 @@ public class HomeViewController {
             upcomingAuctionsContainer.getChildren().add(loadAuctionCard(auction, bidCounts.getOrDefault(auction.getId(), 0)));
         }
     }
-    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac render announcement cards.
-    private void renderAnnouncementCards(List<HomepageAnnouncement> announcements, Map<Integer, AuctionItem> auctionLookup) {
-        announcementsContainer.getChildren().clear();
 
-        List<HomepageAnnouncement> displayAnnouncements = announcements.stream()
-                .limit(MAX_DISPLAY_ANNOUNCEMENTS)
-                .toList();
-
-        if (displayAnnouncements.isEmpty()) {
-            announcementsContainer.getChildren().add(loadEmptyCard(
-                    "No admin announcements yet",
-                    "Announcements, auction schedules, and featured items will appear here after admins publish updates."
-            ));
-            return;
-        }
-
-        for (HomepageAnnouncement announcement : displayAnnouncements) {
-            announcementsContainer.getChildren().add(loadAnnouncementCard(
-                    announcement,
-                    auctionLookup.get(announcement.getLinkedAuctionId())
-            ));
-        }
-    }
     // Phuong thuc: lay hoac doc du lieu cho thao tac load auction card.
     private VBox loadAuctionCard(AuctionItem auction, int bidCount) {
         LoadedView<HomeAuctionCardController> view = FxmlRuntime.loadView(
@@ -264,7 +228,7 @@ public class HomeViewController {
     // Phuong thuc: lay hoac doc du lieu cho thao tac load home snapshot.
     private HomeSnapshot loadHomeSnapshot() {
         List<AuctionItem> auctions = auctionController == null ? List.of() : auctionController.getAllAuctions();
-        List<HomepageAnnouncement> announcements = homepageController == null ? List.of() : homepageController.getAllAnnouncements();
+//        List<HomepageAnnouncement> announcements = homepageController == null ? List.of() : homepageController.getAllAnnouncements();
         Map<Integer, Integer> bidCounts = new HashMap<>();
 
         if (auctionController != null) {
@@ -273,7 +237,7 @@ public class HomeViewController {
             }
         }
 
-        return new HomeSnapshot(auctions, announcements, bidCounts);
+        return new HomeSnapshot(auctions, bidCounts);
     }
     // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac apply home snapshot.
     private void applyHomeSnapshot(HomeSnapshot snapshot) {
@@ -292,21 +256,9 @@ public class HomeViewController {
 
         statRunningValue.setText(String.valueOf(runningCount));
         statUpcomingValue.setText(String.valueOf(upcomingCount));
-        statAnnouncementValue.setText(String.valueOf(snapshot.announcements().size()));
 
         renderAuctionCards(snapshot.auctions(), snapshot.bidCounts());
-        renderAnnouncementCards(snapshot.announcements(), auctionLookup);
         requestScrollRevealUpdate();
-    }
-    // Phuong thuc: lay hoac doc du lieu cho thao tac load announcement card.
-    private VBox loadAnnouncementCard(HomepageAnnouncement announcement, AuctionItem linkedAuction) {
-        LoadedView<HomeAnnouncementCardController> view = FxmlRuntime.loadView(
-                HomeViewController.class,
-                "home-announcement-card.fxml",
-                "component"
-        );
-        view.controller().setAnnouncement(announcement, linkedAuction);
-        return (VBox) view.root();
     }
     // Phuong thuc: lay hoac doc du lieu cho thao tac load empty card.
     private VBox loadEmptyCard(String titleText, String bodyText) {
@@ -407,7 +359,6 @@ public class HomeViewController {
         showNode(statsRow);
         showNode(feedSection);
         showNode(auctionColumn);
-        showNode(announcementColumn);
     }
     // Phuong thuc: thuc hien chuc nang prepare reveal trong lop HomeViewController.
     private void prepareReveal(Node node, double translateX, double translateY) {
@@ -437,7 +388,6 @@ public class HomeViewController {
         scrollRevealTargets.clear();
         scrollRevealTargets.add(new ScrollRevealTarget(feedSection, 0, 84, 0.92, 0.0, 0.84, 0.38));
         scrollRevealTargets.add(new ScrollRevealTarget(auctionColumn, -46, 30, 0.96, 0.0, 0.82, 0.30));
-        scrollRevealTargets.add(new ScrollRevealTarget(announcementColumn, 46, 30, 0.96, 0.0, 0.76, 0.30));
     }
     // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac register scroll reveal listeners.
     private void registerScrollRevealListeners() {
@@ -450,19 +400,16 @@ public class HomeViewController {
         scrollRevealProgress.clear();
         showNode(feedSection);
         showNode(auctionColumn);
-        showNode(announcementColumn);
     }
     // Phuong thuc: thuc hien chuc nang request scroll reveal update trong lop HomeViewController.
     private void requestScrollRevealUpdate() {
         showNode(feedSection);
         showNode(auctionColumn);
-        showNode(announcementColumn);
     }
     // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac update scroll reveal.
     private void updateScrollReveal() {
         showNode(feedSection);
         showNode(auctionColumn);
-        showNode(announcementColumn);
     }
     // Phuong thuc: thuc hien chuc nang compute scroll reveal progress trong lop HomeViewController.
     private double computeScrollRevealProgress(
@@ -511,7 +458,6 @@ public class HomeViewController {
     // Phuong thuc: thuc hien chuc nang home snapshot trong lop HomeViewController.
     private record HomeSnapshot(
             List<AuctionItem> auctions,
-            List<HomepageAnnouncement> announcements,
             Map<Integer, Integer> bidCounts
     ) {
     }

@@ -17,7 +17,6 @@ import javafx.scene.control.TableView;
 import javafx.util.Duration;
 import uet.auctionsystem.controller.AuctionController;
 import uet.auctionsystem.controller.AuthController;
-import uet.auctionsystem.controller.HomepageController;
 import uet.auctionsystem.model.AuctionItem;
 import uet.auctionsystem.model.Role;
 import uet.auctionsystem.model.AuctionStatus;
@@ -162,7 +161,6 @@ public class AdminDashboardViewController {
     // Thuoc tinh: giu tham chieu den AuctionController de phoi hop xu ly.
     private AuctionController auctionController;
     // Thuoc tinh: giu tham chieu den HomepageController de phoi hop xu ly.
-    private HomepageController homepageController;
     // Thuoc tinh: luu trang thai hoac du lieu tam cho current user.
     private User currentUser;
 
@@ -187,10 +185,6 @@ public class AdminDashboardViewController {
     // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set auction controller.
     public void setAuctionController(AuctionController auctionController) {
         this.auctionController = auctionController;
-    }
-    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set homepage controller.
-    public void setHomepageController(HomepageController homepageController) {
-        this.homepageController = homepageController;
     }
     // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac set user.
     public void setUser(User user) {
@@ -275,11 +269,6 @@ public class AdminDashboardViewController {
             NotificationUtil.warning(ownerWindow(), "Notification", "Current admin information is unavailable.");
             return;
         }
-        if (homepageController == null) {
-            NotificationUtil.warning(ownerWindow(), "Notification", "HomepageController has not been assigned to the admin screen.");
-            return;
-        }
-
         deactivate();
         frame.showAdminHomepageManager(currentUser);
     }
