@@ -3,7 +3,6 @@ package uet.auctionsystem.service;
 import uet.auctionsystem.dao.UserDAO;
 import uet.auctionsystem.exception.UnauthorizedException;
 import uet.auctionsystem.exception.ValidationException;
-import uet.auctionsystem.model.Admin;
 import uet.auctionsystem.model.Bidder;
 import uet.auctionsystem.model.Role;
 import uet.auctionsystem.model.Seller;
@@ -60,9 +59,6 @@ public class AuthService {
     public void changePassword(String username, String oldPassword, String newPassword)
             throws ValidationException, UnauthorizedException {
         User user = requireExistingUser(username);
-        if (isDefaultAdmin(user)) {
-            throw new ValidationException("Default admin password is fixed and cannot be changed.");
-        }
         if (!user.checkPassword(oldPassword)) {
             throw new UnauthorizedException("Current password is incorrect.");
         }
@@ -73,72 +69,6 @@ public class AuthService {
         user.setPassword(PasswordUtil.hashPassword(newPassword));
         user.setUpdatedAt(System.currentTimeMillis());
         userDAO.update(user);
-    }
-    // Phuong thuc: thuc hien chuc nang promote user to admin trong lop AuthService.
-    public void promoteUserToAdmin(String adminUsername, int targetUserId)
-            throws UnauthorizedException, ValidationException {
-        User admin = requireExistingUser(adminUsername);
-        if (!isDefaultAdmin(admin)) {
-            throw new UnauthorizedException("Only the default admin can promote accounts to admin.");
-        }
-
-        User target = findUserById(targetUserId);
-        if (target == null) {
-            throw new ValidationException("Account for promotion was not found.");
-        }
-        if (isDefaultAdmin(target)) {
-            throw new ValidationException("The default admin account is already the super admin.");
-        }
-        if (target.getRole() == Role.ADMIN) {
-            throw new ValidationException("Account is already an admin.");
-        }
-
-        target.setRole(Role.ADMIN);
-        target.setUpdatedAt(System.currentTimeMillis());
-        userDAO.update(target);
-    }
-    // Phuong thuc: thuc hien chuc nang demote admin to bidder trong lop AuthService.
-    public void demoteAdminToBidder(String adminUsername, int targetUserId)
-            throws UnauthorizedException, ValidationException {
-        User admin = requireExistingUser(adminUsername);
-        if (!isDefaultAdmin(admin)) {
-            throw new UnauthorizedException("Only the default admin can demote admin accounts.");
-        }
-
-        User target = findUserById(targetUserId);
-        if (target == null) {
-            throw new ValidationException("Account for demotion was not found.");
-        }
-        if (isDefaultAdmin(target)) {
-            throw new ValidationException("The default admin account cannot be demoted.");
-        }
-        if (target.getRole() != Role.ADMIN) {
-            throw new ValidationException("Only admin accounts can be demoted.");
-        }
-
-        target.setRole(Role.BIDDER);
-        target.setUpdatedAt(System.currentTimeMillis());
-        userDAO.update(target);
-    }
-    // Phuong thuc: thuc hien chuc nang toggle user status trong lop AuthService.
-    public void toggleUserStatus(String adminUsername, int targetUserId)
-            throws UnauthorizedException, ValidationException {
-        User admin = requireExistingUser(adminUsername);
-        if (admin.getRole() != Role.ADMIN) {
-            throw new UnauthorizedException("Only admins can lock or unlock accounts.");
-        }
-
-        User target = findUserById(targetUserId);
-        if (target == null) {
-            throw new ValidationException("Account for lock or unlock was not found.");
-        }
-        if (target.getId() == admin.getId()) {
-            throw new ValidationException("You cannot lock your own account.");
-        }
-
-        target.setStatus("ACTIVE".equals(target.getStatus()) ? "BLOCKED" : "ACTIVE");
-        target.setUpdatedAt(System.currentTimeMillis());
-        userDAO.update(target);
     }
     // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac validate registration input.
     private void validateRegistrationInput(String username, String password, String fullName, String email, Role role)
@@ -154,9 +84,6 @@ public class AuthService {
         }
         if (role == null) {
             throw new ValidationException("Invalid role.");
-        }
-        if (role == Role.ADMIN) {
-            throw new ValidationException("Admin accounts cannot be created from registration.");
         }
         if (fullName == null || fullName.trim().isEmpty()) {
             throw new ValidationException("Full name cannot be empty.");
@@ -174,7 +101,6 @@ public class AuthService {
     // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac create user.
     private User createUser(int id, String username, String hashedPassword, String fullName, String email, Role role, long timestamp) {
         return switch (role) {
-            case ADMIN -> new Admin(id, username, hashedPassword, fullName, email, "ACTIVE", timestamp, timestamp);
             case SELLER -> new Seller(id, username, hashedPassword, fullName, email, "ACTIVE", timestamp, timestamp);
             case BIDDER -> new Bidder(id, username, hashedPassword, fullName, email, "ACTIVE", timestamp, timestamp);
         };
@@ -195,11 +121,5 @@ public class AuthService {
             }
         }
         return null;
-    }
-    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac is default admin.
-    private boolean isDefaultAdmin(User user) {
-        return user != null
-                && user.getRole() == Role.ADMIN
-                && AdminDefaults.USERNAME.equalsIgnoreCase(user.getUsername());
     }
 }

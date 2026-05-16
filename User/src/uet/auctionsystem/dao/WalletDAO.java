@@ -23,8 +23,6 @@ public interface WalletDAO {
     TopUpTransaction findTopUpTransactionById(int transactionId);
     // Phuong thuc: lay hoac doc du lieu cho thao tac find top up transactions by user id.
     List<TopUpTransaction> findTopUpTransactionsByUserId(int userId);
-    // Phuong thuc: lay hoac doc du lieu cho thao tac find all pending transactions.
-    List<TopUpTransaction> findAllPendingTransactions();
     // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac delete top up transaction.
     void deleteTopUpTransaction(int transactionId);
 }

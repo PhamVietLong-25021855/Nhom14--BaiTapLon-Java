@@ -163,10 +163,6 @@ public class WalletService {
         getWallet(userId);
         return walletDAO.findTopUpTransactionsByUserId(userId);
     }
-    // Phuong thuc: lay hoac doc du lieu cho thao tac get all pending transactions.
-    public List<TopUpTransaction> getAllPendingTransactions() {
-        return walletDAO.findAllPendingTransactions();
-    }
     // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac ensure wallet exists.
     private void ensureWalletExists(int userId) {
         if (walletDAO.findWalletByUserId(userId) != null) {

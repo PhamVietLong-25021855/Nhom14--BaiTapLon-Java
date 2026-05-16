@@ -1,7 +1,6 @@
 package uet.auctionsystem.dao;
 
 import uet.auctionsystem.database.DatabaseConnection;
-import uet.auctionsystem.model.Admin;
 import uet.auctionsystem.model.Bidder;
 import uet.auctionsystem.model.Role;
 import uet.auctionsystem.model.Seller;
@@ -157,13 +156,17 @@ public class UserDAOImpl implements UserDAO {
         String password = resultSet.getString("password");
         String fullName = resultSet.getString("full_name");
         String email = resultSet.getString("email");
-        Role role = Role.valueOf(resultSet.getString("role").trim().toUpperCase());
         String status = resultSet.getString("status");
         long createdAt = resultSet.getLong("created_at");
         long updatedAt = resultSet.getLong("updated_at");
 
+        Role role ;
+        try{
+            role = Role.valueOf(resultSet.getString("role").trim().toUpperCase());
+        }catch(IllegalArgumentException e){
+            return null;
+        }
         return switch (role) {
-            case ADMIN -> new Admin(id, username, password, fullName, email, status, createdAt, updatedAt);
             case SELLER -> new Seller(id, username, password, fullName, email, status, createdAt, updatedAt);
             case BIDDER -> new Bidder(id, username, password, fullName, email, status, createdAt, updatedAt);
         };

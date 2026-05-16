@@ -87,10 +87,6 @@ public class WalletController {
             return List.of();
         }
     }
-    // Phuong thuc: lay hoac doc du lieu cho thao tac get all pending transactions.
-    public List<TopUpTransaction> getAllPendingTransactions() {
-        return walletService.getAllPendingTransactions();
-    }
     // Phuong thuc: lay hoac doc du lieu cho thao tac get wallet balance.
     public double getWalletBalance(int userId) {
         Wallet wallet = getWallet(userId);

@@ -42,31 +42,4 @@ public class AuthController {
             return e.getMessage();
         }
     }
-    // Phuong thuc: thuc hien chuc nang promote user to admin trong lop AuthController.
-    public String promoteUserToAdmin(String adminUsername, int targetUserId) {
-        try {
-            authService.promoteUserToAdmin(adminUsername, targetUserId);
-            return "SUCCESS";
-        } catch (ValidationException | UnauthorizedException e) {
-            return e.getMessage();
-        }
-    }
-    // Phuong thuc: thuc hien chuc nang demote admin to bidder trong lop AuthController.
-    public String demoteAdminToBidder(String adminUsername, int targetUserId) {
-        try {
-            authService.demoteAdminToBidder(adminUsername, targetUserId);
-            return "SUCCESS";
-        } catch (ValidationException | UnauthorizedException e) {
-            return e.getMessage();
-        }
-    }
-    // Phuong thuc: thuc hien chuc nang toggle user status trong lop AuthController.
-    public String toggleUserStatus(String adminUsername, int targetUserId) {
-        try {
-            authService.toggleUserStatus(adminUsername, targetUserId);
-            return "SUCCESS";
-        } catch (ValidationException | UnauthorizedException e) {
-            return e.getMessage();
-        }
-    }
 }

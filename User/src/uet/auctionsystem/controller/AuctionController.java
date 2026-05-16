@@ -18,6 +18,7 @@ import java.util.Map;
 public class AuctionController {
     // Thuoc tinh: giu tham chieu den AuctionService de phoi hop xu ly.
     private final AuctionService auctionService;
+
     // Ham tao: khoi tao doi tuong AuctionController voi cac phu thuoc can thiet.
     public AuctionController(AuctionService auctionService) {
         this.auctionService = auctionService;
@@ -56,6 +57,7 @@ public class AuctionController {
             return e.getMessage();
         }
     }
+
     // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac delete auction.
     public String deleteAuction(int auctionId, int sellerId) {
         try {
@@ -65,22 +67,27 @@ public class AuctionController {
             return e.getMessage();
         }
     }
+
     // Phuong thuc: lay hoac doc du lieu cho thao tac get auctions by seller.
     public List<AuctionItem> getAuctionsBySeller(int sellerId) {
         return auctionService.getAuctionsBySeller(sellerId);
     }
+
     // Phuong thuc: lay hoac doc du lieu cho thao tac get all auctions.
     public List<AuctionItem> getAllAuctions() {
         return auctionService.getAllAuctions();
     }
+
     // Phuong thuc: lay hoac doc du lieu cho thao tac get bids for auction.
     public List<BidTransaction> getBidsForAuction(int auctionId) {
         return auctionService.getBidsForAuction(auctionId);
     }
+
     // Phuong thuc: lay hoac doc du lieu cho thao tac get all bids.
     public List<BidTransaction> getAllBids() {
         return auctionService.getAllBids();
     }
+
     // Phuong thuc: xu ly nghiep vu chinh cho thao tac place bid.
     public String placeBid(int auctionId, int bidderId, double amount) {
         try {
@@ -90,6 +97,7 @@ public class AuctionController {
             return e.getMessage();
         }
     }
+
     // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac close auction.
     public String closeAuction(int auctionId, int sellerId) {
         try {
@@ -120,35 +128,5 @@ public class AuctionController {
         } catch (ItemNotFoundException | UnauthorizedException | ValidationException e) {
             return e.getMessage();
         }
-    }
-    // Phuong thuc: khoi dong hoac khoi tao tien trinh start admin early close countdown.
-    public String startAdminEarlyCloseCountdown(User currentUser, int auctionId) {
-        if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
-            return "Only admins can issue early-close commands.";
-        }
-
-        try {
-            auctionService.startAdminEarlyCloseCountdown(auctionId);
-            return "SUCCESS";
-        } catch (ItemNotFoundException | AuctionClosedException | ValidationException e) {
-            return e.getMessage();
-        }
-    }
-    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac cancel admin early close countdown.
-    public String cancelAdminEarlyCloseCountdown(User currentUser, int auctionId) {
-        if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
-            return "Only admins can cancel early-close commands.";
-        }
-
-        try {
-            auctionService.cancelAdminEarlyCloseCountdown(auctionId);
-            return "SUCCESS";
-        } catch (ItemNotFoundException | ValidationException e) {
-            return e.getMessage();
-        }
-    }
-
-    public Map<Integer, Integer> getAdminEarlyCloseCountdowns() {
-        return auctionService.getAdminEarlyCloseCountdowns();
     }
 }

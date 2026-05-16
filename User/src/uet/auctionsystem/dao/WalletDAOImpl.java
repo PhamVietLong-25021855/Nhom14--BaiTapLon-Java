@@ -222,26 +222,6 @@ public class WalletDAOImpl implements WalletDAO {
     }
 
     @Override
-    // Phuong thuc: lay hoac doc du lieu cho thao tac find all pending transactions.
-    public List<TopUpTransaction> findAllPendingTransactions() {
-        List<TopUpTransaction> transactions = new ArrayList<>();
-
-        try (Connection connection = DatabaseConnection.openDatabaseConnection();
-             PreparedStatement statement = connection.prepareStatement(FIND_ALL_PENDING_TOPUP_SQL)) {
-            statement.setString(1, TopUpStatus.PENDING.name());
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    transactions.add(mapTopUpTransaction(resultSet));
-                }
-            }
-        } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to read pending top-up transactions from PostgreSQL.", ex);
-        }
-
-        return transactions;
-    }
-
-    @Override
     // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac delete top up transaction.
     public void deleteTopUpTransaction(int transactionId) {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();

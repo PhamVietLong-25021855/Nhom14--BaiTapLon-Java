@@ -44,9 +44,6 @@ public class AuthFrame {
     // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<RegisterViewController> registerView;
     // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
-    private final LoadedView<AdminDashboardViewController> adminView;
-    // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
-    // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<SellerDashboardViewController> sellerView;
     // Thuoc tinh: giu phu thuoc can dung xuyen suot vong doi doi tuong.
     private final LoadedView<BidderDashboardViewController> bidderView;
@@ -79,7 +76,6 @@ public class AuthFrame {
         homeView = FxmlRuntime.loadView(AuthFrame.class, "home-view.fxml", "view");
         loginView = FxmlRuntime.loadView(AuthFrame.class, "login-view.fxml", "view");
         registerView = FxmlRuntime.loadView(AuthFrame.class, "register-view.fxml", "view");
-        adminView = FxmlRuntime.loadView(AuthFrame.class, "admin-dashboard-view.fxml", "view");
         sellerView = FxmlRuntime.loadView(AuthFrame.class, "seller-dashboard-view.fxml", "view");
         bidderView = FxmlRuntime.loadView(AuthFrame.class, "bidder-dashboard-view.fxml", "view");
 
@@ -107,7 +103,6 @@ public class AuthFrame {
         applyLanguage(homeView.root());
         applyLanguage(loginView.root());
         applyLanguage(registerView.root());
-        applyLanguage(adminView.root());
         applyLanguage(sellerView.root());
         applyLanguage(bidderView.root());
     }
@@ -130,7 +125,6 @@ public class AuthFrame {
     // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show role dashboard.
     public void showRoleDashboard(User user) {
         switch (user.getRole()) {
-            case ADMIN -> showAdminDashboard(user);
             case SELLER -> {
                 deactivateLiveViews();
                 sellerView.controller().setUser(user);
@@ -145,18 +139,7 @@ public class AuthFrame {
             }
         }
     }
-    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show admin dashboard.
-    public void showAdminDashboard(User user) {
-        deactivateLiveViews();
-        adminView.controller().setUser(user);
-        switchView(adminView.root());
-        adminView.controller().activate();
-    }
-    // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show admin homepage manager.
-    public void showAdminHomepageManager(User user) {
-        deactivateLiveViews();
 
-    }
     // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac show change password dialog.
     public void showChangePasswordDialog(User user) {
         LoadedView<ChangePasswordDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "change-password-dialog.fxml", "dialog");
@@ -196,10 +179,6 @@ public class AuthFrame {
         registerView.controller().setWarningHandler(message -> NotificationUtil.warning(stage, "NOTIFICATION", message));
         registerView.controller().setErrorHandler(message -> NotificationUtil.error(stage, "ERROR", message));
 
-        adminView.controller().setFrame(this);
-        adminView.controller().setAuthController(authController);
-        adminView.controller().setAuctionController(auctionController);
-
         sellerView.controller().setFrame(this);
         sellerView.controller().setAuctionController(auctionController);
 
@@ -211,7 +190,6 @@ public class AuthFrame {
     // Phuong thuc: thuc hien chuc nang deactivate live views trong lop AuthFrame.
     private void deactivateLiveViews() {
         homeView.controller().deactivate();
-        adminView.controller().deactivate();
         bidderView.controller().deactivate();
         sellerView.controller().deactivate();
     }

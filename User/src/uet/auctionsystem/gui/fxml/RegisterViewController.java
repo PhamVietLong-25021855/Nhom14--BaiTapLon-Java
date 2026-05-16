@@ -278,8 +278,6 @@ public class RegisterViewController {
         }
         if (role == null) {
             valid = false;
-        } else if (role == Role.ADMIN) {
-            valid = false;
         }
 
         if (valid) {
@@ -295,8 +293,6 @@ public class RegisterViewController {
             message = "Password confirmation does not match.";
         } else if (role == null) {
             message = "Invalid role.";
-        } else if (role == Role.ADMIN) {
-            message = "Admin accounts cannot be created from registration.";
         } else if (username.isEmpty() || fullName.isEmpty()) {
             message = "Please fill in all required information.";
         }

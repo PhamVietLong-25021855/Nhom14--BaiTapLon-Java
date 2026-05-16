@@ -11,9 +11,7 @@ import uet.auctionsystem.exception.ValidationException;
 import uet.auctionsystem.model.AuctionItem;
 import uet.auctionsystem.model.AuctionStatus;
 import uet.auctionsystem.model.BidTransaction;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -29,7 +27,6 @@ public class AuctionService {
     // Lock theo auction Ä‘á»ƒ xá»­ lÃ½ bid vÃ  settlement an toÃ n hÆ¡n khi cÃ³ cáº¡nh tranh.
     private final ConcurrentHashMap<Integer, ReentrantLock> auctionLocks;
     // Tráº¡ng thÃ¡i Ä‘áº¿m ngÆ°á»£c Ä‘Ã³ng sá»›m cá»§a admin.
-    private final ConcurrentHashMap<Integer, AdminEarlyCloseState> adminEarlyCloseStates;
     // KÃªnh phÃ¡t sá»± kiá»‡n cho cÃ¡c dashboard Ä‘ang má»Ÿ.
     // Thuoc tinh: giu tham chieu den AuctionEventBus de phoi hop xu ly.
     private final AuctionEventBus eventBus;
@@ -38,7 +35,6 @@ public class AuctionService {
         this.auctionDAO = auctionDAO;
         this.walletService = walletService;
         this.auctionLocks = new ConcurrentHashMap<>();
-        this.adminEarlyCloseStates = new ConcurrentHashMap<>();
         this.eventBus = AuctionEventBus.getInstance();
     }
     // Phuong thuc: lay hoac doc du lieu cho thao tac get lock for auction.
@@ -117,7 +113,6 @@ public class AuctionService {
             auctionDAO.updateAuction(item);
             eventBus.publish(AuctionEvent.statusChanged(item, item.getUpdatedAt(), "Auction was cancelled by the seller."));
         }
-        adminEarlyCloseStates.remove(auctionId);
     }
     // Phuong thuc: lay hoac doc du lieu cho thao tac get auctions by seller.
     public List<AuctionItem> getAuctionsBySeller(int sellerId) {
@@ -184,8 +179,6 @@ public class AuctionService {
             if (antiSnipingExtended) {
                 auctionDAO.updateAuction(effectiveItem);
             }
-
-            refreshEarlyCloseSnapshot(auctionId, effectiveItem, now);
             eventBus.publish(AuctionEvent.bidActivity(effectiveItem, effectiveItem.getUpdatedAt()));
             if (antiSnipingExtended) {
                 eventBus.publish(AuctionEvent.antiSnipingExtended(effectiveItem, effectiveItem.getUpdatedAt()));
@@ -195,7 +188,6 @@ public class AuctionService {
         }
     }
 
-    // Seller Ä‘Ã³ng tay vÃ  dÃ¹ng cÃ¹ng luá»“ng settlement chung vá»›i scheduler/admin.
     // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac close auction manually.
     public void closeAuctionManually(int auctionId, int sellerId)
             throws ItemNotFoundException, UnauthorizedException, AuctionClosedException {
@@ -207,55 +199,7 @@ public class AuctionService {
         }
 
         closeAuctionAndSettle(item, System.currentTimeMillis(), "Auction closed manually.");
-        adminEarlyCloseStates.remove(auctionId);
     }
-    // Phuong thuc: khoi dong hoac khoi tao tien trinh start admin early close countdown.
-    public void startAdminEarlyCloseCountdown(int auctionId)
-            throws ItemNotFoundException, AuctionClosedException, ValidationException {
-        ReentrantLock lock = getLockForAuction(auctionId);
-        lock.lock();
-        try {
-            AuctionItem item = auctionDAO.findAuctionById(auctionId);
-            if (item == null) {
-                throw new ItemNotFoundException("Auction not found.");
-            }
-            if (item.getStatus() != AuctionStatus.RUNNING) {
-                throw new AuctionClosedException("Early-close countdown is only available while the auction is RUNNING.");
-            }
-            if (adminEarlyCloseStates.containsKey(auctionId)) {
-                throw new ValidationException("This auction is already in an early-close countdown process.");
-            }
-
-            List<BidTransaction> bids = auctionDAO.findBidsByAuction(auctionId);
-            adminEarlyCloseStates.put(auctionId, AdminEarlyCloseState.from(item, bids, System.currentTimeMillis()));
-        } finally {
-            lock.unlock();
-        }
-    }
-    // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac cancel admin early close countdown.
-    public void cancelAdminEarlyCloseCountdown(int auctionId) throws ItemNotFoundException, ValidationException {
-        ReentrantLock lock = getLockForAuction(auctionId);
-        lock.lock();
-        try {
-            AuctionItem item = auctionDAO.findAuctionById(auctionId);
-            if (item == null) {
-                throw new ItemNotFoundException("Auction not found.");
-            }
-            if (adminEarlyCloseStates.remove(auctionId) == null) {
-                throw new ValidationException("This auction has not activated the early-close countdown.");
-            }
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public Map<Integer, Integer> getAdminEarlyCloseCountdowns() {
-        Map<Integer, Integer> countdowns = new HashMap<>();
-        adminEarlyCloseStates.forEach((auctionId, state) -> countdowns.put(auctionId, state.remainingCounts));
-        return countdowns;
-    }
-
-    // DÃ nh cho flow má»›i: seller capture thá»§ cÃ´ng khi auction Ä‘ang á»Ÿ FINISHED.
     // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac mark auction as paid.
     public void markAuctionAsPaid(int auctionId, int sellerId)
             throws ItemNotFoundException, UnauthorizedException, ValidationException {
@@ -314,14 +258,6 @@ public class AuctionService {
         long now = System.currentTimeMillis();
         for (AuctionItem item : auctionDAO.findAllAuctions()) {
             AuctionStatus currentStatus = item.getStatus();
-
-            if (currentStatus == AuctionStatus.FINISHED ||
-                    currentStatus == AuctionStatus.PAID ||
-                    currentStatus == AuctionStatus.CANCELED) {
-                adminEarlyCloseStates.remove(item.getId());
-                continue;
-            }
-
             if (currentStatus == AuctionStatus.OPEN &&
                     now >= item.getStartTime() &&
                     now < item.getEndTime()) {
@@ -337,58 +273,6 @@ public class AuctionService {
                 closeAuctionAndSettle(item, now, "Auction reached its closing time.");
             }
         }
-
-        tickAdminEarlyCloseCountdowns(now);
-    }
-
-    // Má»—i nhá»‹p sáº½ giáº£m countdown Ä‘Ã³ng sá»›m náº¿u auction khÃ´ng phÃ¡t sinh bid má»›i.
-    // Phuong thuc: thuc hien chuc nang tick admin early close countdowns trong lop AuctionService.
-    private void tickAdminEarlyCloseCountdowns(long now) {
-        for (Map.Entry<Integer, AdminEarlyCloseState> entry : new HashMap<>(adminEarlyCloseStates).entrySet()) {
-            int auctionId = entry.getKey();
-            ReentrantLock lock = getLockForAuction(auctionId);
-            lock.lock();
-            try {
-                AuctionItem item = auctionDAO.findAuctionById(auctionId);
-                AdminEarlyCloseState state = adminEarlyCloseStates.get(auctionId);
-
-                if (item == null || state == null || item.getStatus() != AuctionStatus.RUNNING) {
-                    adminEarlyCloseStates.remove(auctionId);
-                    continue;
-                }
-
-                if (now - state.lastTickAt < 1000) {
-                    continue;
-                }
-
-                List<BidTransaction> bids = auctionDAO.findBidsByAuction(auctionId);
-                long latestBidTimestamp = findLatestBidTimestamp(bids);
-                if (bids.size() != state.observedBidCount ||
-                        Double.compare(item.getCurrentHighestBid(), state.observedHighestBid) != 0 ||
-                        latestBidTimestamp != state.observedLatestBidTimestamp) {
-                    state.reset(bids.size(), item.getCurrentHighestBid(), latestBidTimestamp, now);
-                    continue;
-                }
-
-                state.lastTickAt = now;
-                state.remainingCounts--;
-                if (state.remainingCounts <= 0) {
-                    closeAuctionAndSettle(item, now, "Admin early-close countdown finished.");
-                }
-            } finally {
-                lock.unlock();
-            }
-        }
-    }
-    // Phuong thuc: cap nhat du lieu hoac trang thai cho thao tac refresh early close snapshot.
-    private void refreshEarlyCloseSnapshot(int auctionId, AuctionItem item, long now) {
-        AdminEarlyCloseState state = adminEarlyCloseStates.get(auctionId);
-        if (state == null) {
-            return;
-        }
-
-        List<BidTransaction> bids = auctionDAO.findBidsByAuction(auctionId);
-        state.reset(bids.size(), item.getCurrentHighestBid(), findLatestBidTimestamp(bids), now);
     }
 
     // DÃ¹ng chung cho má»i action seller Ä‘á»ƒ kiá»ƒm tra auction tá»“n táº¡i vÃ  Ä‘Ãºng chá»§ sá»Ÿ há»¯u.
@@ -466,7 +350,6 @@ public class AuctionService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    // Cháº·n áº£nh quÃ¡ lá»›n ngay tá»« service trÆ°á»›c khi ghi DB.
     // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac validate image.
     private void validateImage(byte[] imageData) throws ValidationException {
         if (imageData != null && imageData.length > AuctionRules.MAX_IMAGE_BYTES) {
@@ -474,7 +357,6 @@ public class AuctionService {
         }
     }
 
-    // Há»§y settlement theo Ä‘Ãºng tráº¡ng thÃ¡i hiá»‡n táº¡i: release reserve hoáº·c refund sá»‘ dÆ° Ä‘Ã£ capture.
     // Phuong thuc: kiem tra dieu kien hoac xac thuc cho thao tac cancel settlement for item.
     private void cancelSettlementForItem(AuctionItem item) {
         if (item.getWinnerId() <= 0 || item.getCurrentHighestBid() <= 0) {
@@ -492,7 +374,6 @@ public class AuctionService {
         }
     }
 
-    // Luá»“ng Ä‘Ã³ng phiÃªn chung: cá»‘ capture tá»± Ä‘á»™ng, náº¿u khÃ´ng Ä‘Æ°á»£c thÃ¬ Ä‘á»ƒ FINISHED cho seller xá»­ lÃ½ sau.
     // Phuong thuc: huy, xoa, dong hoac don trang thai cho thao tac close auction and settle.
     private void closeAuctionAndSettle(AuctionItem item, long now, String summary) {
         AuctionStatus finalStatus = AuctionStatus.FINISHED;
@@ -509,11 +390,9 @@ public class AuctionService {
         item.setEndTime(now);
         item.setUpdatedAt(now);
         auctionDAO.updateAuction(item);
-        adminEarlyCloseStates.remove(item.getId());
         eventBus.publish(AuctionEvent.settled(item, now, buildSettlementSummary(item, finalStatus, summary)));
     }
 
-    // Chuáº©n hÃ³a ná»™i dung event Ä‘á»ƒ UI/debug Ä‘á»c dá»… hÆ¡n.
     // Phuong thuc: tao, mo, hien thi hoac bo sung du lieu cho thao tac build settlement summary.
     private String buildSettlementSummary(AuctionItem item, AuctionStatus finalStatus, String baseSummary) {
         if (finalStatus == AuctionStatus.PAID) {
@@ -525,36 +404,13 @@ public class AuctionService {
         return baseSummary + " Auction ended without a winning bidder.";
     }
 
-    // Snapshot ná»™i bá»™ Ä‘á»ƒ biáº¿t countdown cÃ³ bá»‹ "reset" do bid má»›i hay khÃ´ng.
-    private static final class AdminEarlyCloseState {
-        private int remainingCounts;
-        private int observedBidCount;
-        private double observedHighestBid;
-        private long observedLatestBidTimestamp;
-        private long lastTickAt;
-
-        private static AdminEarlyCloseState from(AuctionItem item, List<BidTransaction> bids, long now) {
-            AdminEarlyCloseState state = new AdminEarlyCloseState();
-            state.reset(bids.size(), item.getCurrentHighestBid(), latestTimestamp(bids), now);
-            return state;
-        }
-
-        private void reset(int bidCount, double highestBid, long latestBidTimestamp, long now) {
-            this.remainingCounts = AuctionRules.ADMIN_EARLY_CLOSE_COUNTS;
-            this.observedBidCount = bidCount;
-            this.observedHighestBid = highestBid;
-            this.observedLatestBidTimestamp = latestBidTimestamp;
-            this.lastTickAt = now;
-        }
-
-        private static long latestTimestamp(List<BidTransaction> bids) {
-            long latestTimestamp = -1;
-            for (BidTransaction bid : bids) {
-                if (bid.getTimestamp() > latestTimestamp) {
-                    latestTimestamp = bid.getTimestamp();
-                }
+    private static long latestTimestamp(List<BidTransaction> bids) {
+        long latestTimestamp = -1;
+        for (BidTransaction bid : bids) {
+            if (bid.getTimestamp() > latestTimestamp) {
+                latestTimestamp = bid.getTimestamp();
             }
-            return latestTimestamp;
         }
+        return latestTimestamp;
     }
 }

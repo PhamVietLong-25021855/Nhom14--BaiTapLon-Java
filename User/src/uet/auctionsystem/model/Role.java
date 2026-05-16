@@ -5,5 +5,4 @@ package uet.auctionsystem.model;
 public enum Role {
     BIDDER,
     SELLER,
-    ADMIN
 }
