@@ -7,7 +7,6 @@ import uet.auctionsystem.model.Bidder;
 import uet.auctionsystem.model.Role;
 import uet.auctionsystem.model.Seller;
 import uet.auctionsystem.model.User;
-import uet.auctionsystem.util.AdminDefaults;
 import uet.auctionsystem.util.PasswordUtil;
 import uet.auctionsystem.validation.UserValidator;
 import java.util.List;

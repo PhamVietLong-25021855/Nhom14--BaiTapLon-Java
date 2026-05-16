@@ -1,6 +1,5 @@
 package uet.auctionsystem.database;
 
-import uet.auctionsystem.util.AdminDefaults;
 import uet.auctionsystem.util.PasswordUtil;
 
 import java.sql.Connection;
@@ -305,19 +304,6 @@ public final class DatabaseInitializer {
             ON auto_bids (auction_id, bidder_id)
             """;
 
-    // Seed/upsert admin mÃ¡ÂºÂ·c Ã„â€˜Ã¡Â»â€¹nh Ã„â€˜Ã¡Â»Æ’ mÃƒÂ´i trÃ†Â°Ã¡Â»Âng mÃ¡Â»â€ºi vÃ¡ÂºÂ«n Ã„â€˜Ã„Æ’ng nhÃ¡ÂºÂ­p Ã„â€˜Ã†Â°Ã¡Â»Â£c ngay.
-    private static final String UPSERT_DEFAULT_ADMIN = """
-            INSERT INTO users (username, password, full_name, email, role, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, 'ADMIN', 'ACTIVE', ?, ?)
-            ON CONFLICT (username) DO UPDATE
-            SET password = EXCLUDED.password,
-                full_name = EXCLUDED.full_name,
-                email = EXCLUDED.email,
-                role = 'ADMIN',
-                status = 'ACTIVE',
-                updated_at = EXCLUDED.updated_at
-            """;
-
     private DatabaseInitializer() {
     }
 
@@ -328,7 +314,6 @@ public final class DatabaseInitializer {
                 createDatabaseIfMissing(config.getDatabase());
             }
             createTables();
-            ensureDefaultAdmin();
             synchronizeDatabaseObjects();
             System.out.println(
                     "[Database] Connected to PostgreSQL successfully: " +
@@ -382,22 +367,6 @@ public final class DatabaseInitializer {
             }
         }
     }
-
-    // Ã„ÂÃ¡ÂºÂ£m bÃ¡ÂºÂ£o luÃƒÂ´n cÃƒÂ³ tÃƒÂ i khoÃ¡ÂºÂ£n admin mÃ¡ÂºÂ·c Ã„â€˜Ã¡Â»â€¹nh.
-    private static void ensureDefaultAdmin() throws SQLException {
-        long now = System.currentTimeMillis();
-        try (Connection connection = DatabaseConnection.openDatabaseConnection();
-             PreparedStatement statement = connection.prepareStatement(UPSERT_DEFAULT_ADMIN)) {
-            statement.setString(1, AdminDefaults.USERNAME);
-            statement.setString(2, PasswordUtil.hashPassword(AdminDefaults.PASSWORD));
-            statement.setString(3, AdminDefaults.FULL_NAME);
-            statement.setString(4, AdminDefaults.EMAIL);
-            statement.setLong(5, now);
-            statement.setLong(6, now);
-            statement.executeUpdate();
-        }
-    }
-
     // ChÃ¡ÂºÂ¡y migration cÃ¡Â»â„¢t/index mÃ¡Â»â€ºi vÃƒÂ  cÃƒÂ i lÃ¡ÂºÂ¡i function/trigger cÃ¡ÂºÂ§n thiÃ¡ÂºÂ¿t.
     private static void synchronizeDatabaseObjects() throws SQLException {
         List<String> statements = List.of(
