@@ -2,11 +2,6 @@ package userauth.network;
 
 import java.io.Serializable;
 
-/**
- * Gói phản hồi từ Server về Client.
- * success=true: data chứa kết quả.
- * success=false: errorMessage chứa nội dung lỗi để UI hiển thị.
- */
 public class AuctionResponse implements Serializable {
     private static final long serialVersionUID = 1L;
 

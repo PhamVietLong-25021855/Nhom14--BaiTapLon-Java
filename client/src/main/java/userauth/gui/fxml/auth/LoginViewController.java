@@ -1,4 +1,4 @@
-package userauth.fxml.auth;
+package userauth.gui.fxml.auth;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -75,13 +75,7 @@ public class LoginViewController {
         loginInProgress = true;
         setBusy(true);
         UiAsync.run(
-                () -> {
-                    try {
-                        return authController.login(username, password);
-                    } catch (UnauthorizedException ex) {
-                        throw new IllegalStateException(ex.getMessage(), ex);
-                    }
-                },
+                () -> authController.login(username, password),
                 user -> {
                     loginInProgress = false;
                     setBusy(false);

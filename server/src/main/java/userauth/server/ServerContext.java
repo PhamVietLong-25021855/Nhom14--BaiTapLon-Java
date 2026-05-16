@@ -5,7 +5,11 @@ import userauth.controller.AuthController;
 import userauth.controller.AutobidController;
 import userauth.controller.HomepageController;
 import userauth.dao.*;
+
+import userauth.dao.*;
 import userauth.database.DatabaseInitializer;
+import userauth.service.*;
+
 import userauth.service.*;
 
 /**

@@ -1,10 +1,10 @@
 package userauth.controller;
 
 import userauth.api.AuthApi;
-import userauth.model.Role;
-import userauth.model.User;
 import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
+import userauth.model.Role;
+import userauth.model.User;
 
 import java.util.List;
 
@@ -19,7 +19,6 @@ public class AuthController {
         if (role == Role.ADMIN) {
             return "Admin accounts cannot be created from the registration screen.";
         }
-
         try {
             authService.register(username, password, fullName, email, role);
             return "SUCCESS";
@@ -28,8 +27,12 @@ public class AuthController {
         }
     }
 
-    public User login(String username, String password) throws UnauthorizedException {
-        return authService.login(username, password); // Will throw UnauthorizedException if fails
+    public User login(String username, String password) {
+        try {
+            return authService.login(username, password);
+        } catch (UnauthorizedException e) {
+            return null;
+        }
     }
 
     public List<User> getAllUsersList() {
@@ -45,18 +48,20 @@ public class AuthController {
         }
     }
 
-    public User updateProfile(String username, String fullName, String email)
-            throws ValidationException, UnauthorizedException {
-        return authService.updateProfile(username, fullName, email);
+    public Object updateProfile(String username, String fullName, String email) {
+        try {
+            return authService.updateProfile(username, fullName, email);
+        } catch (ValidationException | UnauthorizedException e) {
+            return e.getMessage();
+        }
     }
 
     public String updateProfileGUI(User currentUser, String fullName, String email) {
         if (currentUser == null) {
             return "Current user information is unavailable.";
         }
-
         try {
-            User updatedUser = updateProfile(currentUser.getUsername(), fullName, email);
+            User updatedUser = authService.updateProfile(currentUser.getUsername(), fullName, email);
             currentUser.setFullName(updatedUser.getFullName());
             currentUser.setEmail(updatedUser.getEmail());
             currentUser.setUpdatedAt(updatedUser.getUpdatedAt());

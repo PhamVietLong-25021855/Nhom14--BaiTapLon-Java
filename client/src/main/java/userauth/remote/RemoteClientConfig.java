@@ -1,4 +1,4 @@
-package userauth.client.remote;
+package userauth.remote;
 
 /** Đọc cấu hình địa chỉ server cho client remote. */
 public final class RemoteClientConfig {

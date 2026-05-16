@@ -1,4 +1,4 @@
-package userauth.fxml.bidder;
+package userauth.gui.fxml.bidder;
 
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;

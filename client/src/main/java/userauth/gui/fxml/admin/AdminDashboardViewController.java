@@ -1,4 +1,4 @@
-package userauth.fxml.admin;
+package userauth.gui.fxml.admin;
 
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;

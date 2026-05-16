@@ -1,4 +1,4 @@
-package userauth.fxml.auth;
+package userauth.gui.fxml.auth;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;

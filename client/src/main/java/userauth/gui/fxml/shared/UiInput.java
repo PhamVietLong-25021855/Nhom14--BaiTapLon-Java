@@ -1,4 +1,4 @@
-package userauth.fxml.shared;
+package userauth.gui.fxml.shared;
 
 import javafx.scene.control.IndexRange;
 import javafx.scene.control.TextField;

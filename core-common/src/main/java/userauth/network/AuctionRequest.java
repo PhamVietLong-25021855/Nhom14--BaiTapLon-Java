@@ -4,10 +4,6 @@ import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Gói yêu cầu gửi từ Client sang Server qua Socket.
- * Mỗi request gồm tên hành động và danh sách tham số dạng key-value.
- */
 public class AuctionRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 

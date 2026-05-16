@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 public final class DatabaseConfig {
-    private static final String RESOURCE_PATH = "/userauth/database.properties";
+    private static final String RESOURCE_PATH = "/database.properties";
 
     private final String dbType;
     private final String jdbcUrl;

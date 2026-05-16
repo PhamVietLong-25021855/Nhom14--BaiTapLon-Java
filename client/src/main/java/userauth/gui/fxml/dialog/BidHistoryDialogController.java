@@ -1,4 +1,4 @@
-package userauth.fxml.dialog;
+package userauth.gui.fxml.dialog;
 
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;

@@ -1,4 +1,4 @@
-package userauth.fxml.shell;
+package userauth.gui.fxml.shell;
 
 import javafx.scene.Parent;
 import javafx.scene.Scene;

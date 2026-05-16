@@ -1,6 +1,5 @@
 package userauth.network;
 
-/** Tên các lệnh Client có thể gọi sang Server. */
 public final class NetworkActions {
     private NetworkActions() {}
 
