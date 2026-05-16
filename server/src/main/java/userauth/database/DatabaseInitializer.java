@@ -6,8 +6,7 @@ import java.sql.Statement;
 import java.util.List;
 
 public final class DatabaseInitializer {
-    private DatabaseInitializer() {
-    }
+    private DatabaseInitializer() {}
 
     public static void initialize() {
         DatabaseConfig config = DatabaseConnection.getConfig();
@@ -17,18 +16,13 @@ public final class DatabaseInitializer {
             }
             createTables(config);
             synchronizeDatabaseObjects(config);
-            System.out.println(
-                    "[Database] Connected to " + config.getDbType().toUpperCase() + " successfully: " +
-                            config.getHost() + ":" + config.getPort() + "/" + config.getDatabase() +
-                            " (user: " + config.getUsername() + ")"
-            );
+            System.out.println("[Database] Connected to " + config.getDbType().toUpperCase() + " successfully: " +
+                    config.getHost() + ":" + config.getPort() + "/" + config.getDatabase() +
+                    " (user: " + config.getUsername() + ")");
         } catch (SQLException ex) {
-            throw new IllegalStateException(
-                    "Unable to initialize the database connection to " +
-                            config.getHost() + ":" + config.getPort() + "/" + config.getDatabase() +
-                            ". Check the database host, port, Akamai trusted sources/firewall, and DB credentials.",
-                    ex
-            );
+            throw new IllegalStateException("Unable to initialize the database connection to " +
+                    config.getHost() + ":" + config.getPort() + "/" + config.getDatabase() +
+                    ". Check the database host, port, Akamai trusted sources/firewall, and DB credentials.", ex);
         }
     }
 
@@ -50,9 +44,7 @@ public final class DatabaseInitializer {
             try {
                 statement.executeUpdate(sql);
             } catch (SQLException ex) {
-                if (!config.isPostgres() || !"42P04".equals(ex.getSQLState())) {
-                    throw ex;
-                }
+                if (!config.isPostgres() || !"42P04".equals(ex.getSQLState())) throw ex;
             }
         }
     }
@@ -74,9 +66,7 @@ public final class DatabaseInitializer {
                 try {
                     statement.executeUpdate(sql);
                 } catch (SQLException ex) {
-                    if (isIgnorableMySqlSchemaError(config, sql, ex)) {
-                        continue;
-                    }
+                    if (isIgnorableMySqlSchemaError(config, sql, ex)) continue;
                     throw ex;
                 }
             }
@@ -84,13 +74,9 @@ public final class DatabaseInitializer {
     }
 
     private static boolean isIgnorableMySqlSchemaError(DatabaseConfig config, String sql, SQLException ex) {
-        if (!config.isMySql()) {
-            return false;
-        }
+        if (!config.isMySql()) return false;
         String normalizedSql = sql.toLowerCase();
-        if (!normalizedSql.startsWith("alter table") || !normalizedSql.contains("add column")) {
-            return false;
-        }
+        if (!normalizedSql.startsWith("alter table") || !normalizedSql.contains("add column")) return false;
         return ex.getErrorCode() == 1060 || "42S21".equals(ex.getSQLState());
     }
 

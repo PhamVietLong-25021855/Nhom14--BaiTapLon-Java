@@ -1,7 +1,6 @@
 package userauth.dao;
 
 import userauth.model.HomepageAnnouncement;
-
 import java.util.List;
 
 public interface HomepageAnnouncementDAO {

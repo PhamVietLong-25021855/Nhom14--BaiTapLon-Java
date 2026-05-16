@@ -1,4 +1,7 @@
-package userauth.client.remote;
+package userauth.remote;
+
+import userauth.controller.*;
+import userauth.remote.RemoteAuctionClient;
 
 import userauth.api.AuthApi;
 import userauth.exception.UnauthorizedException;
@@ -28,11 +31,17 @@ public class RemoteAuthService implements AuthApi {
 
     @Override
     public User login(String username, String password) throws UnauthorizedException {
+        Object result;
         try {
-            return (User) client.call(NetworkActions.AUTH_LOGIN, "username", username, "password", password);
+            result = client.call(NetworkActions.AUTH_LOGIN, "username", username, "password", password);
         } catch (RemoteServerException ex) {
             throw new UnauthorizedException(ex.getMessage());
         }
+        if (result instanceof User user) {
+            return user;
+        }
+        String message = result != null ? result.toString() : "Login failed.";
+        throw new UnauthorizedException(message);
     }
 
     @Override

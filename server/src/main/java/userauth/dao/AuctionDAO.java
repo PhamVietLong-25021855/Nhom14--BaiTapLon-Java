@@ -10,7 +10,6 @@ public interface AuctionDAO {
     void deleteAuction(int id);
     AuctionItem findAuctionById(int id);
     List<AuctionItem> findAllAuctions();
-    
     void saveBid(BidTransaction bid);
     List<BidTransaction> findAllBids();
     List<BidTransaction> findBidsByAuction(int auctionId);

@@ -1,21 +1,14 @@
 package userauth;
 
+import userauth.controller.*;
+
 import javafx.application.Application;
 import javafx.stage.Stage;
 import userauth.api.AuctionApi;
 import userauth.api.AuthApi;
 import userauth.api.AutobidApi;
 import userauth.api.HomepageContentApi;
-import userauth.client.remote.RemoteAuctionClient;
-import userauth.client.remote.RemoteAuctionService;
-import userauth.client.remote.RemoteAuthService;
-import userauth.client.remote.RemoteAutobidService;
-import userauth.client.remote.RemoteClientConfig;
-import userauth.client.remote.RemoteHomepageContentService;
-import userauth.controller.AuctionController;
-import userauth.controller.AuthController;
-import userauth.controller.AutobidController;
-import userauth.controller.HomepageController;
+import userauth.remote.*;
 import userauth.gui.fxml.shell.AuthFrame;
 
 public class ClientMain extends Application {

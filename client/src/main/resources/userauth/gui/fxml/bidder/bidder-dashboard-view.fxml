@@ -259,7 +259,7 @@
                                                                 <Label styleClass="panel-title" text="QUICK BID" />
                                                                 <TextField fx:id="txtBidAmount" onAction="#handlePlaceBid" promptText="Example: 1500000" />
                                                                 <Label fx:id="lblBidStatus" styleClass="secondary-text" text="Bid status information will appear here." wrapText="true" />
-                                                                <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handlePlaceBid" styleClass="button primary-button" text="PLACE BID NOW" />
+                                                                <Button fx:id="btnPlaceBid" maxWidth="Infinity" mnemonicParsing="false" onAction="#handlePlaceBid" styleClass="button primary-button" text="PLACE BID NOW" />
                                                             </children>
                                                         </VBox>
                                                         <VBox spacing="12.0" styleClass="panel-card">

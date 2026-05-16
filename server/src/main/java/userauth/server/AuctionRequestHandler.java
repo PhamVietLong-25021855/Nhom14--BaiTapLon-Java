@@ -26,7 +26,7 @@ public final class AuctionRequestHandler {
         if (NetworkActions.PING.equals(action)) {
             return "PONG";
         }
-        System.out.println(action);
+        System.out.println("[AuctionServer] " + action);
         return switch (action) {
             case NetworkActions.AUTH_REGISTER -> context.getAuthController().registerGUI(
                     str(request, "username"), str(request, "password"), str(request, "fullName"),
@@ -70,7 +70,7 @@ public final class AuctionRequestHandler {
             }
             case NetworkActions.AUCTION_EARLY_CLOSES -> context.getAuctionController().getAdminEarlyCloseCountdowns();
             case NetworkActions.AUCTION_REFRESH_STATUSES -> {
-                context.getAuctionController().getAllAuctions();
+                context.getAuctionService().refreshAuctionStatuses();
                 yield "SUCCESS";
             }
 

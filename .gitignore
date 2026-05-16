@@ -1,7 +1,3 @@
-out/
-tmp/
-User/bin/
-User/sources.txt
 *.class
 target/
 dist/
@@ -12,5 +8,5 @@ lib/
 !.env.example
 *.log
 *.iml
-.idea/workspace.xml
-.idea/libraries/
+dependency-reduced-pom.xml
+out/

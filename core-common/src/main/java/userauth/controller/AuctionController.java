@@ -8,7 +8,6 @@ import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
 import userauth.model.AuctionItem;
 import userauth.model.BidTransaction;
-import userauth.model.Role;
 import userauth.model.User;
 
 import java.util.List;
@@ -21,7 +20,8 @@ public class AuctionController {
         this.auctionService = auctionService;
     }
 
-    public String createAuction(String name, String desc, double startPrice, long startTime, long endTime, String category, String imageSource, byte[] imageData, int sellerId) {
+    public String createAuction(String name, String desc, double startPrice, long startTime, long endTime,
+                              String category, String imageSource, byte[] imageData, int sellerId) {
         try {
             auctionService.createAuction(name, desc, startPrice, startTime, endTime, category, imageSource, imageData, sellerId);
             return "SUCCESS";
@@ -30,7 +30,8 @@ public class AuctionController {
         }
     }
 
-    public String updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice, long startTime, long endTime, String category, String imageSource, byte[] imageData) {
+    public String updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice,
+                              long startTime, long endTime, String category, String imageSource, byte[] imageData) {
         try {
             auctionService.updateAuction(auctionId, sellerId, name, desc, startPrice, startTime, endTime, category, imageSource, imageData);
             return "SUCCESS";
@@ -55,7 +56,6 @@ public class AuctionController {
     public List<AuctionItem> getAllAuctions() {
         return auctionService.getAllAuctions();
     }
-    
 
     public List<BidTransaction> getBidsForAuction(int auctionId) {
         return auctionService.getBidsForAuction(auctionId);
@@ -102,10 +102,6 @@ public class AuctionController {
     }
 
     public String startAdminEarlyCloseCountdown(User currentUser, int auctionId) {
-        if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
-            return "Only admins can issue early-close commands.";
-        }
-
         try {
             auctionService.startAdminEarlyCloseCountdown(auctionId);
             return "SUCCESS";
@@ -115,10 +111,6 @@ public class AuctionController {
     }
 
     public String cancelAdminEarlyCloseCountdown(User currentUser, int auctionId) {
-        if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
-            return "Only admins can cancel early-close commands.";
-        }
-
         try {
             auctionService.cancelAdminEarlyCloseCountdown(auctionId);
             return "SUCCESS";
@@ -129,5 +121,14 @@ public class AuctionController {
 
     public Map<Integer, Integer> getAdminEarlyCloseCountdowns() {
         return auctionService.getAdminEarlyCloseCountdowns();
+    }
+
+    public String refreshStatuses() {
+        try {
+            auctionService.refreshAuctionStatuses();
+            return "SUCCESS";
+        } catch (Exception e) {
+            return e.getMessage();
+        }
     }
 }

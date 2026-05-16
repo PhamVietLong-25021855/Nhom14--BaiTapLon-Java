@@ -1,4 +1,4 @@
-package userauth.client.remote;
+package userauth.remote;
 
 import userauth.api.HomepageContentApi;
 import userauth.exception.ValidationException;

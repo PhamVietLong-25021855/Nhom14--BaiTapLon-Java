@@ -1,4 +1,4 @@
-package userauth.fxml.shared;
+package userauth.gui.fxml.shared;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;

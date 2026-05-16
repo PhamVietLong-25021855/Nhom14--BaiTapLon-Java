@@ -1,4 +1,4 @@
-package userauth.client.remote;
+package userauth.remote;
 
 import userauth.api.AuctionApi;
 import userauth.exception.*;
@@ -71,8 +71,18 @@ public class RemoteAuctionService implements AuctionApi {
     @Override
     public void placeBid(int auctionId, int bidderId, double amount)
             throws ItemNotFoundException, AuctionClosedException, InvalidBidException {
-        String result = result(NetworkActions.AUCTION_PLACE_BID, "auctionId", auctionId, "bidderId", bidderId, "amount", amount);
-        if (!"SUCCESS".equals(result)) throw new InvalidBidException(result);
+        try {
+            String result = result(NetworkActions.AUCTION_PLACE_BID, "auctionId", auctionId, "bidderId", bidderId, "amount", amount);
+            if (!"SUCCESS".equals(result)) throw new InvalidBidException(result);
+        } catch (RemoteServerException ex) {
+            if ("ItemNotFoundException".equals(ex.getErrorType())) {
+                throw new ItemNotFoundException(ex.getMessage());
+            }
+            if ("AuctionClosedException".equals(ex.getErrorType())) {
+                throw new AuctionClosedException(ex.getMessage());
+            }
+            throw new InvalidBidException(ex.getMessage());
+        }
     }
 
     @Override

@@ -1,4 +1,4 @@
-package userauth.client.remote;
+package userauth.remote;
 
 import userauth.api.AutobidApi;
 import userauth.exception.ItemNotFoundException;

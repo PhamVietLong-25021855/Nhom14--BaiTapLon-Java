@@ -1,4 +1,6 @@
-package userauth.fxml.admin;
+package userauth.gui.fxml.admin;
+
+import userauth.controller.*;
 
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -10,10 +12,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
-import userauth.fxml.controller.AuctionController;
-import userauth.fxml.controller.HomepageController;
-import userauth.fxml.shared.*;
-import userauth.fxml.shell.AuthFrame;
+import userauth.gui.fxml.shared.*;
+import userauth.gui.fxml.shell.AuthFrame;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
 import userauth.model.HomepageAnnouncement;

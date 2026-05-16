@@ -1,4 +1,4 @@
-package userauth.client.remote;
+package userauth.remote;
 
 /** Lỗi nghiệp vụ hoặc kỹ thuật được server trả về. */
 public class RemoteServerException extends RuntimeException {

@@ -1,4 +1,4 @@
-package userauth.fxml.home;
+package userauth.gui.fxml.home;
 
 import javafx.animation.*;
 import javafx.fxml.FXML;

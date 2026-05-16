@@ -16,46 +16,28 @@ import java.util.List;
 
 public class AuctionDAOImpl implements AuctionDAO {
     private static final String INSERT_AUCTION_SQL = """
-            INSERT INTO auctions (
-                name, description, start_price, current_highest_bid, start_time, end_time,
-                category, image_source, image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions
-            )
+            INSERT INTO auctions (name, description, start_price, current_highest_bid, start_time, end_time, category, image_source, image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
     private static final String UPDATE_AUCTION_SQL = """
-            UPDATE auctions
-            SET name = ?, description = ?, start_price = ?, current_highest_bid = ?, start_time = ?, end_time = ?,
-                category = ?, image_source = ?, image_data = ?, updated_at = ?, seller_id = ?, winner_id = ?, status = ?, anti_sniping_extensions = ?
-            WHERE id = ?
+            UPDATE auctions SET name = ?, description = ?, start_price = ?, current_highest_bid = ?, start_time = ?, end_time = ?, category = ?, image_source = ?, image_data = ?, updated_at = ?, seller_id = ?, winner_id = ?, status = ?, anti_sniping_extensions = ? WHERE id = ?
             """;
     private static final String DELETE_BIDS_BY_AUCTION_SQL = "DELETE FROM bids WHERE auction_id = ?";
     private static final String DELETE_AUCTION_SQL = "DELETE FROM auctions WHERE id = ?";
     private static final String FIND_AUCTION_BY_ID_SQL = """
-            SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
-                   category, image_source, image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions
-            FROM auctions
-            WHERE id = ?
+            SELECT id, name, description, start_price, current_highest_bid, start_time, end_time, category, image_source, image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions FROM auctions WHERE id = ?
             """;
     private static final String FIND_ALL_AUCTIONS_SQL = """
-            SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
-                   category, image_source, image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions
-            FROM auctions
-            ORDER BY id
+            SELECT id, name, description, start_price, current_highest_bid, start_time, end_time, category, image_source, image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions FROM auctions ORDER BY id
             """;
     private static final String INSERT_BID_SQL = """
-            INSERT INTO bids (auction_id, bidder_id, amount, bid_time, status)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO bids (auction_id, bidder_id, amount, bid_time, status) VALUES (?, ?, ?, ?, ?)
             """;
     private static final String FIND_BIDS_BY_AUCTION_SQL = """
-            SELECT id, auction_id, bidder_id, amount, bid_time, status
-            FROM bids
-            WHERE auction_id = ?
-            ORDER BY bid_time, id
+            SELECT id, auction_id, bidder_id, amount, bid_time, status FROM bids WHERE auction_id = ? ORDER BY bid_time, id
             """;
     private static final String FIND_ALL_BIDS_SQL = """
-            SELECT id, auction_id, bidder_id, amount, bid_time, status
-            FROM bids
-            ORDER BY auction_id, bid_time, id
+            SELECT id, auction_id, bidder_id, amount, bid_time, status FROM bids ORDER BY auction_id, bid_time, id
             """;
 
     @Override
@@ -64,14 +46,11 @@ public class AuctionDAOImpl implements AuctionDAO {
              PreparedStatement statement = connection.prepareStatement(INSERT_AUCTION_SQL, Statement.RETURN_GENERATED_KEYS)) {
             bindAuctionForInsert(statement, item);
             statement.executeUpdate();
-
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    item.setId(generatedKeys.getInt(1));
-                }
+                if (generatedKeys.next()) item.setId(generatedKeys.getInt(1));
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to save the auction to PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to save the auction to database.", ex);
         }
     }
 
@@ -82,11 +61,7 @@ public class AuctionDAOImpl implements AuctionDAO {
             bindAuctionForUpdate(statement, item);
             statement.executeUpdate();
         } catch (SQLException ex) {
-            throw new IllegalStateException(
-                    "Unable to update the auction in PostgreSQL. SQLState=" + ex.getSQLState() +
-                            ", detail=" + ex.getMessage(),
-                    ex
-            );
+            throw new IllegalStateException("Unable to update the auction in database. SQLState=" + ex.getSQLState() + ", detail=" + ex.getMessage(), ex);
         }
     }
 
@@ -98,7 +73,6 @@ public class AuctionDAOImpl implements AuctionDAO {
                  PreparedStatement deleteAuctionStatement = connection.prepareStatement(DELETE_AUCTION_SQL)) {
                 deleteBidsStatement.setInt(1, id);
                 deleteBidsStatement.executeUpdate();
-
                 deleteAuctionStatement.setInt(1, id);
                 deleteAuctionStatement.executeUpdate();
                 connection.commit();
@@ -109,7 +83,7 @@ public class AuctionDAOImpl implements AuctionDAO {
                 connection.setAutoCommit(true);
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to delete the auction in PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to delete the auction in database.", ex);
         }
     }
 
@@ -119,30 +93,24 @@ public class AuctionDAOImpl implements AuctionDAO {
              PreparedStatement statement = connection.prepareStatement(FIND_AUCTION_BY_ID_SQL)) {
             statement.setInt(1, id);
             try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    return null;
-                }
+                if (!resultSet.next()) return null;
                 return mapAuction(resultSet);
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to find the auction in PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to find the auction in database.", ex);
         }
     }
 
     @Override
     public List<AuctionItem> findAllAuctions() {
         List<AuctionItem> auctions = new ArrayList<>();
-
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(FIND_ALL_AUCTIONS_SQL);
              ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                auctions.add(mapAuction(resultSet));
-            }
+            while (resultSet.next()) auctions.add(mapAuction(resultSet));
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to read the auction list from PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to read the auction list from database.", ex);
         }
-
         return auctions;
     }
 
@@ -156,50 +124,39 @@ public class AuctionDAOImpl implements AuctionDAO {
             statement.setLong(4, bid.getTimestamp());
             statement.setString(5, bid.getStatus());
             statement.executeUpdate();
-
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    bid.setId(generatedKeys.getInt(1));
-                }
+                if (generatedKeys.next()) bid.setId(generatedKeys.getInt(1));
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to save the bid transaction to PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to save the bid transaction to database.", ex);
         }
     }
 
     @Override
     public List<BidTransaction> findBidsByAuction(int auctionId) {
         List<BidTransaction> bids = new ArrayList<>();
-
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(FIND_BIDS_BY_AUCTION_SQL)) {
             statement.setInt(1, auctionId);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    bids.add(mapBid(resultSet));
-                }
+                while (resultSet.next()) bids.add(mapBid(resultSet));
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to read bid history from PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to read bid history from database.", ex);
         }
-
         return bids;
     }
 
     @Override
     public List<BidTransaction> findAllBids() {
         List<BidTransaction> bids = new ArrayList<>();
-
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(FIND_ALL_BIDS_SQL);
              ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                bids.add(mapBid(resultSet));
-            }
+            while (resultSet.next()) bids.add(mapBid(resultSet));
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to read all bid transactions from PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to read all bid transactions from database.", ex);
         }
-
         return bids;
     }
 
@@ -216,11 +173,8 @@ public class AuctionDAOImpl implements AuctionDAO {
         statement.setLong(10, item.getCreatedAt());
         statement.setLong(11, item.getUpdatedAt());
         statement.setInt(12, item.getSellerId());
-        if (item.getWinnerId() <= 0) {
-            statement.setNull(13, Types.INTEGER);
-        } else {
-            statement.setInt(13, item.getWinnerId());
-        }
+        if (item.getWinnerId() <= 0) statement.setNull(13, Types.INTEGER);
+        else statement.setInt(13, item.getWinnerId());
         statement.setString(14, item.getStatus().name());
         statement.setInt(15, item.getAntiSnipingExtensionCount());
     }
@@ -237,11 +191,8 @@ public class AuctionDAOImpl implements AuctionDAO {
         statement.setBytes(9, item.getImageData());
         statement.setLong(10, item.getUpdatedAt());
         statement.setInt(11, item.getSellerId());
-        if (item.getWinnerId() <= 0) {
-            statement.setNull(12, Types.INTEGER);
-        } else {
-            statement.setInt(12, item.getWinnerId());
-        }
+        if (item.getWinnerId() <= 0) statement.setNull(12, Types.INTEGER);
+        else statement.setInt(12, item.getWinnerId());
         statement.setString(13, item.getStatus().name());
         statement.setInt(14, item.getAntiSnipingExtensionCount());
         statement.setInt(15, item.getId());
@@ -250,22 +201,13 @@ public class AuctionDAOImpl implements AuctionDAO {
     private AuctionItem mapAuction(ResultSet resultSet) throws SQLException {
         Object winnerValue = resultSet.getObject("winner_id");
         int winnerId = winnerValue == null ? -1 : ((Number) winnerValue).intValue();
-
         return new AuctionItem(
-                resultSet.getInt("id"),
-                resultSet.getString("name"),
-                resultSet.getString("description"),
-                resultSet.getDouble("start_price"),
-                resultSet.getDouble("current_highest_bid"),
-                resultSet.getLong("start_time"),
-                resultSet.getLong("end_time"),
-                resultSet.getString("category"),
-                resultSet.getString("image_source"),
-                resultSet.getBytes("image_data"),
-                resultSet.getLong("created_at"),
-                resultSet.getLong("updated_at"),
-                resultSet.getInt("seller_id"),
-                winnerId,
+                resultSet.getInt("id"), resultSet.getString("name"), resultSet.getString("description"),
+                resultSet.getDouble("start_price"), resultSet.getDouble("current_highest_bid"),
+                resultSet.getLong("start_time"), resultSet.getLong("end_time"), resultSet.getString("category"),
+                resultSet.getString("image_source"), resultSet.getBytes("image_data"),
+                resultSet.getLong("created_at"), resultSet.getLong("updated_at"),
+                resultSet.getInt("seller_id"), winnerId,
                 AuctionStatus.valueOf(resultSet.getString("status").trim().toUpperCase()),
                 resultSet.getInt("anti_sniping_extensions")
         );
@@ -273,12 +215,8 @@ public class AuctionDAOImpl implements AuctionDAO {
 
     private BidTransaction mapBid(ResultSet resultSet) throws SQLException {
         return new BidTransaction(
-                resultSet.getInt("id"),
-                resultSet.getInt("auction_id"),
-                resultSet.getInt("bidder_id"),
-                resultSet.getDouble("amount"),
-                resultSet.getLong("bid_time"),
-                resultSet.getString("status")
+                resultSet.getInt("id"), resultSet.getInt("auction_id"), resultSet.getInt("bidder_id"),
+                resultSet.getDouble("amount"), resultSet.getLong("bid_time"), resultSet.getString("status")
         );
     }
 }

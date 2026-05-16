@@ -1,4 +1,4 @@
-package userauth.fxml.bidder;
+package userauth.gui.fxml.bidder;
 
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -153,6 +153,9 @@ public class BidderDashboardViewController {
 
     @FXML
     private TextField txtBidAmount;
+
+    @FXML
+    private Button btnPlaceBid;
 
     @FXML
     private VBox bidsLiveContainer;
@@ -385,6 +388,13 @@ public class BidderDashboardViewController {
         AuctionItem selected = tableAuctions.getSelectionModel().getSelectedItem();
         if (selected == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "Please select an auction.");
+            return;
+        }
+        if (isCurrentUserLeading(selected)) {
+            String message = "You are already the leading bidder for this auction.";
+            setBidStatus(message, true);
+            NotificationUtil.warning(ownerWindow(), "Notification", message);
+            updateBidControlsForAuction(selected);
             return;
         }
 
@@ -773,6 +783,7 @@ public class BidderDashboardViewController {
         populateBidFeed(bids);
         updateBidTrend(bids);
         syncAutobidFormToAuction(auction.getId());
+        updateBidControlsForAuction(auction);
 
         lastSelectedAuctionId = auction.getId();
         lastSelectedWinnerId = auction.getWinnerId();
@@ -915,6 +926,7 @@ public class BidderDashboardViewController {
         lblLiveBidCount.setText(formatTransactionCount(0));
         bidsLiveContainer.getChildren().clear();
         chartBidTrend.getData().clear();
+        updateBidControlsForAuction(null);
     }
 
     private void setBidStatus(String message, boolean error) {
@@ -995,9 +1007,33 @@ public class BidderDashboardViewController {
         if (txtBidAmount != null) {
             txtBidAmount.setDisable(busy);
         }
+        if (btnPlaceBid != null) {
+            btnPlaceBid.setDisable(busy);
+        }
         if (tableAuctions != null) {
             tableAuctions.setDisable(busy);
         }
+    }
+
+    private void updateBidControlsForAuction(AuctionItem auction) {
+        if (bidActionInProgress) {
+            return;
+        }
+        boolean disableBid = auction == null
+                || auction.getStatus() != AuctionStatus.RUNNING
+                || isCurrentUserLeading(auction);
+        if (txtBidAmount != null) {
+            txtBidAmount.setDisable(disableBid);
+        }
+        if (btnPlaceBid != null) {
+            btnPlaceBid.setDisable(disableBid);
+        }
+    }
+
+    private boolean isCurrentUserLeading(AuctionItem auction) {
+        return auction != null
+                && currentUser != null
+                && auction.getWinnerId() == currentUser.getId();
     }
 
     private BidderSnapshot loadBidderSnapshot(String keyword, String statusFilter) {

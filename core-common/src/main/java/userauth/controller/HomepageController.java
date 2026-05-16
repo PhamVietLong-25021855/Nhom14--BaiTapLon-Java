@@ -3,7 +3,6 @@ package userauth.controller;
 import userauth.api.HomepageContentApi;
 import userauth.exception.ValidationException;
 import userauth.model.HomepageAnnouncement;
-import userauth.model.Role;
 import userauth.model.User;
 
 import java.util.List;
@@ -20,21 +19,9 @@ public class HomepageController {
     }
 
     public String saveAnnouncement(User currentUser, Integer announcementId, String title, String summary,
-                                   String details, String scheduleText, Integer linkedAuctionId) {
-        if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
-            return "Only admins can publish announcements to the homepage.";
-        }
-
+                                  String details, String scheduleText, Integer linkedAuctionId) {
         try {
-            homepageContentService.saveAnnouncement(
-                    announcementId,
-                    title,
-                    summary,
-                    details,
-                    scheduleText,
-                    linkedAuctionId,
-                    currentUser.getId()
-            );
+            homepageContentService.saveAnnouncement(announcementId, title, summary, details, scheduleText, linkedAuctionId, currentUser.getId());
             return "SUCCESS";
         } catch (ValidationException e) {
             return e.getMessage();
@@ -42,10 +29,6 @@ public class HomepageController {
     }
 
     public String deleteAnnouncement(User currentUser, int announcementId) {
-        if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
-            return "Only admins can delete homepage announcements.";
-        }
-
         try {
             homepageContentService.deleteAnnouncement(announcementId);
             return "SUCCESS";
