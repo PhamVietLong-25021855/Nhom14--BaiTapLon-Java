@@ -116,7 +116,7 @@ fi
 
 # ── Create remote directory ───────────────────────────────────────────────────
 info "Setting up remote directory..."
-run ssh_cmd "mkdir -p '$REMOTE_DIR/sdk' '$REMOTE_DIR/logs' '$REMOTE_DIR/target/dependency'"
+run ssh_cmd "mkdir -p '$REMOTE_DIR/sdk' '$REMOTE_DIR/logs'"
 
 # ── Upload source code ────────────────────────────────────────────────────────
 info "Uploading source code to ${VPS_HOST}:${REMOTE_DIR}..."
@@ -203,13 +203,13 @@ run ssh_cmd "
 # ── Validate JAR ──────────────────────────────────────────────────────────────
 if [ "$SKIP_BUILD" = false ]; then
     info "Validating JAR..."
-    JAR_CHECK=$(run ssh_cmd "[ -f '$REMOTE_DIR/target/auction-server.jar' ] && echo found || echo missing")
+    JAR_CHECK=$(run ssh_cmd "[ -f '$REMOTE_DIR/server/target/auction-server.jar' ] && echo found || echo missing")
     if [ "$JAR_CHECK" = "found" ]; then
-        JAR_SIZE=$(run ssh_cmd "stat -c%s '$REMOTE_DIR/target/auction-server.jar' 2>/dev/null || stat -f%z '$REMOTE_DIR/target/auction-server.jar' 2>/dev/null || echo 0")
+        JAR_SIZE=$(run ssh_cmd "stat -c%s '$REMOTE_DIR/server/target/auction-server.jar' 2>/dev/null || stat -f%z '$REMOTE_DIR/server/target/auction-server.jar' 2>/dev/null || echo 0")
         JAR_MB=$(echo "scale=2; $JAR_SIZE / 1048576" | bc 2>/dev/null || echo "?")
         success "JAR validated (${JAR_MB} MB)"
     else
-        error "JAR not found after build: $REMOTE_DIR/target/auction-server.jar"
+        error "JAR not found after build: $REMOTE_DIR/server/target/auction-server.jar"
     fi
 fi
 
@@ -248,7 +248,7 @@ nohup java \
     -Djava.awt.headless=true \
     "-Dapp.server.port=$SERVER_PORT" \
     "-Dapp.server.bind.host=$BIND_HOST" \
-    -cp "target/auction-server.jar" \
+    -cp "server/target/auction-server.jar" \
     userauth.server.AuctionServerMain \
     >> logs/server.log 2>> logs/server.err.log &
 
