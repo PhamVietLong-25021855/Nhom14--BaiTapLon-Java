@@ -2,6 +2,7 @@ package userauth.service;
 
 public class AuctionScheduler {
     private static final long REFRESH_INTERVAL_MS = 1000L;
+
     private final AuctionService auctionService;
     private Thread schedulerThread;
     private volatile boolean running;
@@ -11,7 +12,10 @@ public class AuctionScheduler {
     }
 
     public void start() {
-        if (running) return;
+        if (running) {
+            return;
+        }
+
         running = true;
         schedulerThread = new Thread(this::runLoop, "auction-scheduler");
         schedulerThread.setDaemon(true);
@@ -20,7 +24,9 @@ public class AuctionScheduler {
 
     public void stop() {
         running = false;
-        if (schedulerThread != null) schedulerThread.interrupt();
+        if (schedulerThread != null) {
+            schedulerThread.interrupt();
+        }
     }
 
     private void runLoop() {

@@ -25,25 +25,36 @@ public final class DatabaseConnection {
         } catch (ClassNotFoundException ex) {
             throw new IllegalStateException("JDBC driver not found for database type " + CONFIG.getDbType() + ".", ex);
         }
+
         Runtime.getRuntime().addShutdownHook(new Thread(DatabaseConnection::closeIdleConnections, "db-pool-shutdown"));
     }
 
-    private DatabaseConnection() {}
+    private DatabaseConnection() {
+    }
 
-    public static DatabaseConfig getConfig() { return CONFIG; }
+    public static DatabaseConfig getConfig() {
+        return CONFIG;
+    }
 
     public static Connection openServerConnection() throws SQLException {
-        return DriverManager.getConnection(CONFIG.getServerJdbcUrl(), CONFIG.getUsername(), CONFIG.getPassword());
+        return DriverManager.getConnection(
+                CONFIG.getServerJdbcUrl(),
+                CONFIG.getUsername(),
+                CONFIG.getPassword()
+        );
     }
 
     public static Connection openDatabaseConnection() throws SQLException {
         while (true) {
             Connection idleConnection = IDLE_CONNECTIONS.poll();
             if (idleConnection != null) {
-                if (isReusable(idleConnection)) return wrapPooledConnection(idleConnection);
+                if (isReusable(idleConnection)) {
+                    return wrapPooledConnection(idleConnection);
+                }
                 retire(idleConnection);
                 continue;
             }
+
             int created = CREATED_CONNECTIONS.get();
             if (created < MAX_POOLED_CONNECTIONS && CREATED_CONNECTIONS.compareAndSet(created, created + 1)) {
                 try {
@@ -53,12 +64,15 @@ public final class DatabaseConnection {
                     throw ex;
                 }
             }
+
             try {
                 Connection waitedConnection = IDLE_CONNECTIONS.poll(POOL_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
                 if (waitedConnection == null) {
                     throw new SQLException("The Database connection pool is exhausted. Please try again.");
                 }
-                if (isReusable(waitedConnection)) return wrapPooledConnection(waitedConnection);
+                if (isReusable(waitedConnection)) {
+                    return wrapPooledConnection(waitedConnection);
+                }
                 retire(waitedConnection);
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
@@ -68,42 +82,73 @@ public final class DatabaseConnection {
     }
 
     private static Connection createPhysicalDatabaseConnection() throws SQLException {
-        return DriverManager.getConnection(CONFIG.getDatabaseJdbcUrl(), CONFIG.getUsername(), CONFIG.getPassword());
+        return DriverManager.getConnection(
+                CONFIG.getDatabaseJdbcUrl(),
+                CONFIG.getUsername(),
+                CONFIG.getPassword()
+        );
     }
 
     private static boolean isReusable(Connection connection) {
         try {
             return connection != null && !connection.isClosed() && connection.isValid(2);
-        } catch (SQLException ex) { return false; }
+        } catch (SQLException ex) {
+            return false;
+        }
     }
 
     private static Connection wrapPooledConnection(Connection connection) {
         InvocationHandler handler = new PooledConnectionHandler(connection);
-        return (Connection) Proxy.newProxyInstance(DatabaseConnection.class.getClassLoader(),
-                new Class<?>[]{Connection.class}, handler);
+        return (Connection) Proxy.newProxyInstance(
+                DatabaseConnection.class.getClassLoader(),
+                new Class<?>[]{Connection.class},
+                handler
+        );
     }
 
     private static void recycle(Connection connection) {
-        if (connection == null) return;
+        if (connection == null) {
+            return;
+        }
+
         try {
-            if (connection.isClosed()) { retire(connection); return; }
-            if (!connection.getAutoCommit()) connection.setAutoCommit(true);
-            if (connection.isReadOnly()) connection.setReadOnly(false);
+            if (connection.isClosed()) {
+                retire(connection);
+                return;
+            }
+            if (!connection.getAutoCommit()) {
+                connection.setAutoCommit(true);
+            }
+            if (connection.isReadOnly()) {
+                connection.setReadOnly(false);
+            }
             connection.clearWarnings();
-            if (!IDLE_CONNECTIONS.offer(connection)) retire(connection);
-        } catch (SQLException ex) { retire(connection); }
+            if (!IDLE_CONNECTIONS.offer(connection)) {
+                retire(connection);
+            }
+        } catch (SQLException ex) {
+            retire(connection);
+        }
     }
 
     private static void retire(Connection connection) {
-        if (connection == null) return;
+        if (connection == null) {
+            return;
+        }
         CREATED_CONNECTIONS.updateAndGet(current -> Math.max(0, current - 1));
-        try { connection.close(); } catch (SQLException ignored) {}
+        try {
+            connection.close();
+        } catch (SQLException ignored) {
+        }
     }
 
     private static void closeIdleConnections() {
         Connection connection;
         while ((connection = IDLE_CONNECTIONS.poll()) != null) {
-            try { connection.close(); } catch (SQLException ignored) {}
+            try {
+                connection.close();
+            } catch (SQLException ignored) {
+            }
         }
     }
 
@@ -111,34 +156,56 @@ public final class DatabaseConnection {
         private Connection delegate;
         private boolean released;
 
-        private PooledConnectionHandler(Connection delegate) { this.delegate = delegate; }
+        private PooledConnectionHandler(Connection delegate) {
+            this.delegate = delegate;
+        }
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             String methodName = method.getName();
+
             if ("close".equals(methodName)) {
-                if (!released) { released = true; Connection c = delegate; delegate = null; recycle(c); }
+                if (!released) {
+                    released = true;
+                    Connection connection = delegate;
+                    delegate = null;
+                    recycle(connection);
+                }
                 return null;
             }
-            if ("isClosed".equals(methodName)) return released || delegate == null || delegate.isClosed();
+
+            if ("isClosed".equals(methodName)) {
+                return released || delegate == null || delegate.isClosed();
+            }
+
             if ("unwrap".equals(methodName) && args != null && args.length == 1 && args[0] instanceof Class<?> type) {
-                if (type.isInstance(proxy)) return proxy;
+                if (type.isInstance(proxy)) {
+                    return proxy;
+                }
                 ensureOpen();
                 return delegate.unwrap(type);
             }
+
             if ("isWrapperFor".equals(methodName) && args != null && args.length == 1 && args[0] instanceof Class<?> type) {
                 return type.isInstance(proxy) || (!released && delegate != null && delegate.isWrapperFor(type));
             }
+
             if ("toString".equals(methodName)) {
                 return released ? "PooledConnection[closed]" : "PooledConnection[" + delegate + "]";
             }
+
             ensureOpen();
-            try { return method.invoke(delegate, args); }
-            catch (InvocationTargetException ex) { throw ex.getCause(); }
+            try {
+                return method.invoke(delegate, args);
+            } catch (InvocationTargetException ex) {
+                throw ex.getCause();
+            }
         }
 
         private void ensureOpen() throws SQLException {
-            if (released || delegate == null) throw new SQLException("Database connection is closed.");
+            if (released || delegate == null) {
+                throw new SQLException("Database connection is closed.");
+            }
         }
     }
 }

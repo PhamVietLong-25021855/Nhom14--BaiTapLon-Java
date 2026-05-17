@@ -30,8 +30,16 @@ public class AutobidService implements AutobidApi {
         if (increment > maxPrice) {
             throw new ValidationException("Increment cannot be greater than max price.");
         }
-        if (autoBidDAO.findAutoBidByAuctionBidder(auctionId,bidderId) != null){
-            throw new ValidationException("Already existed autobid for this auction");
+        AutoBid existing = autoBidDAO.findAutoBidByAuctionBidder(auctionId, bidderId);
+        if (existing != null) {
+            existing.setMaxPrice(maxPrice);
+            existing.setIncrement(increment);
+            existing.setUpdatedAt(System.currentTimeMillis());
+            autoBidDAO.updateAutoBid(existing);
+            if (auctionService != null) {
+                auctionService.triggerAutoBids(auctionId);
+            }
+            return;
         }
         long now = System.currentTimeMillis();
         AutoBid item = new AutoBid(0, auctionId, bidderId, maxPrice, increment, now, now);

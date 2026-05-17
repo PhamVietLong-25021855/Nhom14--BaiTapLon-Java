@@ -1,6 +1,7 @@
 package userauth.dao;
 
 import userauth.model.User;
+
 import java.util.List;
 
 public interface UserDAO {

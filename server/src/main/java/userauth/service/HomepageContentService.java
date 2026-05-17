@@ -2,6 +2,7 @@ package userauth.service;
 
 import userauth.api.HomepageContentApi;
 import userauth.dao.HomepageAnnouncementDAO;
+import userauth.dao.HomepageAnnouncementDAOImpl;
 import userauth.exception.ValidationException;
 import userauth.model.HomepageAnnouncement;
 
@@ -12,14 +13,13 @@ public class HomepageContentService implements HomepageContentApi {
     private final HomepageAnnouncementDAO announcementDAO;
 
     public HomepageContentService() {
-        this(new userauth.dao.HomepageAnnouncementDAOImpl());
+        this(new HomepageAnnouncementDAOImpl());
     }
 
     public HomepageContentService(HomepageAnnouncementDAO announcementDAO) {
         this.announcementDAO = announcementDAO;
     }
 
-    @Override
     public synchronized List<HomepageAnnouncement> getAllAnnouncements() {
         return announcementDAO.findAll().stream()
                 .sorted(Comparator.comparingLong(HomepageAnnouncement::getUpdatedAt).reversed())
@@ -27,49 +27,83 @@ public class HomepageContentService implements HomepageContentApi {
                 .toList();
     }
 
-    @Override
     public synchronized void saveAnnouncement(Integer announcementId, String title, String summary, String details,
-                                            String scheduleText, Integer linkedAuctionId, int authorId) throws ValidationException {
+                                              String scheduleText, Integer linkedAuctionId, int authorId)
+            throws ValidationException {
         String normalizedTitle = normalize(title);
         String normalizedSummary = normalize(summary);
         String normalizedDetails = normalize(details);
         String normalizedSchedule = normalize(scheduleText);
         int safeAuctionId = linkedAuctionId == null ? -1 : linkedAuctionId;
+
         validate(normalizedTitle, normalizedSummary, normalizedSchedule);
+
         long now = System.currentTimeMillis();
         HomepageAnnouncement existing = findById(announcementId == null ? -1 : announcementId);
         if (existing == null) {
-            announcementDAO.save(new HomepageAnnouncement(0, normalizedTitle, normalizedSummary, normalizedDetails,
-                    normalizedSchedule, safeAuctionId, authorId, now, now));
+            announcementDAO.save(new HomepageAnnouncement(
+                    0,
+                    normalizedTitle,
+                    normalizedSummary,
+                    normalizedDetails,
+                    normalizedSchedule,
+                    safeAuctionId,
+                    authorId,
+                    now,
+                    now
+            ));
         } else {
-            existing.setTitle(normalizedTitle); existing.setSummary(normalizedSummary);
-            existing.setDetails(normalizedDetails); existing.setScheduleText(normalizedSchedule);
-            existing.setLinkedAuctionId(safeAuctionId); existing.setAuthorId(authorId);
+            existing.setTitle(normalizedTitle);
+            existing.setSummary(normalizedSummary);
+            existing.setDetails(normalizedDetails);
+            existing.setScheduleText(normalizedSchedule);
+            existing.setLinkedAuctionId(safeAuctionId);
+            existing.setAuthorId(authorId);
             existing.setUpdatedAt(now);
             announcementDAO.update(existing);
         }
     }
 
-    @Override
     public synchronized void deleteAnnouncement(int announcementId) throws ValidationException {
         HomepageAnnouncement existing = findById(announcementId);
-        if (existing == null) throw new ValidationException("Homepage announcement not found.");
+        if (existing == null) {
+            throw new ValidationException("Homepage announcement not found.");
+        }
+
         announcementDAO.delete(announcementId);
     }
 
     private void validate(String title, String summary, String scheduleText) throws ValidationException {
-        if (title.isEmpty()) throw new ValidationException("Announcement title cannot be empty.");
-        if (summary.isEmpty()) throw new ValidationException("Announcement summary cannot be empty.");
-        if (scheduleText.isEmpty()) throw new ValidationException("Auction schedule information cannot be empty.");
+        if (title.isEmpty()) {
+            throw new ValidationException("Announcement title cannot be empty.");
+        }
+        if (summary.isEmpty()) {
+            throw new ValidationException("Announcement summary cannot be empty.");
+        }
+        if (scheduleText.isEmpty()) {
+            throw new ValidationException("Auction schedule information cannot be empty.");
+        }
     }
 
-    private String normalize(String value) { return value == null ? "" : value.trim(); }
+    private String normalize(String value) {
+        return value == null ? "" : value.trim();
+    }
 
-    private HomepageAnnouncement findById(int id) { return announcementDAO.findById(id); }
+    private HomepageAnnouncement findById(int announcementId) {
+        return announcementDAO.findById(announcementId);
+    }
 
     private HomepageAnnouncement copyAnnouncement(HomepageAnnouncement source) {
-        return new HomepageAnnouncement(source.getId(), source.getTitle(), source.getSummary(),
-                source.getDetails(), source.getScheduleText(), source.getLinkedAuctionId(),
-                source.getAuthorId(), source.getCreatedAt(), source.getUpdatedAt());
+        return new HomepageAnnouncement(
+                source.getId(),
+                source.getTitle(),
+                source.getSummary(),
+                source.getDetails(),
+                source.getScheduleText(),
+                source.getLinkedAuctionId(),
+                source.getAuthorId(),
+                source.getCreatedAt(),
+                source.getUpdatedAt()
+        );
     }
 }

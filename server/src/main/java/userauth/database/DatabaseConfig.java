@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 public final class DatabaseConfig {
-    private static final String RESOURCE_PATH = "/userauth/database.properties";
+    private static final String RESOURCE_PATH = "/database.properties";
 
     private final String dbType;
     private final String jdbcUrl;
@@ -30,12 +30,19 @@ public final class DatabaseConfig {
         this.database = resolveString(properties, "db.name", "DB_NAME", isMySqlType(dbType) ? "defaultdb" : "postgres");
         this.username = resolveString(properties, "db.username", "DB_USERNAME", isMySqlType(dbType) ? "root" : "postgres");
         this.password = resolveString(properties, "db.password", "DB_PASSWORD", "");
-        this.sslMode = resolveString(properties, "db.sslMode", "DB_SSL_MODE",
-                resolveBoolean(properties, "db.useSSL", "DB_USE_SSL", true)
-                        ? (isMySqlType(dbType) ? "REQUIRED" : "require")
-                        : (isMySqlType(dbType) ? "DISABLED" : "disable"));
+        this.sslMode = resolveString(
+                properties,
+                "db.sslMode",
+                "DB_SSL_MODE",
+                resolveBoolean(properties, "db.useSSL", "DB_USE_SSL", true) ? (isMySqlType(dbType) ? "REQUIRED" : "require") : (isMySqlType(dbType) ? "DISABLED" : "disable")
+        );
         this.schema = resolveString(properties, "db.schema", "DB_SCHEMA", "public");
-        this.createDatabaseIfMissing = resolveBoolean(properties, "db.createDatabaseIfMissing", "DB_CREATE_DATABASE_IF_MISSING", false);
+        this.createDatabaseIfMissing = resolveBoolean(
+                properties,
+                "db.createDatabaseIfMissing",
+                "DB_CREATE_DATABASE_IF_MISSING",
+                false
+        );
     }
 
     public static DatabaseConfig load() {
@@ -52,12 +59,16 @@ public final class DatabaseConfig {
     }
 
     public String getServerJdbcUrl() {
-        if (adminJdbcUrl != null) return adminJdbcUrl;
+        if (adminJdbcUrl != null) {
+            return adminJdbcUrl;
+        }
         return isMySql() ? buildJdbcUrl(null) : buildJdbcUrl("postgres");
     }
 
     public String getDatabaseJdbcUrl() {
-        if (jdbcUrl != null) return jdbcUrl;
+        if (jdbcUrl != null) {
+            return jdbcUrl;
+        }
         return buildJdbcUrl(database);
     }
 
@@ -82,13 +93,13 @@ public final class DatabaseConfig {
     }
 
     private String buildMySqlQueryString() {
-        return "useSSL=" + (!"DISABLED".equalsIgnoreCase(sslMode))
-                + "&requireSSL=" + ("REQUIRED".equalsIgnoreCase(sslMode) || "VERIFY_CA".equalsIgnoreCase(sslMode) || "VERIFY_IDENTITY".equalsIgnoreCase(sslMode))
-                + "&sslMode=" + encode(sslMode)
-                + "&serverTimezone=UTC"
-                + "&allowPublicKeyRetrieval=true"
-                + "&connectTimeout=10000"
-                + "&socketTimeout=30000";
+        return "useSSL=" + (!"DISABLED".equalsIgnoreCase(sslMode)) +
+                "&requireSSL=" + ("REQUIRED".equalsIgnoreCase(sslMode) || "VERIFY_CA".equalsIgnoreCase(sslMode) || "VERIFY_IDENTITY".equalsIgnoreCase(sslMode)) +
+                "&sslMode=" + encode(sslMode) +
+                "&serverTimezone=UTC" +
+                "&allowPublicKeyRetrieval=true" +
+                "&connectTimeout=10000" +
+                "&socketTimeout=30000";
     }
 
     private String buildPostgresQueryString() {
