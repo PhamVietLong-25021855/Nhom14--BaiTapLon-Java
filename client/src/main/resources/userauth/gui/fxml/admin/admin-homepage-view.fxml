@@ -20,7 +20,7 @@
            fx:controller="userauth.gui.fxml.admin.AdminHomepageViewController"
            styleClass="page-root dashboard-root"
            stylesheets="@../shared/auth-theme.css"
-           xmlns="http://javafx.com/javafx/25"
+           xmlns="http://javafx.com/javafx/21"
            xmlns:fx="http://javafx.com/fxml/1">
     <children>
         <VBox maxHeight="Infinity" maxWidth="Infinity" spacing="18.0" styleClass="shell-frame">

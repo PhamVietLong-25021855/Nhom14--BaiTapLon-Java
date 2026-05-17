@@ -9,7 +9,7 @@
       fx:controller="userauth.gui.fxml.home.HomeAnnouncementCardController"
       styleClass="landing-feed-card"
       stylesheets="@../shared/auth-theme.css"
-      xmlns="http://javafx.com/javafx/25"
+      xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1">
     <children>
         <HBox spacing="12.0">
