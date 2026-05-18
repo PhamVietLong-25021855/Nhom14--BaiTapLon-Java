@@ -2,9 +2,8 @@ package userauth.model;
 
 import java.io.Serializable;
 
-public class HomepageAnnouncement implements Serializable {
+public class HomepageAnnouncement extends Entity {
     private static final long serialVersionUID = 1L;
-    private int id;
     private String title;
     private String summary;
     private String details;
@@ -16,7 +15,7 @@ public class HomepageAnnouncement implements Serializable {
 
     public HomepageAnnouncement(int id, String title, String summary, String details, String scheduleText,
                                 int linkedAuctionId, int authorId, long createdAt, long updatedAt) {
-        this.id = id;
+        super(id) ;
         this.title = title;
         this.summary = summary;
         this.details = details;
