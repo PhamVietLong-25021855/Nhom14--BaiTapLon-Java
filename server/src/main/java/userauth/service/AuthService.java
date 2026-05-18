@@ -17,15 +17,20 @@ import java.util.List;
 public class AuthService implements AuthApi {
     private final UserDAO userDAO;
     private final AutoBidInitializer autoBidInitializer;
+    private final WalletService walletService;
 
     public AuthService(UserDAO userDAO) {
-        this.userDAO = userDAO;
-        this.autoBidInitializer = null;
+        this(userDAO, null, null);
     }
 
     public AuthService(UserDAO userDAO, AutoBidInitializer autoBidInitializer) {
+        this(userDAO, autoBidInitializer, null);
+    }
+
+    public AuthService(UserDAO userDAO, AutoBidInitializer autoBidInitializer, WalletService walletService) {
         this.userDAO = userDAO;
         this.autoBidInitializer = autoBidInitializer;
+        this.walletService = walletService;
     }
 
     public void register(String username, String password, String fullName, String email, Role role) throws ValidationException {
@@ -39,6 +44,13 @@ public class AuthService implements AuthApi {
         String hashedPassword = PasswordUtil.hashPassword(password);
         User user = createUser(0, normalizedUsername, hashedPassword, fullName, normalizedEmail, role, now);
         userDAO.save(user);
+        if (walletService != null && role != Role.ADMIN) {
+            try {
+                walletService.getWallet(user.getId());
+            } catch (Exception ex) {
+                System.err.println("Failed to initialize wallet for user " + user.getUsername() + ": " + ex.getMessage());
+            }
+        }
         if (autoBidInitializer != null && role == Role.BIDDER) {
             try {
                 autoBidInitializer.createDefaultsForUser(user.getId());

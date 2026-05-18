@@ -8,6 +8,7 @@ import userauth.controller.AuctionController;
 import userauth.controller.AuthController;
 import userauth.controller.AutobidController;
 import userauth.controller.HomepageController;
+import userauth.controller.WalletController;
 import userauth.gui.fxml.admin.AdminDashboardViewController;
 import userauth.gui.fxml.admin.AdminHomepageViewController;
 import userauth.gui.fxml.auth.LoginViewController;
@@ -16,6 +17,7 @@ import userauth.gui.fxml.bidder.BidderDashboardViewController;
 import userauth.gui.fxml.dialog.BidHistoryDialogController;
 import userauth.gui.fxml.dialog.ChangePasswordDialogController;
 import userauth.gui.fxml.dialog.ProfileDialogController;
+import userauth.gui.fxml.dialog.TopUpDialogController;
 import userauth.gui.fxml.home.HomeViewController;
 import userauth.gui.fxml.seller.SellerDashboardViewController;
 import userauth.gui.fxml.shared.*;
@@ -38,6 +40,7 @@ public class AuthFrame {
     private final Scene scene;
     private final AppShellController shellController;
     private final AutobidController autobidController;
+    private final WalletController walletController;
 
     private final LoadedView<HomeViewController> homeView;
     private final LoadedView<LoginViewController> loginView;
@@ -47,12 +50,15 @@ public class AuthFrame {
     private final LoadedView<SellerDashboardViewController> sellerView;
     private final LoadedView<BidderDashboardViewController> bidderView;
 
-    public AuthFrame(Stage stage, AuthController authController, AuctionController auctionController, HomepageController homepageController, AutobidController autobidController) {
+    public AuthFrame(Stage stage, AuthController authController, AuctionController auctionController,
+                     HomepageController homepageController, AutobidController autobidController,
+                     WalletController walletController) {
         this.stage = stage;
         this.authController = authController;
         this.auctionController = auctionController;
         this.homepageController = homepageController;
         this.autobidController = autobidController;
+        this.walletController = walletController;
 
         stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
         stage.setMinWidth(980);
@@ -185,6 +191,21 @@ public class AuthFrame {
         dialog.showAndWait();
     }
 
+    public void showTopUpDialog(User user, Runnable successHandler) {
+        LoadedView<TopUpDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "dialog/top-up-dialog.fxml", "dialog");
+        Stage dialog = FxmlRuntime.createModalDialog(stage, "TOP UP WALLET", view.root(), 560, 430);
+        view.controller().setDialogStage(dialog);
+        view.controller().setWalletController(walletController);
+        view.controller().setUser(user);
+        view.controller().setSuccessHandler(message -> {
+            if (successHandler != null) {
+                successHandler.run();
+            }
+            NotificationUtil.success(stage, "NOTIFICATION", message);
+        });
+        dialog.showAndWait();
+    }
+
     private void wireControllers() {
         homeView.controller().setShowLoginHandler(this::showLogin);
         homeView.controller().setShowRegisterHandler(this::showRegister);
@@ -220,6 +241,7 @@ public class AuthFrame {
         bidderView.controller().setFrame(this);
         bidderView.controller().setAuctionController(auctionController);
         bidderView.controller().setAutobidController(autobidController);
+        bidderView.controller().setWalletController(walletController);
     }
 
     private void deactivateLiveViews() {

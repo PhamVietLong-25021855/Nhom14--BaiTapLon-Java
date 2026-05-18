@@ -30,6 +30,7 @@ import javafx.util.Duration;
 import javafx.util.StringConverter;
 import userauth.controller.AuctionController;
 import userauth.controller.AutobidController;
+import userauth.controller.WalletController;
 import userauth.event.AuctionEvent;
 import userauth.event.AuctionEventBus;
 import userauth.event.AuctionEventListener;
@@ -110,6 +111,15 @@ public class BidderDashboardViewController {
     private Label lblLeadingCount;
 
     @FXML
+    private Label lblWalletBalance;
+
+    @FXML
+    private Label lblWalletAvailable;
+
+    @FXML
+    private Label lblWalletReserved;
+
+    @FXML
     private Label lblDetailName;
 
     @FXML
@@ -184,6 +194,7 @@ public class BidderDashboardViewController {
     private AuthFrame frame;
     private AuctionController auctionController;
     private AutobidController autobidController;
+    private WalletController walletController;
     private User currentUser;
     private Timeline timeline;
     private final PauseTransition filterRefreshDebounce = new PauseTransition(Duration.millis(220));
@@ -285,6 +296,7 @@ public class BidderDashboardViewController {
         timeline.setCycleCount(Animation.INDEFINITE);
 
         setBidStatus("Select an auction to view details.", false);
+        updateWalletSummary(null);
         showEmptySelectionState();
     }
 
@@ -299,6 +311,10 @@ public class BidderDashboardViewController {
         this.autobidController = autobidController;
     }
 
+    public void setWalletController(WalletController walletController) {
+        this.walletController = walletController;
+    }
+
     public void setUser(User user) {
         this.currentUser = user;
         String displayName = user == null ? UiText.text("Bidder") : abbreviate(resolveDisplayName(user), 26);
@@ -311,6 +327,7 @@ public class BidderDashboardViewController {
         lastSelectedWinnerId = -1;
         lastSelectedHighestBid = -1;
         txtBidAmount.clear();
+        updateWalletSummary(null);
     }
 
     public void activate() {
@@ -369,6 +386,17 @@ public class BidderDashboardViewController {
                         return;
                     }
                     applyAutobidSnapshot(snapshot);
+                },
+                error -> {
+                }
+        );
+        UiAsync.run(
+                this::loadWalletSnapshot,
+                snapshot -> {
+                    if (ticket != refreshTicket) {
+                        return;
+                    }
+                    applyWalletSnapshot(snapshot);
                 },
                 error -> {
                 }
@@ -490,6 +518,23 @@ public class BidderDashboardViewController {
     private void handleClearAutobidForm() {
         clearAutobidForm();
         tableAutoBid.getSelectionModel().clearSelection();
+    }
+
+    @FXML
+    private void handleTopUpWallet() {
+        if (currentUser == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current user information is unavailable.");
+            return;
+        }
+        if (walletController == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Wallet is not ready.");
+            return;
+        }
+        if (frame == null) {
+            NotificationUtil.info(ownerWindow(), "Notification", "Connect this controller to AuthFrame to open wallet top-up.");
+            return;
+        }
+        frame.showTopUpDialog(currentUser, this::refreshData);
     }
 
     @FXML
@@ -929,6 +974,19 @@ public class BidderDashboardViewController {
         updateBidControlsForAuction(null);
     }
 
+    private void updateWalletSummary(Wallet wallet) {
+        String zero = AuctionViewFormatter.formatMoney(0);
+        if (wallet == null) {
+            lblWalletBalance.setText(zero);
+            lblWalletAvailable.setText(zero);
+            lblWalletReserved.setText(zero);
+            return;
+        }
+        lblWalletBalance.setText(AuctionViewFormatter.formatMoney(wallet.getBalance()));
+        lblWalletAvailable.setText(AuctionViewFormatter.formatMoney(wallet.getAvailableBalance()));
+        lblWalletReserved.setText(AuctionViewFormatter.formatMoney(wallet.getReservedBalance()));
+    }
+
     private void setBidStatus(String message, boolean error) {
         lblBidStatus.setText(UiText.text(message));
         lblBidStatus.getStyleClass().removeAll("error-text", "success-text");
@@ -1114,6 +1172,17 @@ public class BidderDashboardViewController {
         tableAutoBid.refresh();
     }
 
+    private WalletSnapshot loadWalletSnapshot() {
+        if (walletController == null || currentUser == null) {
+            return new WalletSnapshot(null);
+        }
+        return new WalletSnapshot(walletController.getWallet(currentUser.getId()));
+    }
+
+    private void applyWalletSnapshot(WalletSnapshot snapshot) {
+        updateWalletSummary(snapshot.wallet());
+    }
+
     private String resolveDisplayName(User user) {
         String fullName = safeText(user.getFullName(), "");
         if (!fullName.isBlank()) {
@@ -1144,6 +1213,10 @@ public class BidderDashboardViewController {
 
     private record AutobidSnapshot(
             List<AutoBid> allAutobids
+    ) {}
+
+    private record WalletSnapshot(
+            Wallet wallet
     ) {}
 
     private  void setBid (double amount, int auctionId, int bidderId){

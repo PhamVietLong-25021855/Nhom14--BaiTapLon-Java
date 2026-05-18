@@ -35,6 +35,10 @@ public final class NetworkActions {
     public static final String AUTOBID_BY_BIDDER = "AUTOBID_BY_BIDDER";
     public static final String AUTOBID_BY_ID = "AUTOBID_BY_ID";
 
+    public static final String WALLET_GET = "WALLET_GET";
+    public static final String WALLET_TOP_UP = "WALLET_TOP_UP";
+    public static final String WALLET_TOP_UP_HISTORY = "WALLET_TOP_UP_HISTORY";
+
     public static final String HOMEPAGE_ALL = "HOMEPAGE_ALL";
     public static final String HOMEPAGE_SAVE = "HOMEPAGE_SAVE";
     public static final String HOMEPAGE_DELETE = "HOMEPAGE_DELETE";

@@ -4,12 +4,9 @@ import userauth.controller.AuctionController;
 import userauth.controller.AuthController;
 import userauth.controller.AutobidController;
 import userauth.controller.HomepageController;
-import userauth.dao.*;
-
+import userauth.controller.WalletController;
 import userauth.dao.*;
 import userauth.database.DatabaseInitializer;
-import userauth.service.*;
-
 import userauth.service.*;
 
 /**
@@ -23,6 +20,8 @@ public final class ServerContext {
     private final AutobidController autobidController;
     private final HomepageController homepageController;
     private final HomepageContentService homepageContentService;
+    private final WalletController walletController;
+    private final WalletService walletService;
     private final AuctionScheduler scheduler;
 
     public ServerContext(boolean startScheduler) {
@@ -31,12 +30,15 @@ public final class ServerContext {
         UserDAO userDAO = new UserDAOImpl();
         AuctionDAO auctionDAO = new AuctionDAOImpl();
         AutoBidDAO autoBidDAO = new AutoBidDAOImpl();
+        WalletDAO walletDAO = new WalletDAOImpl();
 
         AutoBidInitializer autoBidInitializer = new AutoBidInitializer(autoBidDAO, auctionDAO);
-        AuthService authService = new AuthService(userDAO, autoBidInitializer);
+        this.walletService = new WalletService(walletDAO);
+        AuthService authService = new AuthService(userDAO, autoBidInitializer, walletService);
         this.authController = new AuthController(authService);
+        this.walletController = new WalletController(walletService);
 
-        this.auctionService = new AuctionService(auctionDAO, autoBidDAO);
+        this.auctionService = new AuctionService(auctionDAO, autoBidDAO, walletService);
         this.auctionController = new AuctionController(this.auctionService);
 
         AutobidService autobidService = new AutobidService(autoBidDAO, this.auctionService);
@@ -73,6 +75,14 @@ public final class ServerContext {
 
     public HomepageContentService getHomepageContentService() {
         return homepageContentService;
+    }
+
+    public WalletController getWalletController() {
+        return walletController;
+    }
+
+    public WalletService getWalletService() {
+        return walletService;
     }
 
     public void stop() {

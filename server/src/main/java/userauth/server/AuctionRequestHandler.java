@@ -1,6 +1,7 @@
 package userauth.server;
 
 import userauth.model.Role;
+import userauth.model.PaymentMethod;
 import userauth.network.AuctionRequest;
 import userauth.network.AuctionResponse;
 import userauth.network.NetworkActions;
@@ -81,6 +82,11 @@ public final class AuctionRequestHandler {
             case NetworkActions.AUTOBID_DELETE -> context.getAutobidController().deleteAutoBid(integer(request, "bidderId"), integer(request, "id"));
             case NetworkActions.AUTOBID_BY_BIDDER -> context.getAutobidController().getAutobidByBidder(integer(request, "bidderId"));
             case NetworkActions.AUTOBID_BY_ID -> context.getAutobidController().getAutobidById(integer(request, "id"));
+
+            case NetworkActions.WALLET_GET -> context.getWalletController().getWallet(integer(request, "userId"));
+            case NetworkActions.WALLET_TOP_UP -> context.getWalletController().createTopUpRequest(
+                    integer(request, "userId"), dbl(request, "amount"), (PaymentMethod) request.get("method"));
+            case NetworkActions.WALLET_TOP_UP_HISTORY -> context.getWalletController().getTopUpHistory(integer(request, "userId"));
 
             case NetworkActions.HOMEPAGE_ALL -> context.getHomepageController().getAllAnnouncements();
             case NetworkActions.HOMEPAGE_SAVE -> {
