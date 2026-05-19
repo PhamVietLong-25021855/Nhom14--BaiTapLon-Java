@@ -1,0 +1,85 @@
+BAO CAO TICH HOP CHUC NANG WALLET
+
+1. Muc tieu
+- Tich hop chuc nang wallet vao ban hien tai theo kien truc client-server.
+- Wallet ho tro nap tien, xem so du, giu tien khi dang dan dau phien dau gia, tru tien khi chot thanh cong, va hoan/tra lai tien khi huy ket qua.
+
+2. Hien trang truoc khi tich hop
+- Ban hien tai da tach thanh 3 module: core-common, server, client.
+- He thong da co luong dang ky, dang nhap, dau gia, auto-bid, homepage.
+- Chua co model wallet, chua co bang wallet trong database, chua co network action de client goi wallet.
+- AuctionService chi xu ly bid va settlement theo trang thai, chua rang buoc den so du tai khoan.
+
+3. Noi dung da thuc hien
+
+3.1. Bo sung lop dung chung trong core-common
+- Them WalletApi.
+- Them WalletController.
+- Them cac model:
+  + Wallet
+  + TopUpTransaction
+  + PaymentMethod
+  + TopUpStatus
+- Them cac action mang:
+  + WALLET_GET
+  + WALLET_TOP_UP
+  + WALLET_TOP_UP_HISTORY
+
+3.2. Bo sung backend trong server
+- Them WalletDAO va WalletDAOImpl.
+- Them WalletService de xu ly nghiep vu wallet.
+- Cap nhat DatabaseInitializer de tao cac bang:
+  + wallets
+  + topup_transactions
+- Cap nhat AuctionRequestHandler de xu ly request wallet tu client.
+- Cap nhat ServerContext de khoi tao WalletService va WalletController.
+- Cap nhat AuthService de wallet duoc tao/lazy-create khi user moi duoc dang ky.
+
+3.3. Gan wallet vao nghiep vu dau gia
+- AuctionService da duoc mo rong de:
+  + kiem tra available balance truoc khi chap nhan bid
+  + reserve tien cho bidder dang dan dau
+  + release reserved funds cho bidder bi outbid
+  + xu ly auto-bid co rang buoc so du
+  + capture reserved funds khi seller mark auction as paid
+  + refund hoac release funds khi ket qua auction bi huy
+- Luong settlement duoc sua de trang thai PAID va CANCELED khong chi doi status ma con cap nhat wallet dung nghiep vu.
+
+3.4. Bo sung client
+- Them RemoteWalletService de client goi wallet qua socket.
+- Cap nhat ClientMain de khoi tao WalletApi va WalletController.
+- Cap nhat AuthFrame de truyen WalletController vao bidder dashboard va mo top-up dialog.
+- Them TopUpDialogController va top-up-dialog.fxml.
+- Cap nhat BidderDashboardViewController va bidder-dashboard-view.fxml:
+  + hien thi tong so du
+  + hien thi so du kha dung
+  + hien thi so tien dang bi giu
+  + nut TOP UP de nap tien
+
+4. Ket qua dat duoc
+- He thong da co wallet hoat dong tren dung kien truc hien tai.
+- Bidder co the nap tien vao tai khoan.
+- He thong chi cho phep dat bid khi so du kha dung du.
+- Khi bidder dang dan dau, so tien tuong ung duoc reserve.
+- Khi bi outbid, so tien reserve cu duoc release.
+- Khi seller xac nhan thanh toan, he thong capture reserved funds.
+- Khi ket qua dau gia bi huy, he thong release hoac refund tien tuy theo trang thai truoc do.
+
+5. Kiem tra da thuc hien
+- Da kiem tra compile bang javac cho core-common va server: thanh cong.
+- Da kiem tra compile phan client da sua voi JavaFX jars co san tren may: thanh cong.
+- Chua chay full Maven test vi moi truong hien tai khong co lenh mvn trong PATH.
+
+6. Gioi han va luu y
+- Database can duoc khoi tao/cap nhat de co 2 bang moi: wallets, topup_transactions.
+- Top-up hien tai dang o che do mo phong xac nhan ngay, chua tich hop cong thanh toan that.
+- Luong wallet hien tai tap trung vao bidder-side flow; neu can co dashboard rieng cho admin ve top-up history thi can bo sung them.
+
+7. Huong phat trien tiep theo
+- Chay thu nghiem end-to-end tren server va client that.
+- Bo sung test JUnit cho WalletService va cac tinh huong bid/reserve/release/capture/refund.
+- Neu can, mo rong giao dien de hien thi lich su top-up va lich su bien dong wallet.
+
+8. Ket luan
+- Chuc nang wallet da duoc dua vao ban hien tai ma khong pha vo kien truc client-server dang co.
+- Phan tich hop khong chi dung o muc nap tien, ma da lien ket truc tiep voi luong dau gia va settlement, giup he thong gan hon voi nghiep vu thuc te.

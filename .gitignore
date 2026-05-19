@@ -1,0 +1,14 @@
+.idea/
+
+*.class
+target/
+dist/
+javafx-sdk/
+lib/
+.env
+*.env
+!.env.example
+*.log
+*.iml
+dependency-reduced-pom.xml
+out/
