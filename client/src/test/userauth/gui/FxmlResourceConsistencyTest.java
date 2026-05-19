@@ -27,8 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FxmlResourceConsistencyTest {
-    private static final Path FXML_ROOT = Paths.get("User", "", "userauth", "gui", "fxml");
-    private static final Path SOURCE_ROOT = Paths.get("User", "src", "userauth");
+    private static final Path FXML_ROOT = Paths.get("src", "main", "resources", "userauth", "gui", "fxml");
+    private static final Path SOURCE_ROOT = Paths.get("src", "main", "java");
     private static final String FXML_NAMESPACE = "http://javafx.com/fxml/1";
     private static final Pattern LOAD_VIEW_PATTERN = Pattern.compile(
             "FxmlRuntime\\.loadView\\([^;]*?,\\s*\"([^\"]+\\.fxml)\"",
@@ -122,7 +122,7 @@ class FxmlResourceConsistencyTest {
 
     private static void assertClasspathResourceExists(Path fxml) {
         String relativePath = FXML_ROOT.relativize(fxml).toString().replace(File.separatorChar, '/');
-        String classpathPath = "/java/resources/fxml/" + relativePath;
+        String classpathPath = "/userauth/gui/fxml/" + relativePath;
 
         assertNotNull(
                 FxmlResourceConsistencyTest.class.getResource(classpathPath),
