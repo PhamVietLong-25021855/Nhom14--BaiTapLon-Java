@@ -2,8 +2,8 @@ package userauth.model;
 
 public class Wallet extends Entity {
     private int userId;
-    private double balance;
-    private double reservedBalance;
+    private long balance;
+    private long reservedBalance;
     private long createdAt;
     private long updatedAt;
 
@@ -11,7 +11,7 @@ public class Wallet extends Entity {
         super();
     }
 
-    public Wallet(int id, int userId, double balance, double reservedBalance, long createdAt, long updatedAt) {
+    public Wallet(int id, int userId, long balance, long reservedBalance, long createdAt, long updatedAt) {
         super(id);
         this.userId = userId;
         this.balance = balance;
@@ -21,7 +21,7 @@ public class Wallet extends Entity {
     }
 
     public Wallet(int userId) {
-        this(0, userId, 0.0, 0.0, System.currentTimeMillis(), System.currentTimeMillis());
+        this(0, userId, 0L, 0L, System.currentTimeMillis(), System.currentTimeMillis());
     }
 
     public int getUserId() {
@@ -32,23 +32,23 @@ public class Wallet extends Entity {
         this.userId = userId;
     }
 
-    public double getBalance() {
+    public long getBalance() {
         return balance;
     }
 
-    public void setBalance(double balance) {
+    public void setBalance(long balance) {
         this.balance = balance;
     }
 
-    public double getReservedBalance() {
+    public long getReservedBalance() {
         return reservedBalance;
     }
 
-    public void setReservedBalance(double reservedBalance) {
+    public void setReservedBalance(long reservedBalance) {
         this.reservedBalance = reservedBalance;
     }
 
-    public double getAvailableBalance() {
+    public long getAvailableBalance() {
         return balance - reservedBalance;
     }
 

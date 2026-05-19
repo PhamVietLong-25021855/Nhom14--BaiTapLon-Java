@@ -27,7 +27,7 @@ public class RemoteWalletService implements WalletApi {
     }
 
     @Override
-    public int createTopUpRequest(int userId, double amount, PaymentMethod method)
+    public int createTopUpRequest(int userId, long amount, PaymentMethod method)
             throws ItemNotFoundException, ValidationException {
         try {
             String result = (String) client.call(

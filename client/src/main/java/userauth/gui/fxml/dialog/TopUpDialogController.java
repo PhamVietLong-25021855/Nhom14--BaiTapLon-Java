@@ -98,9 +98,9 @@ public class TopUpDialogController {
             return;
         }
 
-        double amount;
+        long amount;
         try {
-            amount = UiInput.parsePositiveDecimal(amountText, "Top-up amount");
+            amount = (long) UiInput.parsePositiveDecimal(amountText, "Top-up amount");
         } catch (NumberFormatException ex) {
             showError(UiText.text("Invalid amount format."));
             return;

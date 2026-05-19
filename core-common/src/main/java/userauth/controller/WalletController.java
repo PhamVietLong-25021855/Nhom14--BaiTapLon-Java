@@ -24,7 +24,7 @@ public class WalletController {
         }
     }
 
-    public String createTopUpRequest(int userId, double amount, PaymentMethod method) {
+    public String createTopUpRequest(int userId, long amount, PaymentMethod method) {
         try {
             int transactionId = walletService.createTopUpRequest(userId, amount, method);
             return "SUCCESS: Transaction ID " + transactionId;
