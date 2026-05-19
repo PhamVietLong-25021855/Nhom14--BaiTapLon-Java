@@ -11,8 +11,5 @@
         <module name="server" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="baitaplon" target="21" />
-    </bytecodeTargetLevel>
   </component>
 </project>
