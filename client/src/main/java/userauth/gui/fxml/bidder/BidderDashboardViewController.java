@@ -17,8 +17,6 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -38,9 +36,6 @@ import userauth.gui.fxml.shared.*;
 import userauth.gui.fxml.shell.AuthFrame;
 import userauth.model.*;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class BidderDashboardViewController {
@@ -50,10 +45,6 @@ public class BidderDashboardViewController {
     private static final String FILTER_FINISHED = "Finished";
     private static final long ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
     private static final double LIVE_REFRESH_INTERVAL_SECONDS = 1.0;
-    private static final DateTimeFormatter LIVE_TIME =
-            DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
-
-
 
     @FXML
     private TableView<AuctionItem> tableAuctions;
@@ -159,16 +150,10 @@ public class BidderDashboardViewController {
     private Label lblBidStatus;
 
     @FXML
-    private Label lblLiveBidCount;
-
-    @FXML
     private TextField txtBidAmount;
 
     @FXML
     private Button btnPlaceBid;
-
-    @FXML
-    private VBox bidsLiveContainer;
 
     @FXML
     private LineChart<Number, Number> chartBidTrend;
@@ -821,11 +806,9 @@ public class BidderDashboardViewController {
         lblDetailSchedule.setText(AuctionViewFormatter.formatScheduleRange(auction));
         lblDetailCategory.setText(auction.getCategory());
         lblDetailAntiSniping.setText(AuctionViewFormatter.formatAntiSnipingSummary(auction));
-        lblLiveBidCount.setText(formatTransactionCount(bids.size()));
 
         applyStatusChip(auction);
         applyTimeChip(auction);
-        populateBidFeed(bids);
         updateBidTrend(bids);
         syncAutobidFormToAuction(auction.getId());
         updateBidControlsForAuction(auction);
@@ -899,44 +882,6 @@ public class BidderDashboardViewController {
         }
     }
 
-    private void populateBidFeed(List<BidTransaction> bids) {
-        bidsLiveContainer.getChildren().clear();
-        if (bids == null || bids.isEmpty()) {
-            VBox placeholder = new VBox(4);
-            placeholder.getStyleClass().add("activity-card");
-            placeholder.getChildren().addAll(
-                    createLabel(UiText.text("No bid transactions yet."), "activity-title"),
-                    createLabel(UiText.text("New bid activity will appear here immediately."), "activity-meta")
-            );
-            bidsLiveContainer.getChildren().add(placeholder);
-            return;
-        }
-
-        List<BidTransaction> latestBids = bids.stream()
-                .sorted(Comparator.comparingLong(BidTransaction::getTimestamp).reversed())
-                .limit(5)
-                .toList();
-
-        for (BidTransaction bid : latestBids) {
-            VBox card = new VBox(4);
-            card.getStyleClass().add("activity-card");
-
-            HBox row = new HBox(8);
-            Label bidder = createLabel(UiText.text("Bidder #") + bid.getBidderId(), "activity-title");
-            Label time = createLabel(LIVE_TIME.format(Instant.ofEpochMilli(bid.getTimestamp())), "activity-meta");
-            Region spacer = new Region();
-            HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-            row.getChildren().addAll(bidder, spacer, time);
-
-            card.getChildren().addAll(
-                    row,
-                    createLabel(AuctionViewFormatter.formatMoney(bid.getAmount()), "activity-price"),
-                    createLabel(UiText.text("Status") + ": " + UiText.text(bid.getStatus()), "activity-meta")
-            );
-            bidsLiveContainer.getChildren().add(card);
-        }
-    }
-
     private void updateBidTrend(List<BidTransaction> bids) {
         chartBidTrend.getData().clear();
         if (bids == null || bids.isEmpty()) {
@@ -968,8 +913,6 @@ public class BidderDashboardViewController {
         lblDetailState.setText(UiText.text("NO AUCTION SELECTED"));
         lblDetailTimeLeft.getStyleClass().setAll("status-chip", "status-chip-neutral");
         lblDetailTimeLeft.setText(UiText.text("Remaining") + ": -");
-        lblLiveBidCount.setText(formatTransactionCount(0));
-        bidsLiveContainer.getChildren().clear();
         chartBidTrend.getData().clear();
         updateBidControlsForAuction(null);
     }
@@ -1021,10 +964,6 @@ public class BidderDashboardViewController {
 
     private javafx.stage.Window ownerWindow() {
         return frame == null ? null : frame.getWindow();
-    }
-
-    private String formatTransactionCount(int count) {
-        return count + " " + UiText.text("transactions");
     }
 
     private void switchLanguage(AppLanguage language) {
