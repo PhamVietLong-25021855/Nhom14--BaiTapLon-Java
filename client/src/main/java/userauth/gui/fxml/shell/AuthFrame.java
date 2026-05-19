@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class AuthFrame {
-    private static final double DEFAULT_WIDTH = 1280;
-    private static final double DEFAULT_HEIGHT = 840;
+    private static final double DEFAULT_WIDTH = 1000;
+    private static final double DEFAULT_HEIGHT = 700;
     private static final boolean OPEN_FULLSCREEN = false;
 
     private final Stage stage;
@@ -61,9 +61,9 @@ public class AuthFrame {
         this.walletController = walletController;
 
         stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
-        stage.setMinWidth(980);
+        stage.setMinWidth(1000);
         stage.setMinHeight(700);
-        stage.setMaximized(OPEN_FULLSCREEN);
+        stage.setMaximized(true);
         if (OPEN_FULLSCREEN) {
             stage.setFullScreen(true);
             stage.setFullScreenExitHint("");
@@ -254,15 +254,6 @@ public class AuthFrame {
 
     private void switchView(Parent root) {
         shellController.setContent(root, true);
-        if (stage.isMaximized() || stage.isFullScreen()) {
-            return;
-        }
-
-        if (root instanceof javafx.scene.layout.Region region) {
-            stage.setWidth(Math.max(stage.getMinWidth(), region.prefWidth(-1)));
-            stage.setHeight(Math.max(stage.getMinHeight(), region.prefHeight(-1)));
-            stage.centerOnScreen();
-        }
     }
 
     private void applyLanguage(Parent root) {
