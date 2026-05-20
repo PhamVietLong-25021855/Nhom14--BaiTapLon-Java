@@ -44,54 +44,57 @@ public class LoginViewController {
         Platform.runLater(() -> UiEffects.playEntrance(authCard, 140, 24, 0));
     }
 
+
     @FXML
     private void handleLogin() {
-        hideStatus();
-        clearFieldState(txtUsername, txtPassword);
-
-        if (authController == null) {
-            showErrorState("AuthController has not been assigned to LoginViewController.");
-            infoHandler.accept("AuthController has not been assigned to LoginViewController.");
-            return;
-        }
-
-        String username = txtUsername.getText().trim();
-        String password = txtPassword.getText();
-        if (username.isEmpty() || password.isBlank()) {
-            if (username.isEmpty()) {
-                applyErrorState(txtUsername);
-            }
-            if (password.isBlank()) {
-                applyErrorState(txtPassword);
-            }
-            showErrorState("Please enter both username and password.");
-            return;
-        }
-
+        // Tránh việc người dùng click liên tục khi đang xử lý đăng nhập
         if (loginInProgress) {
             return;
         }
 
+        String username = txtUsername.getText() == null ? "" : txtUsername.getText().trim();
+        String password = txtPassword.getText() == null ? "" : txtPassword.getText();
+
+        // 1. Dọn dẹp trạng thái lỗi cũ trước khi gửi yêu cầu mới
+        hideStatus();
+        clearFieldState(txtUsername, txtPassword);
+
+        // 2. Kiểm tra dữ liệu trống ngay tại Client
+        if (username.isEmpty() || password.isEmpty()) {
+            applyErrorState(txtUsername, txtPassword);
+            showErrorState("Please enter both username and password.");
+            return;
+        }
+
         loginInProgress = true;
-        setBusy(true);
+
+        // 3. Đẩy luồng kết nối Socket xuống nền thông qua UiAsync để không gây treo giao diện
         UiAsync.run(
                 () -> authController.login(username, password),
                 user -> {
                     loginInProgress = false;
-                    setBusy(false);
-                    hideStatus();
-                    clearInputs();
-                    loginSuccessHandler.accept(user);
+                    if (user != null) {
+                        // Đăng nhập thành công -> Chuyển màn hình dựa trên Role
+                        loginSuccessHandler.accept(user);
+                    } else {
+                        // Trường hợp khẩn cấp nếu trả về object null
+                        applyErrorState(txtUsername, txtPassword);
+                        showErrorState("Invalid username or password.");
+                    }
                 },
                 error -> {
                     loginInProgress = false;
-                    setBusy(false);
-                    String message = error.getMessage() == null || error.getMessage().isBlank()
-                            ? "Login failed."
-                            : error.getMessage();
+                    // Đăng nhập thất bại (Sai pass, không tồn tại user, rớt mạng...)
                     applyErrorState(txtUsername, txtPassword);
-                    showErrorState(message);
-                    errorHandler.accept(message);
+
+                    // Lấy thông báo lỗi chi tiết từ Server ném ra qua Exception
+                    String errorMessage = error.getMessage();
+                    if (errorMessage == null || errorMessage.isBlank()) {
+                        errorMessage = "Invalid username or password.";
+                    }
+
+                    // Hiển thị chữ đỏ lỗi lên nhãn lblStatus và thực hiện hiệu ứng rung form
+                    showErrorState(errorMessage);
                 }
         );
     }
