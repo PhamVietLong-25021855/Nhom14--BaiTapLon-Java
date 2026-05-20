@@ -1,29 +1,39 @@
-# Server riêng cho hệ thống đấu giá
+# Server
 
-Server là tiến trình duy nhất được phép truy cập database. Client JavaFX chạy ở chế độ remote và chỉ gọi server qua Socket.
+Server là tiến trình duy nhất truy cập database. Client gửi `AuctionRequest` qua socket, server xử lý bằng controller/service/DAO và trả `AuctionResponse`.
 
-## Chạy server trên VPS
+## Build server
+
+Từ root project:
 
 ```bash
-export DB_PASSWORD="mat_khau_database_cua_ban"
-java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -cp "target/classes:target/dependency/*" userauth.server.AuctionServerMain
+mvn -ntp -pl server -am package -DskipTests
 ```
 
-## Chạy server trên Windows
+File chạy chính sau build:
+
+```text
+server/target/server-1.0.0-SNAPSHOT.jar
+```
+
+## Chạy server
+
+PowerShell:
 
 ```powershell
-.\server\run-server.ps1 -DbPassword "mat_khau_database_cua_ban" -ServerPort 5050
+$env:DB_PASSWORD="mat_khau_database"
+java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -jar server\target\server-1.0.0-SNAPSHOT.jar
 ```
 
-Nếu dùng Maven:
+Bash/Linux:
 
 ```bash
-DB_PASSWORD="mat_khau_database_cua_ban" mvn -DskipTests package
-java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -cp "target/classes:target/dependency/*" userauth.server.AuctionServerMain
+export DB_PASSWORD="mat_khau_database"
+java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -jar server/target/server-1.0.0-SNAPSHOT.jar
 ```
 
-## Cổng cần mở trên firewall
+## Cổng và database
 
-Mở TCP `5050` để client truy cập server. Database Akamai/MySQL chỉ cần server truy cập qua host/port MySQL.
-
-Mặc định server bind `0.0.0.0`, tức là lắng nghe trên mọi card mạng của máy server. Nếu client ở mạng khác, client vẫn cần kết nối tới public IP/domain của server và firewall/VPS firewall phải mở TCP `5050`.
+- App server mặc định dùng TCP `5050`.
+- MySQL config nằm ở `server/src/main/resources/database.properties`.
+- Không commit mật khẩu thật; truyền bằng `DB_PASSWORD` hoặc JVM property.

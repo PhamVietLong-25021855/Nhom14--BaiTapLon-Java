@@ -1,39 +1,31 @@
-# Client JavaFX riêng
+# Client JavaFX
 
-Client không truy cập database trực tiếp. Script client dùng `userauth.ClientLauncher`, chỉ khởi tạo remote service và gọi server qua Socket.
+Client chỉ hiển thị giao diện và gọi server qua socket. Client không truy cập database, không dùng DAO và không giữ mật khẩu database.
 
-## Chạy client trên máy người dùng
+## Chạy client
 
-Client mặc định trỏ tới VPS `172.104.50.54:5050`:
-
-```powershell
-.\client\run-client.ps1
-```
-
-Nếu đổi VPS hoặc dùng domain server:
+Từ thư mục `client`:
 
 ```powershell
-.\client\run-client.ps1 -ServerHost "IP_PUBLIC_HOAC_DOMAIN" -ServerPort 5050
+cd client
+.\run-client.ps1 -ServerHost "127.0.0.1" -ServerPort 5050
 ```
 
-Hoặc truyền VM options trong IntelliJ:
+Nếu không truyền `-ServerHost`, script sẽ đọc `APP_SERVER_HOST`; nếu biến này không có, mặc định dùng `172.104.50.54`.
 
-```text
--Dapp.server.host=172.104.50.54 -Dapp.server.port=5050
-```
-
-## Chạy qua SSH port 22
-
-Không chạy `AuctionServerMain` trực tiếp trên cổng `22` vì cổng này đang dùng cho SSH. Nếu VPS chỉ mở cổng `22`, hãy chạy app server trên VPS ở `127.0.0.1:5050` hoặc `0.0.0.0:5050`, rồi dùng SSH tunnel:
+## Chạy bằng Maven từ root
 
 ```powershell
-.\client\run-client-via-ssh.ps1
+mvn -pl client javafx:run "-Dmain.class=userauth.ClientLauncher" "-Dapp.server.host=127.0.0.1" "-Dapp.server.port=5050"
 ```
 
-Khi cửa sổ SSH hiện ra, đăng nhập và giữ cửa sổ đó mở. Client sẽ kết nối tới `127.0.0.1:5050`, còn đường mạng thật sẽ đi qua SSH port `22`.
+## Chạy qua SSH tunnel
 
-Nếu cần chạy lại chế độ local DB cũ trong source project, dùng script gốc ở thư mục root:
+Dùng khi VPS chỉ mở SSH hoặc không muốn mở public port cho app:
 
 ```powershell
-.\run-javafx.ps1 -LocalMode
+cd client
+.\run-client-via-ssh.ps1
 ```
+
+Giữ cửa sổ SSH mở trong lúc dùng client.

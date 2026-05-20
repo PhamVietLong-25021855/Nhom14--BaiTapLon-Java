@@ -1,33 +1,35 @@
-# Các design pattern đang dùng
+# Design Patterns
+
+Project dùng một số pattern chính để tách giao diện, nghiệp vụ và hạ tầng.
 
 ## Singleton
 
-`userauth.event.AuctionEventBus` được triển khai theo Singleton thông qua `getInstance()`.
+Dùng cho thành phần dùng chung toàn ứng dụng, ví dụ `AuctionEventBus`.
 
-- Ứng dụng dùng chung một event hub cho toàn bộ cập nhật đấu giá.
-- Controller đăng ký lắng nghe khi màn hình được kích hoạt và hủy đăng ký khi màn hình bị tắt.
+Mục đích: có một kênh phát event thống nhất giữa các phần cần theo dõi thay đổi phiên đấu giá.
 
 ## Factory Method
 
-`userauth.service.AuctionSettlementHandlerFactory` tạo handler xử lý trạng thái cuối của một phiên đấu giá đã kết thúc.
+Dùng trong `AuctionSettlementHandlerFactory`.
 
-- `PAID` dùng handler riêng cho trạng thái đã thanh toán.
-- `CANCELED` dùng handler riêng với logic validate và cập nhật trạng thái khác.
-- `AuctionService` ủy quyền luồng `FINISHED -> PAID/CANCELED` cho handler do factory tạo ra, thay vì viết cứng nhiều nhánh xử lý trong cùng một hàm.
+Mục đích: chọn handler phù hợp khi seller/admin xác nhận kết quả phiên đấu giá, ví dụ `PAID` hoặc `CANCELED`.
 
 ## Observer
 
-Luồng Observer xoay quanh các lớp:
+Dùng qua `AuctionEventBus` và `AuctionEventListener`.
 
-- `AuctionEventBus`
-- `AuctionEventListener`
-- `AuctionEvent`
+Mục đích: service phát event khi bid/status thay đổi, UI hoặc thành phần khác có thể subscribe để cập nhật.
 
-Các observer hiện tại:
+## Layered Architecture
 
-- `BidderDashboardViewController`
-- `SellerDashboardViewController`
+Server được chia theo lớp:
 
-Các publisher hiện tại:
+```text
+RequestHandler -> Controller -> Service -> DAO -> Database
+```
 
-- `AuctionService` phát sự kiện khi có bid mới, khi anti-sniping kéo dài thời gian, khi trạng thái phiên thay đổi và khi phiên đã kết thúc được xử lý thanh toán/hủy.
+Client được chia theo lớp:
+
+```text
+FXML Controller -> Remote Service -> Socket Client
+```

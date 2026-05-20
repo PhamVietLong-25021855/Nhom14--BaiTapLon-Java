@@ -1,65 +1,184 @@
 # Nhóm 14 - Hệ thống đấu giá trực tuyến
 
-Dự án sử dụng Java 25, JavaFX 25.0.2 và Maven. Bản nâng cấp hiện tại bổ sung kiến trúc Client-Server, hỗ trợ database MySQL trên Akamai/VPS và có bộ kiểm thử JUnit cho các logic quan trọng.
+Dự án JavaFX mô phỏng hệ thống đấu giá trực tuyến theo kiến trúc client-server. Client chỉ hiển thị giao diện và gửi request qua socket; server xử lý nghiệp vụ, quản lý ví, đấu giá, tự động đặt giá và truy cập MySQL.
 
-## Cấu trúc chính
+## Công nghệ sử dụng
+
+| Thành phần | Công nghệ |
+| --- | --- |
+| Ngôn ngữ | Java 21 |
+| Build tool | Maven multi-module |
+| Giao diện | JavaFX 21 |
+| Database | MySQL/Akamai DB |
+| Giao tiếp | Java Socket + request/response object |
+| Kiểm thử | JUnit 5 |
+
+## Chức năng chính
+
+- Đăng ký, đăng nhập, đổi mật khẩu và cập nhật hồ sơ.
+- Phân quyền `ADMIN`, `SELLER`, `BIDDER`.
+- Seller tạo, sửa, xóa/hủy và đóng phiên đấu giá.
+- Bidder xem phiên, đặt giá, dùng ví và cấu hình tự động đặt giá.
+- Admin quản lý tài khoản, thông báo trang chủ và lệnh đóng sớm phiên đấu giá.
+- Ví điện tử hỗ trợ nạp tiền, giữ tiền khi đang dẫn giá, hoàn tiền khi bị vượt giá và thu tiền khi phiên được xác nhận thanh toán.
+- Server có cache ngắn hạn, index database và các test JUnit cho logic quan trọng.
+
+## Cấu trúc project
 
 ```text
-User/src/userauth/                 Mã nguồn chính của dự án
-User/src/userauth/api/             Interface nghiệp vụ dùng chung cho client và server
-User/src/userauth/common/          Hằng số/logic dùng chung, không phụ thuộc database
-User/src/userauth/server/          Socket server chạy trên VPS hoặc máy host
-User/src/userauth/client/remote/   Remote service phía client, không truy cập database trực tiếp
-User/src/userauth/network/         Request/Response cho giao tiếp client-server
-User/src/userauth/gui/fxml/        Controller JavaFX đã chia theo từng nhóm màn hình
-User/resources/userauth/gui/fxml/  FXML/CSS đã chia theo từng nhóm giao diện
-client/                            Script và hướng dẫn chạy client
-server/                            Script và hướng dẫn chạy server
-docs/                              Tài liệu kỹ thuật
-src/test/java/                     Bộ kiểm thử JUnit
+pom.xml                         Parent Maven project
+core-common/                    Mã dùng chung cho client và server
+  src/main/java/userauth/api     Interface nghiệp vụ
+  src/main/java/userauth/model   Model domain
+  src/main/java/userauth/network Request/response qua socket
+  src/main/java/userauth/util    Tiện ích dùng chung
+  src/main/java/userauth/validation
+client/                         Ứng dụng JavaFX
+  src/main/java/userauth/remote  Remote service gọi server
+  src/main/java/userauth/gui     Controller JavaFX
+  src/main/resources             FXML/CSS
+server/                         Backend socket server
+  src/main/java/userauth/server  Server main, socket, request handler
+  src/main/java/userauth/service Nghiệp vụ
+  src/main/java/userauth/dao     Truy cập database
+  src/main/resources             Cấu hình database
+docs/                           Tài liệu kỹ thuật rút gọn
+scripts/                        Script hỗ trợ deploy/tách client-server
 ```
 
-## Chạy server trên VPS
+## Luồng xử lý
+
+```text
+JavaFX Client
+  -> Remote*Service
+  -> AuctionRequest qua socket
+  -> AuctionRequestHandler
+  -> Controller
+  -> Service
+  -> DAO
+  -> MySQL
+```
+
+Server trả kết quả bằng `AuctionResponse`. Client không giữ mật khẩu database và không truy cập DAO trực tiếp.
+
+## Cấu hình database
+
+File cấu hình chính nằm tại:
+
+```text
+server/src/main/resources/database.properties
+```
+
+Mật khẩu không nên ghi cứng vào Git. Khi chạy server, truyền bằng biến môi trường hoặc JVM property:
+
+```powershell
+$env:DB_PASSWORD="mat_khau_database"
+```
 
 ```bash
-export DB_PASSWORD="mat_khau_database_cua_ban"
-mvn -DskipTests package
-mvn dependency:copy-dependencies -DincludeScope=runtime
-java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -cp "target/classes:target/dependency/*" userauth.server.AuctionServerMain
+export DB_PASSWORD="mat_khau_database"
 ```
 
-## Chạy server trên Windows
+## Build và kiểm thử
+
+Chạy toàn bộ test:
+
+```bash
+mvn -ntp test
+```
+
+Build toàn project:
+
+```bash
+mvn -ntp package
+```
+
+Build riêng server kèm module phụ thuộc:
+
+```bash
+mvn -ntp -pl server -am package -DskipTests
+```
+
+## Chạy server
+
+Sau khi build, chạy server bằng shaded jar:
 
 ```powershell
-.\server\run-server.ps1 -DbPassword "mat_khau_database_cua_ban" -ServerPort 5050
+$env:DB_PASSWORD="mat_khau_database"
+java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -jar server\target\server-1.0.0-SNAPSHOT.jar
 ```
 
-## Chạy client JavaFX
+Trên Linux/VPS:
+
+```bash
+export DB_PASSWORD="mat_khau_database"
+java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -jar server/target/server-1.0.0-SNAPSHOT.jar
+```
+
+Port mặc định của server là `5050`. Nếu client chạy từ máy khác, cần mở TCP `5050` trên firewall/VPS.
+
+## Chạy client
+
+Từ thư mục `client`:
 
 ```powershell
-.\client\run-client.ps1 -ServerHost "172.104.50.54" -ServerPort 5050
+cd client
+.\run-client.ps1 -ServerHost "IP_PUBLIC_HOAC_DOMAIN" -ServerPort 5050
 ```
 
-Client dùng entry point `userauth.ClientLauncher`, chỉ gọi server qua Socket và không khởi tạo DAO/database. Nếu đổi VPS hoặc domain, truyền lại `-ServerHost ...` hoặc đặt biến môi trường `APP_SERVER_HOST`.
-
-Nếu VPS chỉ mở cổng SSH `22`, không chạy ứng dụng trực tiếp trên cổng `22`. Hãy chạy app server trên VPS ở cổng `5050`, sau đó chạy client qua SSH tunnel:
+Hoặc chạy Maven trực tiếp từ root:
 
 ```powershell
-.\client\run-client-via-ssh.ps1
+mvn -pl client javafx:run "-Dmain.class=userauth.ClientLauncher" "-Dapp.server.host=127.0.0.1" "-Dapp.server.port=5050"
 ```
 
-## Tách client/server để deploy trên 2 máy
+Nếu server ở VPS nhưng chỉ mở SSH, dùng SSH tunnel trong `client/run-client-via-ssh.ps1`.
+
+## Luồng ví và đặt giá
+
+Ví có 3 số liệu chính:
+
+| Trường | Ý nghĩa |
+| --- | --- |
+| `balance` | Tổng số tiền trong ví |
+| `reservedBalance` | Tiền đang bị giữ cho giá dẫn đầu |
+| `availableBalance` | Tiền còn có thể dùng, bằng `balance - reservedBalance` |
+
+Ví dụ:
+
+| Thao tác | Balance | Reserved | Available |
+| --- | ---: | ---: | ---: |
+| Nạp 1,000,000 | 1,000,000 | 0 | 1,000,000 |
+| Đặt giá 500,000 | 1,000,000 | 500,000 | 500,000 |
+| Bị người khác vượt giá | 1,000,000 | 0 | 1,000,000 |
+| Thắng và được xác nhận PAID | 500,000 | 0 | 500,000 |
+
+Các nghiệp vụ chính nằm trong `WalletService`: giữ tiền khi đặt giá, giải phóng tiền khi bị vượt, thu tiền khi thanh toán và hoàn tiền khi hủy.
+
+## Tách client/server để deploy
+
+Script hỗ trợ tạo 2 gói runtime riêng:
 
 ```powershell
 .\scripts\split-client-server.ps1
 ```
 
-Hướng dẫn chi tiết: `docs/split-client-server.md`
+Kết quả nằm trong `dist/server` và `dist/client`. Gói client không chứa DAO, service backend, database config hoặc MySQL driver.
 
-Gói `dist/client` được kiểm tra để không chứa `userauth/server`, `userauth/database`, `userauth/dao`, `userauth/service`, `database.properties` hoặc MySQL driver.
+## Tài liệu thêm
 
-## Chạy kiểm thử
+- `client/README-CLIENT.md`: cách chạy client.
+- `server/README-SERVER.md`: cách chạy server.
+- `docs/DEPLOY-GUIDE.md`: checklist deploy VPS ngắn gọn.
+- `docs/optimization-guide.md`: các tối ưu hiệu năng đang dùng.
+- `docs/design-patterns.md`: các design pattern chính.
+- `docs/split-client-server.md`: cách tách gói client/server.
 
-```bash
-mvn test
-```
+## Lỗi thường gặp
+
+| Lỗi | Cách kiểm tra nhanh |
+| --- | --- |
+| Client không kết nối được server | Kiểm tra IP/domain, port `5050`, firewall và server log |
+| Server không kết nối được database | Kiểm tra `DB_PASSWORD`, host/port MySQL và trusted sources |
+| Không đặt giá được sau khi nạp tiền | Kiểm tra số dư ví, giá đặt có lớn hơn giá hiện tại không, và log `[Wallet]` |
+| FXML không load | Chạy `mvn test` để kiểm tra resource/controller consistency |
