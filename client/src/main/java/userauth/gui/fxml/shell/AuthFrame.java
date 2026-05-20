@@ -127,6 +127,11 @@ public class AuthFrame {
     }
 
     public void showRoleDashboard(User user) {
+        if (user == null) {
+            NotificationUtil.error(stage, "LOGIN FAILED", "Login failed.");
+            showLogin();
+            return;
+        }
         switch (user.getRole()) {
             case ADMIN -> showAdminDashboard(user);
             case SELLER -> {

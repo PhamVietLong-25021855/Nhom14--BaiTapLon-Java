@@ -1426,12 +1426,12 @@
 }
 
 .chart-series-line {
-    -fx-stroke: -app-teal-1;
+    -fx-stroke: #12917c;
     -fx-stroke-width: 2.4px;
 }
 
 .default-color0.chart-line-symbol {
-    -fx-background-color: -app-teal-1, white;
+    -fx-background-color: #12917c, white;
     -fx-background-insets: 0, 2;
     -fx-background-radius: 8px;
     -fx-padding: 5px;
