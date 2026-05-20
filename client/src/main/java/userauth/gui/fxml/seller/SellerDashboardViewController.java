@@ -26,6 +26,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,7 +78,10 @@ public class SellerDashboardViewController {
     private TextField txtImageSource;
 
     @FXML
-    private Spinner<Integer> spinDuration;
+    private DatePicker dpEndDate;
+
+    @FXML
+    private TextField txtEndTime;
 
     @FXML
     private Button btnCreate;
@@ -137,12 +143,10 @@ public class SellerDashboardViewController {
 
     @FXML
     private void initialize() {
-        if (spinDuration.getValueFactory() == null) {
-            spinDuration.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 99999, 30));
-        }
         UiInput.installMoneyInput(txtPrice);
-        UiInput.installPositiveIntegerInput(spinDuration.getEditor());
-
+        // Đặt giá trị mặc định khi mở màn hình là ngày hôm nay và kết thúc vào cuối ngày
+        dpEndDate.setValue(LocalDate.now());
+        txtEndTime.setText("23:59");
         AuctionImageUtil.installRoundedClip(imgPreviewImage, 32, 32);
 
         colId.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
@@ -252,16 +256,41 @@ public class SellerDashboardViewController {
             String imageSource = resolveImageSourceForSave(rawImageInput);
             byte[] imageData = workingImageData;
             double price = UiInput.parsePositiveDecimal(txtPrice.getText(), "Starting price");
-            int durationMinutes = readDurationMinutes();
-            long start = System.currentTimeMillis();
-            long end = start + (long) durationMinutes * 60 * 1000;
+            // Bóc tách Ngày
+            LocalDate date = dpEndDate.getValue();
+            String timeStr = txtEndTime.getText();
+
+            if (date == null || timeStr == null || timeStr.trim().isEmpty()) {
+                NotificationUtil.error(ownerWindow(), "Validation Error", "Please select an end date and enter the time.");
+                return;
+            }
+
+            // Bóc tách Giờ
+            LocalTime time;
+            try {
+                time = LocalTime.parse(timeStr.trim(), DateTimeFormatter.ofPattern("HH:mm"));
+            } catch (DateTimeParseException e) {
+                NotificationUtil.error(ownerWindow(), "Validation Error", "Invalid time format. Please use HH:mm (e.g., 14:30).");
+                return;
+            }
+
+            // Gộp Ngày và Giờ lại, sau đó đổi sang mili-giây (long) để ném xuống Backend
+            LocalDateTime endDateTime = LocalDateTime.of(date, time);
+            long endTime = endDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+            long startTime = System.currentTimeMillis();
+
+            if (endTime <= startTime) {
+                NotificationUtil.error(ownerWindow(), "Validation Error", "The end time must be in the future!");
+                return;
+            }
+
             int sellerId = currentUser.getId();
             int currentEditingId = editingId;
 
             runActionAsync(
                     currentEditingId == -1
-                            ? () -> auctionController.createAuction(name, desc, price, start, end, category, imageSource, imageData, sellerId)
-                            : () -> auctionController.updateAuction(currentEditingId, sellerId, name, desc, price, start, end, category, imageSource, imageData),
+                            ? () -> auctionController.createAuction(name, desc, price, startTime, endTime, category, imageSource, imageData, sellerId)
+                            : () -> auctionController.updateAuction(currentEditingId, sellerId, name, desc, price, startTime, endTime, category, imageSource, imageData),
                     "Auction saved successfully.",
                     () -> {
                         resetForm();
@@ -320,9 +349,10 @@ public class SellerDashboardViewController {
         txtDesc.setText(item.getDescription());
         txtImageSource.setText(item.getImageSource() == null ? "" : item.getImageSource());
 
-        long durationMs = item.getEndTime() - item.getStartTime();
-        int durationMin = (int) Math.max(1, durationMs / 60000);
-        spinDuration.getValueFactory().setValue(durationMin);
+        // Chuyển đổi mili-giây của phiên đấu giá thành đối tượng Ngày Giờ địa phương
+        LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(item.getEndTime()), ZoneId.systemDefault());
+        dpEndDate.setValue(endDateTime.toLocalDate());
+        txtEndTime.setText(endDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")));
         btnCreate.setText(UiText.text("SAVE CHANGES"));
         updatePreview();
     }
@@ -498,8 +528,8 @@ public class SellerDashboardViewController {
         txtCategory.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtImageSource.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtPrice.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
-        spinDuration.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
-        spinDuration.getEditor().textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        dpEndDate.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        txtEndTime.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
     }
 
     private void updatePreview() {
@@ -515,13 +545,20 @@ public class SellerDashboardViewController {
                 : txtDesc.getText().trim();
         String category = txtCategory.getText() == null || txtCategory.getText().isBlank() ? UiText.text("Category") : txtCategory.getText().trim();
         String price = parsePricePreview();
-        int duration = readDurationPreview();
 
         AuctionImageUtil.applyAuctionImage(imgPreviewImage, lblPreviewInitial, workingImageData, workingImagePreviewSource, name);
         lblPreviewName.setText(name);
         lblPreviewDescription.setText(description);
         lblPreviewCategory.setText(category);
-        lblPreviewDuration.setText(duration + " " + UiText.text("minutes"));
+        // Hiển thị ngày giờ kết thúc lên Preview Card
+        LocalDate previewDate = dpEndDate.getValue();
+        String previewTime = txtEndTime.getText() == null ? "" : txtEndTime.getText().trim();
+        if (previewDate != null && !previewTime.isBlank()) {
+            lblPreviewDuration.setText(previewDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " " + previewTime);
+        } else {
+            lblPreviewDuration.setText(UiText.text("Not set"));
+        }
+
         lblPreviewPrice.setText(price);
         lblPreviewMode.setText(editingId == -1
                 ? UiText.text("Creating a new auction")
@@ -589,9 +626,8 @@ public class SellerDashboardViewController {
         txtPrice.clear();
         txtCategory.clear();
         txtImageSource.clear();
-        if (spinDuration.getValueFactory() != null) {
-            spinDuration.getValueFactory().setValue(30);
-        }
+        dpEndDate.setValue(LocalDate.now());
+        txtEndTime.setText("23:59");
         btnCreate.setText(UiText.text("CREATE NEW"));
         updatePreview();
     }
@@ -632,35 +668,6 @@ public class SellerDashboardViewController {
             return "";
         }
         return control.getText().trim();
-    }
-
-    private int readDurationMinutes() {
-        String editorText = spinDuration.getEditor() == null ? "" : spinDuration.getEditor().getText();
-        int duration;
-        if (editorText == null || editorText.isBlank()) {
-            Integer currentValue = spinDuration.getValue();
-            duration = currentValue == null ? 30 : currentValue;
-            if (duration <= 0) {
-                throw new NumberFormatException("Auction duration must be greater than 0.");
-            }
-        } else {
-            duration = UiInput.parsePositiveInteger(editorText, "Auction duration");
-        }
-        spinDuration.getValueFactory().setValue(duration);
-        return duration;
-    }
-
-    private int readDurationPreview() {
-        try {
-            String editorText = spinDuration.getEditor() == null ? "" : spinDuration.getEditor().getText();
-            if (editorText != null && !editorText.isBlank()) {
-                return UiInput.parsePositiveInteger(editorText, "Auction duration");
-            }
-        } catch (NumberFormatException ignored) {
-            return 30;
-        }
-        Integer value = spinDuration.getValue();
-        return value == null || value <= 0 ? 30 : value;
     }
 
     private String resolveImageSourceForSave(String rawImageInput) {
@@ -793,8 +800,11 @@ public class SellerDashboardViewController {
         if (txtImageSource != null) {
             txtImageSource.setDisable(busy);
         }
-        if (spinDuration != null) {
-            spinDuration.setDisable(busy);
+        if (dpEndDate != null) {
+            dpEndDate.setDisable(busy);
+        }
+        if (txtEndTime != null) {
+            txtEndTime.setDisable(busy);
         }
         if (btnCreate != null) {
             btnCreate.setDisable(busy);

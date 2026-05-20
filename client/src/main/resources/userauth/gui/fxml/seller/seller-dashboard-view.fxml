@@ -21,6 +21,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
+<?import javafx.scene.control.DatePicker?>
 <StackPane maxHeight="Infinity" maxWidth="Infinity" prefHeight="920.0" prefWidth="1440.0" styleClass="page-root dashboard-root" stylesheets="@../shared/auth-theme.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.seller.SellerDashboardViewController">
     <children>
         <HBox maxHeight="Infinity" maxWidth="Infinity" spacing="20.0" styleClass="shell-frame">
@@ -159,8 +160,13 @@
                                                                                 </VBox>
                                                                                 <VBox spacing="8.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
                                                                                     <children>
-                                                                                        <Label styleClass="field-label" text="Auction Duration (minutes)" />
-                                                                                        <Spinner fx:id="spinDuration" editable="true" maxWidth="Infinity" prefWidth="240.0" />
+                                                                                        <Label styleClass="field-label" text="END DATE &amp; TIME" />
+                                                                                        <HBox spacing="10.0">
+                                                                                            <children>
+                                                                                                <DatePicker fx:id="dpEndDate" prefWidth="180.0" promptText="Select end date" styleClass="text-field" />
+                                                                                                <TextField fx:id="txtEndTime" prefWidth="120.0" promptText="HH:mm (e.g., 14:30)" />
+                                                                                            </children>
+                                                                                        </HBox>
                                                                                     </children>
                                                                                 </VBox>
                                                                                 <VBox spacing="8.0" GridPane.columnSpan="2" GridPane.rowIndex="2">
