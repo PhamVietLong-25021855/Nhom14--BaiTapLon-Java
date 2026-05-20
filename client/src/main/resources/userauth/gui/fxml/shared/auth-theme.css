@@ -9,7 +9,11 @@
  *   forcing -fx-text-fill on every control.
  */
 
-.root {
+.page-root,
+.dialog-root,
+.toast-root,
+.landing-root,
+.dashboard-root {
     -fx-font-family: "Segoe UI Variable", "Bahnschrift", "Segoe UI", sans-serif;
     -fx-font-smoothing-type: lcd;
 
