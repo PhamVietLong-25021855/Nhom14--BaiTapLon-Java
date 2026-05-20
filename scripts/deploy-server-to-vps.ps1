@@ -15,6 +15,7 @@ if (-not $DbPassword) {
 }
 
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot "use-jdk21.ps1")
 
 Push-Location $root
 try {

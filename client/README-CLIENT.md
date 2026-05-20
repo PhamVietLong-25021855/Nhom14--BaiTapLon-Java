@@ -29,3 +29,23 @@ cd client
 ```
 
 Giữ cửa sổ SSH mở trong lúc dùng client.
+
+## JDK 25 / IntelliJ warnings
+
+This project targets Java 21 and JavaFX 21. If IntelliJ runs
+`userauth.ClientLauncher` directly with JDK 25, JavaFX can print warnings about
+unnamed modules, native access, or `sun.misc.Unsafe`. They are JVM/runtime
+warnings, not server connection errors.
+
+Recommended: set the IntelliJ Project SDK and Run Configuration JRE to JDK 21.
+
+If you keep JDK 25, add this VM option to the IntelliJ Application run
+configuration:
+
+```text
+--enable-native-access=ALL-UNNAMED
+```
+
+To avoid the `Unsupported JavaFX configuration` warning too, run the client via
+the Maven JavaFX goal or the PowerShell script instead of IntelliJ's direct
+classpath launcher.

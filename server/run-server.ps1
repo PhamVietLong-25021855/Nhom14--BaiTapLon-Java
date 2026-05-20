@@ -31,6 +31,8 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 if ($root -eq "") { $root = "." }
 Set-Location $root
+$repoRoot = Split-Path -Parent $root
+. (Join-Path $repoRoot "scripts\use-jdk21.ps1")
 
 # Load DB_PASSWORD from environment if not provided
 if (-not $DbPassword) {

@@ -17,6 +17,7 @@ param(
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $root
+. (Join-Path $root "scripts\use-jdk21.ps1")
 
 if ($LocalMode) {
     $ClientMode = "local"
