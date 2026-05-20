@@ -198,6 +198,41 @@ public class WalletService implements WalletApi {
         }, userId);
     }
 
+    public void reconcileReservedBalance(int userId, long expectedReservedBalance) throws ValidationException {
+        if (expectedReservedBalance < 0) {
+            throw new ValidationException("Expected reserved balance cannot be negative.");
+        }
+        try {
+            withWalletLocks(() -> {
+                Wallet wallet = getOrCreateWallet(userId);
+                long targetReservedBalance = Math.min(expectedReservedBalance, wallet.getBalance());
+                long currentReservedBalance = wallet.getReservedBalance();
+                if (currentReservedBalance == targetReservedBalance) {
+                    return null;
+                }
+
+                wallet.setReservedBalance(targetReservedBalance);
+                wallet.setUpdatedAt(System.currentTimeMillis());
+                walletDAO.updateWallet(wallet);
+
+                long delta = Math.abs(targetReservedBalance - currentReservedBalance);
+                WalletTransactionType type = targetReservedBalance > currentReservedBalance
+                        ? WalletTransactionType.RESERVE
+                        : WalletTransactionType.RELEASE;
+                logWalletTransaction(userId, type, delta, null, "reservation_reconcile");
+
+                System.out.println("[Wallet] Reconciled reserved balance for user " + userId +
+                        " - Expected: " + formatMoney(expectedReservedBalance) +
+                        ", Before: " + formatMoney(currentReservedBalance) +
+                        ", After: " + formatMoney(targetReservedBalance) +
+                        ", Available: " + formatMoney(wallet.getAvailableBalance()));
+                return null;
+            }, userId);
+        } catch (ItemNotFoundException ex) {
+            throw new IllegalStateException("Unexpected wallet lookup failure.", ex);
+        }
+    }
+
      private void reserveAdditionalFunds(int userId, long amount) throws ItemNotFoundException, ValidationException {
          validatePositiveAmount(amount, "Reserved amount");
          Wallet wallet = getOrCreateWallet(userId);

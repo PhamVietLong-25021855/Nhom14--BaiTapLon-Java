@@ -616,6 +616,7 @@
     -fx-font-weight: 800;
     -fx-text-background-color: -app-ink;
     -fx-text-base-color: -app-ink;
+    -fx-wrap-text: true;
 }
 
 .hint-text {
@@ -1038,6 +1039,8 @@
     -fx-font-size: 13px;
     -fx-font-weight: 800;
     -fx-min-height: 42px;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
 }
 
 .button:hover {
@@ -1329,6 +1332,8 @@
     -fx-text-background-color: -app-copy;
     -fx-text-base-color: -app-copy;
     -fx-padding: 10 8 10 8;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
 }
 
 .table-row-cell {
