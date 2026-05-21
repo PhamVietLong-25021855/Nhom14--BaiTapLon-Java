@@ -6,6 +6,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
@@ -52,52 +53,56 @@
                 </StackPane>
                 <VBox prefWidth="520.0" HBox.hgrow="ALWAYS">
                     <children>
-                        <VBox fx:id="registerCard" maxWidth="520.0" prefWidth="520.0" spacing="16.0" styleClass="auth-card">
-                            <children>
-                                <HBox alignment="CENTER_LEFT" spacing="12.0">
-                                    <children>
-                                        <Button mnemonicParsing="false" onAction="#handleShowHome" styleClass="button home-icon-button">
-                                            <graphic>
-                                                <SVGPath content="M 12 4 L 3 11 H 5 V 20 H 10 V 14 H 14 V 20 H 19 V 11 H 21 Z" styleClass="home-icon-shape" />
-                                            </graphic>
-                                        </Button>
-                                        <VBox spacing="2.0">
-                                            <children>
-                                                <Label styleClass="auth-form-title" text="ACCOUNT REGISTRATION" />
-                                                <Label styleClass="auth-form-copy" text="Complete all required information to join the online auction system." wrapText="true" />
-                                            </children>
-                                        </VBox>
-                                    </children>
-                                </HBox>
-                                <Button mnemonicParsing="false" onAction="#handleBackToLogin" styleClass="button ghost-button" text="BACK TO LOGIN" />
-                                <VBox fx:id="fieldContainer" spacing="10.0">
-                                    <children>
-                                        <Label styleClass="field-label" text="Username" />
-                                        <TextField fx:id="txtUsername" promptText="Enter username" />
-                                        <Label styleClass="field-label" text="Full Name" />
-                                        <TextField fx:id="txtFullName" promptText="Enter your full name" />
-                                        <Label styleClass="field-label" text="Email" />
-                                        <TextField fx:id="txtEmail" promptText="Enter email address" />
-                                        <Label styleClass="field-label" text="Password" />
-                                        <PasswordField fx:id="txtPassword" promptText="Password must be at least 6 characters and include letters and numbers" />
-                                        <Label styleClass="field-label" text="Confirm Password" />
-                                        <PasswordField fx:id="txtConfirmPassword" onAction="#handleRegister" promptText="Confirm your password" />
-                                        <Label styleClass="field-label" text="Role" />
-                                        <ComboBox fx:id="cbRole" prefWidth="476.0" value="BIDDER">
-                                            <items>
-                                                <FXCollections fx:factory="observableArrayList">
-                                                    <String fx:value="BIDDER" />
-                                                    <String fx:value="SELLER" />
-                                                </FXCollections>
-                                            </items>
-                                        </ComboBox>
-                                    </children>
-                                </VBox>
-                                <Label fx:id="lblStatus" managed="false" styleClass="error-text" text="Status" visible="false" wrapText="true" />
-                                <Label fx:id="lblValidationHint" styleClass="hint-text" text="A valid password must have at least 6 characters and include both letters and numbers." wrapText="true" />
-                                <Button mnemonicParsing="false" onAction="#handleRegister" prefWidth="180.0" styleClass="button success-button" text="COMPLETE REGISTRATION" />
-                            </children>
-                        </VBox>
+                  <ScrollPane fitToHeight="true" fitToWidth="true">
+                     <content>
+                              <VBox fx:id="registerCard" maxWidth="520.0" prefWidth="520.0" spacing="16.0" styleClass="auth-card">
+                                  <children>
+                                      <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                          <children>
+                                              <Button mnemonicParsing="false" onAction="#handleShowHome" styleClass="button home-icon-button">
+                                                  <graphic>
+                                                      <SVGPath content="M 12 4 L 3 11 H 5 V 20 H 10 V 14 H 14 V 20 H 19 V 11 H 21 Z" styleClass="home-icon-shape" />
+                                                  </graphic>
+                                              </Button>
+                                              <VBox spacing="2.0">
+                                                  <children>
+                                                      <Label styleClass="auth-form-title" text="ACCOUNT REGISTRATION" />
+                                                      <Label styleClass="auth-form-copy" text="Complete all required information to join the online auction system." wrapText="true" />
+                                                  </children>
+                                              </VBox>
+                                          </children>
+                                      </HBox>
+                                      <Button mnemonicParsing="false" onAction="#handleBackToLogin" styleClass="button ghost-button" text="BACK TO LOGIN" />
+                                      <VBox fx:id="fieldContainer" spacing="10.0">
+                                          <children>
+                                              <Label styleClass="field-label" text="Username" />
+                                              <TextField fx:id="txtUsername" promptText="Enter username" />
+                                              <Label styleClass="field-label" text="Full Name" />
+                                              <TextField fx:id="txtFullName" promptText="Enter your full name" />
+                                              <Label styleClass="field-label" text="Email" />
+                                              <TextField fx:id="txtEmail" promptText="Enter email address" />
+                                              <Label styleClass="field-label" text="Password" />
+                                              <PasswordField fx:id="txtPassword" promptText="Password must be at least 6 characters and include letters and numbers" />
+                                              <Label styleClass="field-label" text="Confirm Password" />
+                                              <PasswordField fx:id="txtConfirmPassword" onAction="#handleRegister" promptText="Confirm your password" />
+                                              <Label styleClass="field-label" text="Role" />
+                                              <ComboBox fx:id="cbRole" prefWidth="476.0" value="BIDDER">
+                                                  <items>
+                                                      <FXCollections fx:factory="observableArrayList">
+                                                          <String fx:value="BIDDER" />
+                                                          <String fx:value="SELLER" />
+                                                      </FXCollections>
+                                                  </items>
+                                              </ComboBox>
+                                          </children>
+                                      </VBox>
+                                      <Label fx:id="lblStatus" managed="false" styleClass="error-text" text="Status" visible="false" wrapText="true" />
+                                      <Label fx:id="lblValidationHint" styleClass="hint-text" text="A valid password must have at least 6 characters and include both letters and numbers." wrapText="true" />
+                                      <Button mnemonicParsing="false" onAction="#handleRegister" prefWidth="180.0" styleClass="button success-button" text="COMPLETE REGISTRATION" />
+                                  </children>
+                              </VBox>
+                     </content>
+                  </ScrollPane>
                     </children>
                 </VBox>
             </children>
