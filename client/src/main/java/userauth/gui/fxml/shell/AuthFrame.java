@@ -63,7 +63,7 @@ public class AuthFrame {
         stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
         stage.setMinWidth(980);
         stage.setMinHeight(700);
-        stage.setMaximized(OPEN_FULLSCREEN);
+        stage.setMaximized(true);
 
         LoadedView<AppShellController> shellView = FxmlRuntime.loadView(AuthFrame.class, "shell/app-shell.fxml", "view");
         this.shellController = shellView.controller();
