@@ -19,7 +19,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane maxHeight="Infinity" maxWidth="Infinity" prefHeight="960.0" prefWidth="1480.0" styleClass="page-root dashboard-root" stylesheets="@../shared/auth-theme.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.bidder.BidderDashboardViewController">
+<StackPane maxHeight="Infinity" maxWidth="Infinity" prefHeight="960.0" prefWidth="1480.0" styleClass="page-root dashboard-root" stylesheets="@../shared/auth-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.bidder.BidderDashboardViewController">
     <children>
         <HBox maxHeight="Infinity" maxWidth="Infinity" spacing="20.0" styleClass="shell-frame">
             <children>
@@ -144,7 +144,6 @@
                                                                         <FlowPane hgap="10.0" prefWrapLength="900.0" vgap="10.0">
                                                                             <children>
                                                                                 <Button minWidth="138.0" mnemonicParsing="false" onAction="#handleShowHistory" styleClass="button ghost-button" text="BID HISTORY" />
-                                                                                <Button minWidth="158.0" mnemonicParsing="false" onAction="#handleChangePassword" styleClass="button ghost-button" text="CHANGE PASSWORD" />
                                                                             </children>
                                                                         </FlowPane>
                                                                     </children>
@@ -295,18 +294,6 @@
                                                                 <Button fx:id="btnPlaceBid" maxWidth="Infinity" mnemonicParsing="false" onAction="#handlePlaceBid" styleClass="button primary-button" text="PLACE BID NOW" />
                                                             </children>
                                                         </VBox>
-                                                        <VBox spacing="12.0" styleClass="panel-card">
-                                                            <children>
-                                                                <HBox alignment="CENTER_LEFT" spacing="10.0">
-                                                                    <children>
-                                                                        <Label styleClass="panel-title" text="LIVE BID FEED" />
-                                                                        <Region HBox.hgrow="ALWAYS" />
-                                                                        <Label fx:id="lblLiveBidCount" styleClass="secondary-text" text="0 transactions" />
-                                                                    </children>
-                                                                </HBox>
-                                                                <VBox fx:id="bidsLiveContainer" spacing="10.0" />
-                                                            </children>
-                                                        </VBox>
                                           <VBox spacing="12.0" styleClass="panel-card chart-card">
                                              <children>
                                                 <Label styleClass="panel-title" text="Auto Bidding (Current auction)" />
@@ -322,6 +309,18 @@
                                                 </HBox>
                                              </children>
                                           </VBox>
+                                                        <VBox spacing="12.0" styleClass="panel-card">
+                                                            <children>
+                                                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                                                    <children>
+                                                                        <Label styleClass="panel-title" text="LIVE BID FEED" />
+                                                                        <Region HBox.hgrow="ALWAYS" />
+                                                                        <Label fx:id="lblLiveBidCount" styleClass="secondary-text" text="0 transactions" />
+                                                                    </children>
+                                                                </HBox>
+                                                                <VBox fx:id="bidsLiveContainer" spacing="10.0" />
+                                                            </children>
+                                                        </VBox>
                                                     </children>
                                                 </VBox>
                                             </children>
