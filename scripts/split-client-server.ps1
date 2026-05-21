@@ -7,6 +7,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot "use-jdk21.ps1")
 $distRoot = Join-Path $root $OutputDir
 $serverDir = Join-Path $distRoot $ServerFolderName
 $clientDir = Join-Path $distRoot $ClientFolderName

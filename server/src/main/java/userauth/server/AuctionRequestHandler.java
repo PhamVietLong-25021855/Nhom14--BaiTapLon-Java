@@ -85,7 +85,7 @@ public final class AuctionRequestHandler {
 
             case NetworkActions.WALLET_GET -> context.getWalletController().getWallet(integer(request, "userId"));
             case NetworkActions.WALLET_TOP_UP -> context.getWalletController().createTopUpRequest(
-                    integer(request, "userId"), dbl(request, "amount"), (PaymentMethod) request.get("method"));
+                    integer(request, "userId"), lng(request, "amount"), (PaymentMethod) request.get("method"));
             case NetworkActions.WALLET_TOP_UP_HISTORY -> context.getWalletController().getTopUpHistory(integer(request, "userId"));
 
             case NetworkActions.HOMEPAGE_ALL -> context.getHomepageController().getAllAnnouncements();

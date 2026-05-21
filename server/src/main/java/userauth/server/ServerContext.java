@@ -39,6 +39,7 @@ public final class ServerContext {
         this.walletController = new WalletController(walletService);
 
         this.auctionService = new AuctionService(auctionDAO, autoBidDAO, walletService);
+        this.auctionService.reconcileReservedBalances();
         this.auctionController = new AuctionController(this.auctionService);
 
         AutobidService autobidService = new AutobidService(autoBidDAO, this.auctionService);

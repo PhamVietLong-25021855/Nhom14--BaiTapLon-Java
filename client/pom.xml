@@ -45,6 +45,9 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>userauth.ClientLauncher</mainClass>
+                    <options>
+                        <option>--enable-native-access=ALL-UNNAMED</option>
+                    </options>
                 </configuration>
             </plugin>
         </plugins>

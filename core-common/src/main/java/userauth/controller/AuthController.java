@@ -31,7 +31,7 @@ public class AuthController {
         try {
             return authService.login(username, password);
         } catch (UnauthorizedException e) {
-            return null;
+            throw new IllegalStateException(e.getMessage(), e);
         }
     }
 

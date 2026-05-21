@@ -1,34 +1,30 @@
-# Nâng cấp Client-Server
+# Nâng Cấp Client-Server
 
-## Mục tiêu
+Project đã được tách thành 3 module Maven:
 
-- Tách tiến trình chạy thành `Server` và `Client`.
-- Chỉ server được mở kết nối JDBC tới database.
-- Client JavaFX chạy ở `remote mode` và gọi server qua Socket.
-- Bổ sung kiểm thử JUnit cho logic đăng ký, đăng nhập và đấu giá đồng thời.
+| Module | Vai trò |
+| --- | --- |
+| `core-common` | Model, API interface, request/response, util dùng chung |
+| `client` | JavaFX UI và remote service gọi server |
+| `server` | Socket server, service, DAO và database |
 
-## Luồng chạy mới
+## Luồng chạy
 
 ```text
-JavaFX Client
-   |
-   | Socket request/response
-   v
-AuctionServerMain
-   |
-   v
-Controller -> Service -> DAO -> Akamai MySQL
+Client JavaFX -> Remote service -> Socket -> Server handler -> Service -> DAO -> MySQL
 ```
 
-## Entry point chính
+Client không truy cập database trực tiếp. Toàn bộ quyền truy cập MySQL nằm ở server.
 
-- `userauth.server.AuctionServerMain`: chạy server trên VPS hoặc máy host.
-- `userauth.Launcher`: chạy JavaFX client. Thêm `-Dapp.client.mode=remote` để bật chế độ client-server.
-- `userauth.client.remote.*`: các service remote giúp client không truy cập database trực tiếp.
-- `userauth.network.*`: request/response dùng cho giao tiếp socket.
+## Entry point
 
-## Kiểm thử đã thêm
+- Client: `userauth.ClientLauncher`
+- Server: `userauth.server.AuctionServerMain`
 
-- `AuthServiceTest`: kiểm thử đăng ký, đăng nhập, trùng username và sai mật khẩu.
-- `AuctionServiceTest`: kiểm thử bid không hợp lệ và nhiều bidder đặt giá đồng thời.
-- Các test service khác kiểm tra lifecycle phiên đấu giá, auto-bid, settlement và validation.
+## Kiểm thử liên quan
+
+- FXML/resource consistency.
+- Remote client config.
+- Network request/response.
+- Event bus.
+- Wallet, cache và settlement logic ở server.

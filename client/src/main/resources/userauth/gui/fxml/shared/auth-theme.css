@@ -9,7 +9,11 @@
  *   forcing -fx-text-fill on every control.
  */
 
-.root {
+.page-root,
+.dialog-root,
+.toast-root,
+.landing-root,
+.dashboard-root {
     -fx-font-family: "Segoe UI Variable", "Bahnschrift", "Segoe UI", sans-serif;
     -fx-font-smoothing-type: lcd;
 
@@ -616,6 +620,7 @@
     -fx-font-weight: 800;
     -fx-text-background-color: -app-ink;
     -fx-text-base-color: -app-ink;
+    -fx-wrap-text: true;
 }
 
 .hint-text {
@@ -1038,6 +1043,8 @@
     -fx-font-size: 13px;
     -fx-font-weight: 800;
     -fx-min-height: 42px;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
 }
 
 .button:hover {
@@ -1329,6 +1336,8 @@
     -fx-text-background-color: -app-copy;
     -fx-text-base-color: -app-copy;
     -fx-padding: 10 8 10 8;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
 }
 
 .table-row-cell {
@@ -1417,12 +1426,12 @@
 }
 
 .chart-series-line {
-    -fx-stroke: -app-teal-1;
+    -fx-stroke: #12917c;
     -fx-stroke-width: 2.4px;
 }
 
 .default-color0.chart-line-symbol {
-    -fx-background-color: -app-teal-1, white;
+    -fx-background-color: #12917c, white;
     -fx-background-insets: 0, 2;
     -fx-background-radius: 8px;
     -fx-padding: 5px;

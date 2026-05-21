@@ -1,10 +1,13 @@
 package userauth.dao;
 
 import userauth.database.DatabaseConnection;
+import userauth.exception.ValidationException;
 import userauth.model.PaymentMethod;
 import userauth.model.TopUpStatus;
 import userauth.model.TopUpTransaction;
 import userauth.model.Wallet;
+import userauth.model.WalletTransaction;
+import userauth.model.WalletTransactionType;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -51,14 +54,25 @@ public class WalletDAOImpl implements WalletDAO {
             WHERE user_id = ?
             ORDER BY transaction_time DESC, id DESC
             """;
+    private static final String SAVE_WALLET_TRANSACTION_SQL = """
+            INSERT INTO wallet_transactions (user_id, type, amount, auction_id, reference, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """;
+    private static final String FIND_WALLET_TRANSACTIONS_BY_USER_SQL = """
+            SELECT id, user_id, type, amount, auction_id, reference, created_at
+            FROM wallet_transactions
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            """;
 
     @Override
-    public int saveWallet(Wallet wallet) {
+    public int saveWallet(Wallet wallet) throws ValidationException {
+        validateWallet(wallet);
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(SAVE_WALLET_SQL, Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, wallet.getUserId());
-            statement.setDouble(2, wallet.getBalance());
-            statement.setDouble(3, wallet.getReservedBalance());
+            statement.setLong(2, wallet.getBalance());
+            statement.setLong(3, wallet.getReservedBalance());
             statement.setLong(4, wallet.getCreatedAt());
             statement.setLong(5, wallet.getUpdatedAt());
             statement.executeUpdate();
@@ -76,11 +90,12 @@ public class WalletDAOImpl implements WalletDAO {
     }
 
     @Override
-    public void updateWallet(Wallet wallet) {
+    public void updateWallet(Wallet wallet) throws ValidationException {
+        validateWallet(wallet);
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(UPDATE_WALLET_SQL)) {
-            statement.setDouble(1, wallet.getBalance());
-            statement.setDouble(2, wallet.getReservedBalance());
+            statement.setLong(1, wallet.getBalance());
+            statement.setLong(2, wallet.getReservedBalance());
             statement.setLong(3, wallet.getUpdatedAt());
             statement.setInt(4, wallet.getId());
             statement.executeUpdate();
@@ -110,7 +125,7 @@ public class WalletDAOImpl implements WalletDAO {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(SAVE_TOP_UP_SQL, Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, transaction.getUserId());
-            statement.setDouble(2, transaction.getAmount());
+            statement.setLong(2, transaction.getAmount());
             statement.setString(3, transaction.getMethod().name());
             statement.setString(4, transaction.getStatus().name());
             statement.setString(5, transaction.getReferenceCode());
@@ -185,12 +200,61 @@ public class WalletDAOImpl implements WalletDAO {
         return transactions;
     }
 
+    @Override
+    public void saveWalletTransaction(WalletTransaction transaction) {
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(SAVE_WALLET_TRANSACTION_SQL)) {
+            statement.setInt(1, transaction.getUserId());
+            statement.setString(2, transaction.getType().name());
+            statement.setLong(3, transaction.getAmount());
+            if (transaction.getAuctionId() == null) {
+                statement.setNull(4, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(4, transaction.getAuctionId());
+            }
+            statement.setString(5, transaction.getReference());
+            statement.setLong(6, transaction.getCreatedAt());
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to save wallet transaction.", ex);
+        }
+    }
+
+    @Override
+    public List<WalletTransaction> findWalletTransactionsByUserId(int userId) {
+        List<WalletTransaction> transactions = new ArrayList<>();
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_WALLET_TRANSACTIONS_BY_USER_SQL)) {
+            statement.setInt(1, userId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    transactions.add(mapWalletTransaction(resultSet));
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to read wallet transactions.", ex);
+        }
+        return transactions;
+    }
+
+    private void validateWallet(Wallet wallet) throws ValidationException {
+        if (wallet.getBalance() < 0) {
+            throw new ValidationException("Wallet balance cannot be negative.");
+        }
+        if (wallet.getReservedBalance() < 0) {
+            throw new ValidationException("Reserved balance cannot be negative.");
+        }
+        if (wallet.getReservedBalance() > wallet.getBalance()) {
+            throw new ValidationException("Reserved balance cannot exceed the wallet balance.");
+        }
+    }
+
     private Wallet mapWallet(ResultSet resultSet) throws SQLException {
         return new Wallet(
                 resultSet.getInt("id"),
                 resultSet.getInt("user_id"),
-                resultSet.getDouble("balance"),
-                resultSet.getDouble("reserved_balance"),
+                resultSet.getLong("balance"),
+                resultSet.getLong("reserved_balance"),
                 resultSet.getLong("created_at"),
                 resultSet.getLong("updated_at")
         );
@@ -203,12 +267,24 @@ public class WalletDAOImpl implements WalletDAO {
         return new TopUpTransaction(
                 resultSet.getInt("id"),
                 resultSet.getInt("user_id"),
-                resultSet.getDouble("amount"),
+                resultSet.getLong("amount"),
                 PaymentMethod.valueOf(resultSet.getString("method")),
                 TopUpStatus.valueOf(resultSet.getString("status")),
                 resultSet.getString("reference_code"),
                 resultSet.getLong("transaction_time"),
                 completeAt
+        );
+    }
+
+    private WalletTransaction mapWalletTransaction(ResultSet resultSet) throws SQLException {
+        return new WalletTransaction(
+                resultSet.getInt("id"),
+                resultSet.getInt("user_id"),
+                WalletTransactionType.valueOf(resultSet.getString("type")),
+                resultSet.getLong("amount"),
+                (Integer) resultSet.getObject("auction_id"),
+                resultSet.getString("reference"),
+                resultSet.getLong("created_at")
         );
     }
 }

@@ -11,7 +11,7 @@ import java.util.List;
 public interface WalletApi {
     Wallet getWallet(int userId) throws ItemNotFoundException;
 
-    int createTopUpRequest(int userId, double amount, PaymentMethod method)
+    int createTopUpRequest(int userId, long amount, PaymentMethod method)
             throws ItemNotFoundException, ValidationException;
 
     List<TopUpTransaction> getTopUpHistory(int userId) throws ItemNotFoundException;

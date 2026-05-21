@@ -3,6 +3,9 @@ param(
     [int]$ServerPort = 5050
 )
 
+$repoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $repoRoot "scripts\use-jdk21.ps1")
+
 if (-not $ServerHost) {
     $ServerHost = $env:APP_SERVER_HOST
 }

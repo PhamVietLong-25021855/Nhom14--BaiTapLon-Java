@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class AuthFrame {
-    private static final double DEFAULT_WIDTH = 1280;
-    private static final double DEFAULT_HEIGHT = 840;
     private static final boolean OPEN_FULLSCREEN = false;
+    private static final double DEFAULT_WIDTH = 1000;
+    private static final double DEFAULT_HEIGHT = 700;
 
     private final Stage stage;
     private final AuthController authController;
@@ -63,11 +63,7 @@ public class AuthFrame {
         stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
         stage.setMinWidth(980);
         stage.setMinHeight(700);
-        stage.setMaximized(OPEN_FULLSCREEN);
-        if (OPEN_FULLSCREEN) {
-            stage.setFullScreen(true);
-            stage.setFullScreenExitHint("");
-        }
+        stage.setMaximized(true);
 
         LoadedView<AppShellController> shellView = FxmlRuntime.loadView(AuthFrame.class, "shell/app-shell.fxml", "view");
         this.shellController = shellView.controller();
@@ -89,9 +85,6 @@ public class AuthFrame {
 
     public void show() {
         stage.show();
-        if (!OPEN_FULLSCREEN) {
-            stage.centerOnScreen();
-        }
     }
 
     public Window getWindow() {
@@ -127,6 +120,11 @@ public class AuthFrame {
     }
 
     public void showRoleDashboard(User user) {
+        if (user == null) {
+            NotificationUtil.error(stage, "LOGIN FAILED", "Login failed.");
+            showLogin();
+            return;
+        }
         switch (user.getRole()) {
             case ADMIN -> showAdminDashboard(user);
             case SELLER -> {
@@ -254,15 +252,6 @@ public class AuthFrame {
 
     private void switchView(Parent root) {
         shellController.setContent(root, true);
-        if (stage.isMaximized() || stage.isFullScreen()) {
-            return;
-        }
-
-        if (root instanceof javafx.scene.layout.Region region) {
-            stage.setWidth(Math.max(stage.getMinWidth(), region.prefWidth(-1)));
-            stage.setHeight(Math.max(stage.getMinHeight(), region.prefHeight(-1)));
-            stage.centerOnScreen();
-        }
     }
 
     private void applyLanguage(Parent root) {

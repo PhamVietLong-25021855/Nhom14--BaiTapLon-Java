@@ -19,6 +19,7 @@ $ErrorActionPreference = "Stop"
 
 # ── Resolve project root ────────────────────────────────────────────────────────
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot "use-jdk21.ps1")
 
 # ── Defaults ───────────────────────────────────────────────────────────────────
 if (-not $DbPassword) {

@@ -26,11 +26,20 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class SellerDashboardViewController {
     private static final long ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
+    private static final ZoneId DISPLAY_ZONE = ZoneId.systemDefault();
+    private static final DateTimeFormatter TIME_INPUT_FORMATTER = DateTimeFormatter.ofPattern("H:mm");
+    private static final DateTimeFormatter TIME_DISPLAY_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     @FXML
     private TableView<AuctionItem> tableAuctions;
@@ -54,7 +63,10 @@ public class SellerDashboardViewController {
     private TableColumn<AuctionItem, String> colStatus;
 
     @FXML
-    private TableColumn<AuctionItem, String> colDuration;
+    private TableColumn<AuctionItem, String> colStartTime;
+
+    @FXML
+    private TableColumn<AuctionItem, String> colEndTime;
 
     @FXML
     private TableColumn<AuctionItem, String> colRemaining;
@@ -75,7 +87,16 @@ public class SellerDashboardViewController {
     private TextField txtImageSource;
 
     @FXML
-    private Spinner<Integer> spinDuration;
+    private DatePicker dateStart;
+
+    @FXML
+    private TextField txtStartTime;
+
+    @FXML
+    private DatePicker dateEnd;
+
+    @FXML
+    private TextField txtEndTime;
 
     @FXML
     private Button btnCreate;
@@ -114,7 +135,10 @@ public class SellerDashboardViewController {
     private Label lblPreviewCategory;
 
     @FXML
-    private Label lblPreviewDuration;
+    private Label lblPreviewStartTime;
+
+    @FXML
+    private Label lblPreviewEndTime;
 
     @FXML
     private Label lblPreviewPrice;
@@ -137,11 +161,10 @@ public class SellerDashboardViewController {
 
     @FXML
     private void initialize() {
-        if (spinDuration.getValueFactory() == null) {
-            spinDuration.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 99999, 30));
-        }
         UiInput.installMoneyInput(txtPrice);
-        UiInput.installPositiveIntegerInput(spinDuration.getEditor());
+        installTimeInput(txtStartTime);
+        installTimeInput(txtEndTime);
+        setDefaultSchedule();
 
         AuctionImageUtil.installRoundedClip(imgPreviewImage, 32, 32);
 
@@ -151,7 +174,8 @@ public class SellerDashboardViewController {
         colStartPrice.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatMoney(data.getValue().getStartPrice())));
         colCurrentBid.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatMoney(data.getValue().getCurrentHighestBid())));
         colStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(UiText.auctionStatus(data.getValue().getStatus())));
-        colDuration.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatDuration(data.getValue())));
+        colStartTime.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatDateTime(data.getValue().getStartTime())));
+        colEndTime.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatDateTime(data.getValue().getEndTime())));
         colRemaining.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatRemaining(data.getValue().getEndTime())));
 
         tableAuctions.setRowFactory(this::createAuctionRow);
@@ -252,9 +276,9 @@ public class SellerDashboardViewController {
             String imageSource = resolveImageSourceForSave(rawImageInput);
             byte[] imageData = workingImageData;
             double price = UiInput.parsePositiveDecimal(txtPrice.getText(), "Starting price");
-            int durationMinutes = readDurationMinutes();
-            long start = System.currentTimeMillis();
-            long end = start + (long) durationMinutes * 60 * 1000;
+            long start = readScheduleTimestamp(dateStart, txtStartTime, "Start date and time");
+            long end = readScheduleTimestamp(dateEnd, txtEndTime, "End date and time");
+            validateSchedule(start, end);
             int sellerId = currentUser.getId();
             int currentEditingId = editingId;
 
@@ -320,9 +344,7 @@ public class SellerDashboardViewController {
         txtDesc.setText(item.getDescription());
         txtImageSource.setText(item.getImageSource() == null ? "" : item.getImageSource());
 
-        long durationMs = item.getEndTime() - item.getStartTime();
-        int durationMin = (int) Math.max(1, durationMs / 60000);
-        spinDuration.getValueFactory().setValue(durationMin);
+        setScheduleControls(item.getStartTime(), item.getEndTime());
         btnCreate.setText(UiText.text("SAVE CHANGES"));
         updatePreview();
     }
@@ -498,8 +520,10 @@ public class SellerDashboardViewController {
         txtCategory.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtImageSource.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtPrice.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
-        spinDuration.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
-        spinDuration.getEditor().textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        dateStart.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        txtStartTime.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        dateEnd.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        txtEndTime.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
     }
 
     private void updatePreview() {
@@ -515,13 +539,12 @@ public class SellerDashboardViewController {
                 : txtDesc.getText().trim();
         String category = txtCategory.getText() == null || txtCategory.getText().isBlank() ? UiText.text("Category") : txtCategory.getText().trim();
         String price = parsePricePreview();
-        int duration = readDurationPreview();
 
         AuctionImageUtil.applyAuctionImage(imgPreviewImage, lblPreviewInitial, workingImageData, workingImagePreviewSource, name);
         lblPreviewName.setText(name);
         lblPreviewDescription.setText(description);
         lblPreviewCategory.setText(category);
-        lblPreviewDuration.setText(duration + " " + UiText.text("minutes"));
+        updateSchedulePreview();
         lblPreviewPrice.setText(price);
         lblPreviewMode.setText(editingId == -1
                 ? UiText.text("Creating a new auction")
@@ -589,9 +612,7 @@ public class SellerDashboardViewController {
         txtPrice.clear();
         txtCategory.clear();
         txtImageSource.clear();
-        if (spinDuration.getValueFactory() != null) {
-            spinDuration.getValueFactory().setValue(30);
-        }
+        setDefaultSchedule();
         btnCreate.setText(UiText.text("CREATE NEW"));
         updatePreview();
     }
@@ -634,33 +655,98 @@ public class SellerDashboardViewController {
         return control.getText().trim();
     }
 
-    private int readDurationMinutes() {
-        String editorText = spinDuration.getEditor() == null ? "" : spinDuration.getEditor().getText();
-        int duration;
-        if (editorText == null || editorText.isBlank()) {
-            Integer currentValue = spinDuration.getValue();
-            duration = currentValue == null ? 30 : currentValue;
-            if (duration <= 0) {
-                throw new NumberFormatException("Auction duration must be greater than 0.");
-            }
-        } else {
-            duration = UiInput.parsePositiveInteger(editorText, "Auction duration");
+    private void installTimeInput(TextField textField) {
+        if (textField == null) {
+            return;
         }
-        spinDuration.getValueFactory().setValue(duration);
-        return duration;
+
+        textField.setTextFormatter(new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            return newText.length() <= 5 && newText.matches("[0-9:]*") ? change : null;
+        }));
+        textField.focusedProperty().addListener((observable, wasFocused, isFocused) -> {
+            if (!isFocused) {
+                normalizeTimeInput(textField);
+            }
+        });
     }
 
-    private int readDurationPreview() {
+    private void normalizeTimeInput(TextField textField) {
         try {
-            String editorText = spinDuration.getEditor() == null ? "" : spinDuration.getEditor().getText();
-            if (editorText != null && !editorText.isBlank()) {
-                return UiInput.parsePositiveInteger(editorText, "Auction duration");
-            }
-        } catch (NumberFormatException ignored) {
-            return 30;
+            LocalTime time = parseTime(textField, "Time");
+            textField.setText(TIME_DISPLAY_FORMATTER.format(time));
+        } catch (IllegalArgumentException ignored) {
         }
-        Integer value = spinDuration.getValue();
-        return value == null || value <= 0 ? 30 : value;
+    }
+
+    private void setDefaultSchedule() {
+        LocalDateTime start = LocalDateTime.now(DISPLAY_ZONE).withSecond(0).withNano(0);
+        setScheduleControls(start, start.plusMinutes(30));
+    }
+
+    private void setScheduleControls(long startTimestamp, long endTimestamp) {
+        setScheduleControls(
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(startTimestamp), DISPLAY_ZONE),
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(endTimestamp), DISPLAY_ZONE)
+        );
+    }
+
+    private void setScheduleControls(LocalDateTime start, LocalDateTime end) {
+        if (dateStart != null) {
+            dateStart.setValue(start.toLocalDate());
+        }
+        if (txtStartTime != null) {
+            txtStartTime.setText(TIME_DISPLAY_FORMATTER.format(start.toLocalTime()));
+        }
+        if (dateEnd != null) {
+            dateEnd.setValue(end.toLocalDate());
+        }
+        if (txtEndTime != null) {
+            txtEndTime.setText(TIME_DISPLAY_FORMATTER.format(end.toLocalTime()));
+        }
+    }
+
+    private long readScheduleTimestamp(DatePicker datePicker, TextField timeField, String fieldName) {
+        LocalDate date = datePicker == null ? null : datePicker.getValue();
+        if (date == null) {
+            throw new IllegalArgumentException(fieldName + " is required.");
+        }
+        LocalTime time = parseTime(timeField, fieldName);
+        return LocalDateTime.of(date, time).atZone(DISPLAY_ZONE).toInstant().toEpochMilli();
+    }
+
+    private LocalTime parseTime(TextField timeField, String fieldName) {
+        String value = textOf(timeField);
+        if (value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " is required.");
+        }
+        if (!value.matches("([01]?\\d|2[0-3]):[0-5]\\d")) {
+            throw new IllegalArgumentException(fieldName + " must use HH:mm format.");
+        }
+        return LocalTime.parse(value, TIME_INPUT_FORMATTER);
+    }
+
+    private void validateSchedule(long start, long end) {
+        if (start >= end) {
+            throw new IllegalArgumentException("Start date and time must be earlier than end date and time.");
+        }
+        if (end <= System.currentTimeMillis()) {
+            throw new IllegalArgumentException("End date and time must be in the future.");
+        }
+    }
+
+    private void updateSchedulePreview() {
+        try {
+            long start = readScheduleTimestamp(dateStart, txtStartTime, "Start date and time");
+            long end = readScheduleTimestamp(dateEnd, txtEndTime, "End date and time");
+            lblPreviewStartTime.setText(AuctionViewFormatter.formatDateTime(start));
+            lblPreviewEndTime.setText(start < end
+                    ? AuctionViewFormatter.formatDateTime(end)
+                    : UiText.text("End must be after start"));
+        } catch (IllegalArgumentException ex) {
+            lblPreviewStartTime.setText(UiText.text("Invalid schedule"));
+            lblPreviewEndTime.setText(UiText.text("Invalid schedule"));
+        }
     }
 
     private String resolveImageSourceForSave(String rawImageInput) {
@@ -793,8 +879,17 @@ public class SellerDashboardViewController {
         if (txtImageSource != null) {
             txtImageSource.setDisable(busy);
         }
-        if (spinDuration != null) {
-            spinDuration.setDisable(busy);
+        if (dateStart != null) {
+            dateStart.setDisable(busy);
+        }
+        if (txtStartTime != null) {
+            txtStartTime.setDisable(busy);
+        }
+        if (dateEnd != null) {
+            dateEnd.setDisable(busy);
+        }
+        if (txtEndTime != null) {
+            txtEndTime.setDisable(busy);
         }
         if (btnCreate != null) {
             btnCreate.setDisable(busy);

@@ -2,7 +2,7 @@ package userauth.model;
 
 public class TopUpTransaction extends Entity {
     private int userId;
-    private double amount;
+    private long amount;
     private PaymentMethod method;
     private TopUpStatus status;
     private String referenceCode;
@@ -13,7 +13,7 @@ public class TopUpTransaction extends Entity {
         super();
     }
 
-    public TopUpTransaction(int id, int userId, double amount, PaymentMethod method, TopUpStatus status,
+    public TopUpTransaction(int id, int userId, long amount, PaymentMethod method, TopUpStatus status,
                             String referenceCode, long transactionTime, Long completeAt) {
         super(id);
         this.userId = userId;
@@ -25,7 +25,7 @@ public class TopUpTransaction extends Entity {
         this.completeAt = completeAt;
     }
 
-    public TopUpTransaction(int userId, double amount, PaymentMethod method) {
+    public TopUpTransaction(int userId, long amount, PaymentMethod method) {
         this(0, userId, amount, method, TopUpStatus.PENDING, null, System.currentTimeMillis(), null);
     }
 
@@ -37,11 +37,11 @@ public class TopUpTransaction extends Entity {
         this.userId = userId;
     }
 
-    public double getAmount() {
+    public long getAmount() {
         return amount;
     }
 
-    public void setAmount(double amount) {
+    public void setAmount(long amount) {
         this.amount = amount;
     }
 

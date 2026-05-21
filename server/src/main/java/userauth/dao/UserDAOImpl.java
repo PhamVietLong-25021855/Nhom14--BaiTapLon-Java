@@ -53,6 +53,9 @@ public class UserDAOImpl implements UserDAO {
     private static final String DELETE_AUTO_BIDS_BY_AUCTION_SQL = "DELETE FROM auto_bids WHERE auction_id = ?";
     private static final String DELETE_BIDS_BY_AUCTION_SQL = "DELETE FROM bids WHERE auction_id = ?";
     private static final String DELETE_AUCTION_SQL = "DELETE FROM auctions WHERE id = ?";
+    private static final String DELETE_WALLET_BY_USER_SQL = "DELETE FROM wallets WHERE user_id = ?";
+    private static final String DELETE_TOPUP_BY_USER_SQL = "DELETE FROM topup_transactions WHERE user_id = ?";
+    private static final String DELETE_WALLET_TX_BY_USER_SQL = "DELETE FROM wallet_transactions WHERE user_id = ?";
     private static final String FIND_AUCTION_START_PRICE_SQL = "SELECT start_price FROM auctions WHERE id = ?";
     private static final String FIND_TOP_BID_FOR_AUCTION_SQL = """
             SELECT bidder_id, amount
@@ -135,6 +138,9 @@ public class UserDAOImpl implements UserDAO {
                     recalculateAuctionAfterBidDeletion(connection, auctionId);
                 }
 
+                executeSingleIdStatement(connection, DELETE_WALLET_TX_BY_USER_SQL, userId);
+                executeSingleIdStatement(connection, DELETE_TOPUP_BY_USER_SQL, userId);
+                executeSingleIdStatement(connection, DELETE_WALLET_BY_USER_SQL, userId);
                 executeSingleIdStatement(connection, DELETE_USER_SQL, userId);
                 connection.commit();
             } catch (SQLException ex) {

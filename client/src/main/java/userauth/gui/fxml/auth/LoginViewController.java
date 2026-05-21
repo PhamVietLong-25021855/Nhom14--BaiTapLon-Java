@@ -5,7 +5,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import userauth.controller.AuthController;
-import userauth.exception.UnauthorizedException;
 import userauth.gui.fxml.shared.*;
 import userauth.model.User;
 
@@ -79,6 +78,12 @@ public class LoginViewController {
                 user -> {
                     loginInProgress = false;
                     setBusy(false);
+                    if (user == null) {
+                        applyErrorState(txtUsername, txtPassword);
+                        showErrorState("Login failed.");
+                        errorHandler.accept("Login failed.");
+                        return;
+                    }
                     hideStatus();
                     clearInputs();
                     loginSuccessHandler.accept(user);

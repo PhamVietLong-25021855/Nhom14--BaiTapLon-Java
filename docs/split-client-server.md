@@ -1,37 +1,52 @@
-# Tách client và server thành 2 bộ deploy riêng
+# Tách Client Và Server
 
-Script `scripts/split-client-server.ps1` sẽ tạo:
+Script `scripts/split-client-server.ps1` tạo 2 gói runtime riêng để deploy client và server trên 2 máy khác nhau.
 
-- `dist/server`: dùng để copy lên máy chạy server.
-- `dist/client`: dùng để copy sang máy người dùng.
-
-Script copy theo danh sách package được phép thay vì copy toàn bộ `target/classes`.
-
-## 1. Tạo gói tách riêng
+## Chạy script
 
 ```powershell
 .\scripts\split-client-server.ps1
 ```
 
-## 2. Chạy server trên máy host
+Kết quả:
 
-Vào thư mục `dist/server`:
-
-```powershell
-.\run-server.ps1 -DbPassword "mat_khau_db" -ServerPort 5050
+```text
+dist/server
+dist/client
 ```
 
-## 3. Chạy client trên máy khác
+## Gói server
 
-Vào thư mục `dist/client`:
+Chứa:
+
+- Model/API/network dùng chung.
+- Controller/service/DAO/database.
+- MySQL driver.
+- Script chạy server.
+
+## Gói client
+
+Chứa:
+
+- Model/API/network dùng chung.
+- JavaFX UI, FXML/CSS.
+- Remote service.
+- JavaFX runtime dependency.
+
+Không chứa DAO, database config, server service hoặc MySQL driver.
+
+## Chạy sau khi tách
+
+Server:
 
 ```powershell
-.\run-client.ps1 -ServerHost "IP_PUBLIC_CUA_SERVER" -ServerPort 5050
+cd dist\server
+.\run-server.ps1 -DbPassword "mat_khau_database" -ServerPort 5050
 ```
 
-## Ghi chú
+Client:
 
-- Nếu client ở mạng khác, cần mở firewall hoặc port forwarding TCP `5050` trên máy server.
-- Không commit mật khẩu thật vào source code.
-- `dist/client` không chứa package server, DAO, database, service implementation, `database.properties` hoặc MySQL driver.
-- `dist/server` không chứa JavaFX GUI/client và không copy dependency JavaFX.
+```powershell
+cd dist\client
+.\run-client.ps1 -ServerHost "IP_PUBLIC_HOAC_DOMAIN" -ServerPort 5050
+```
