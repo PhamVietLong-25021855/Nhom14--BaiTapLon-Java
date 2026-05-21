@@ -61,6 +61,16 @@ public class AuthFrame {
         this.walletController = walletController;
 
         stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
+        try {
+            java.io.InputStream iconStream = AuthFrame.class.getResourceAsStream("/userauth/gui/fxml/shared/app-icon.png");
+            if (iconStream != null) {
+                stage.getIcons().add(new javafx.scene.image.Image(iconStream));
+            } else {
+                System.err.println("[UI Icon] Không tìm thấy file app-icon.png tại đường dẫn chỉ định.");
+            }
+        } catch (Exception e) {
+            System.err.println("[UI Icon] Lỗi nạp icon cho ứng dụng: " + e.getMessage());
+        }
         stage.setMinWidth(980);
         stage.setMinHeight(700);
         stage.setMaximized(true);
