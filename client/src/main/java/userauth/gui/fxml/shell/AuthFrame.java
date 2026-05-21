@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class AuthFrame {
+    private static final boolean OPEN_FULLSCREEN = false;
     private static final double DEFAULT_WIDTH = 1000;
     private static final double DEFAULT_HEIGHT = 700;
 
@@ -62,8 +63,7 @@ public class AuthFrame {
         stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
         stage.setMinWidth(980);
         stage.setMinHeight(700);
-        stage.setMaximized(true);
-
+        stage.setMaximized(OPEN_FULLSCREEN);
 
         LoadedView<AppShellController> shellView = FxmlRuntime.loadView(AuthFrame.class, "shell/app-shell.fxml", "view");
         this.shellController = shellView.controller();
