@@ -185,7 +185,7 @@ public final class NotificationUtil {
         for (Popup toast : toasts) {
             toast.setX(startX);
             toast.setY(currentY);
-            currentY += 96 + TOAST_GAP;
+            currentY += 40 + TOAST_GAP;
         }
     }
 
