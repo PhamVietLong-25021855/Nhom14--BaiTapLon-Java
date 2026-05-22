@@ -50,7 +50,7 @@ class AuctionReservedBalanceReconciliationTest {
     }
 
     @Test
-    void runningAndFinishedAuctionsRemainReservedWhileCanceledAndPaidDoNot() {
+    void finishedAuctionsAreCapturedAndOnlyRunningAuctionsRemainReserved() {
         InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
         InMemoryWalletDAO walletDAO = new InMemoryWalletDAO();
         AuctionService auctionService = new AuctionService(auctionDAO, new EmptyAutoBidDAO(), new WalletService(walletDAO));
@@ -69,8 +69,12 @@ class AuctionReservedBalanceReconciliationTest {
         auctionService.reconcileReservedBalances();
 
         Wallet wallet = walletDAO.findWalletByUserId(bidderId);
-        assertEquals(350_000L, wallet.getReservedBalance());
+        assertEquals(800_000L, wallet.getBalance());
+        assertEquals(150_000L, wallet.getReservedBalance());
         assertEquals(650_000L, wallet.getAvailableBalance());
+        assertEquals(AuctionStatus.PAID, auctionDAO.findAuctionById(2).getStatus());
+        assertEquals(WalletTransactionType.CAPTURE, walletDAO.transactions.get(0).getType());
+        assertEquals(200_000L, walletDAO.transactions.get(0).getAmount());
     }
 
     private static AuctionItem auction(int id, int sellerId, int winnerId, double currentBid, AuctionStatus status) {
