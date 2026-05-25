@@ -221,7 +221,6 @@ public final class DatabaseInitializer {
                     title VARCHAR(255) NOT NULL,
                     content TEXT NOT NULL,
                     created_at BIGINT NOT NULL,
-                    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 );        
                 """
         );
@@ -375,7 +374,6 @@ public final class DatabaseInitializer {
                     title VARCHAR(255) NOT NULL,
                     content TEXT NOT NULL,
                     created_at BIGINT NOT NULL,
-                    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 );
                 """
         );
