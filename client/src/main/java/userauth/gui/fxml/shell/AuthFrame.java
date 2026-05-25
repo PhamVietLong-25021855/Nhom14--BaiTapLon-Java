@@ -4,26 +4,21 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import userauth.controller.AuctionController;
-import userauth.controller.AuthController;
-import userauth.controller.AutobidController;
-import userauth.controller.HomepageController;
-import userauth.controller.WalletController;
+import userauth.controller.*;
 import userauth.gui.fxml.admin.AdminDashboardViewController;
 import userauth.gui.fxml.admin.AdminHomepageViewController;
 import userauth.gui.fxml.auth.LoginViewController;
 import userauth.gui.fxml.auth.RegisterViewController;
 import userauth.gui.fxml.bidder.BidderDashboardViewController;
-import userauth.gui.fxml.dialog.BidHistoryDialogController;
-import userauth.gui.fxml.dialog.ChangePasswordDialogController;
-import userauth.gui.fxml.dialog.ProfileDialogController;
-import userauth.gui.fxml.dialog.TopUpDialogController;
+import userauth.gui.fxml.dialog.*;
 import userauth.gui.fxml.home.HomeViewController;
 import userauth.gui.fxml.seller.SellerDashboardViewController;
 import userauth.gui.fxml.shared.*;
 import userauth.model.AuctionItem;
 import userauth.model.BidTransaction;
+import userauth.model.Notification;
 import userauth.model.User;
+import userauth.remote.RemoteNotificationService;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -41,6 +36,7 @@ public class AuthFrame {
     private final AppShellController shellController;
     private final AutobidController autobidController;
     private final WalletController walletController;
+    private final NotificationController notificationController;
 
     private final LoadedView<HomeViewController> homeView;
     private final LoadedView<LoginViewController> loginView;
@@ -52,13 +48,14 @@ public class AuthFrame {
 
     public AuthFrame(Stage stage, AuthController authController, AuctionController auctionController,
                      HomepageController homepageController, AutobidController autobidController,
-                     WalletController walletController) {
+                     WalletController walletController, NotificationController notificationController) {
         this.stage = stage;
         this.authController = authController;
         this.auctionController = auctionController;
         this.homepageController = homepageController;
         this.autobidController = autobidController;
         this.walletController = walletController;
+        this.notificationController = notificationController;
 
         stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
         try {
@@ -199,6 +196,14 @@ public class AuthFrame {
         dialog.showAndWait();
     }
 
+    public void showInboxDialog(List<Notification> notificationList) {
+        LoadedView<InboxDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "dialog/inbox.fxml", "dialog");
+        Stage dialog = FxmlRuntime.createModalDialog(stage, "INBOX", view.root(), 1040, 720);
+        view.controller().setDialogStage(dialog);
+        view.controller().loadNotifications(notificationList);
+        dialog.showAndWait();
+    }
+
     public void showTopUpDialog(User user, Runnable successHandler) {
         LoadedView<TopUpDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "dialog/top-up-dialog.fxml", "dialog");
         Stage dialog = FxmlRuntime.createModalDialog(stage, "TOP UP WALLET", view.root(), 560, 430);
@@ -250,6 +255,7 @@ public class AuthFrame {
         bidderView.controller().setAuctionController(auctionController);
         bidderView.controller().setAutobidController(autobidController);
         bidderView.controller().setWalletController(walletController);
+        bidderView.controller().setNotificationController(notificationController);
     }
 
     private void deactivateLiveViews() {

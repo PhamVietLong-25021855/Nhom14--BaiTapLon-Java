@@ -26,7 +26,9 @@ class AuctionReservedBalanceReconciliationTest {
     void canceledAuctionIsExcludedFromReservedBalance() {
         InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
         InMemoryWalletDAO walletDAO = new InMemoryWalletDAO();
-        AuctionService auctionService = new AuctionService(auctionDAO, new EmptyAutoBidDAO(), new WalletService(walletDAO));
+        ServiceTestSupport.EmptyNotificationDAO notificationDAO = new ServiceTestSupport.EmptyNotificationDAO();
+
+        AuctionService auctionService = new AuctionService(auctionDAO, new EmptyAutoBidDAO(), new WalletService(walletDAO), new NotificationService(notificationDAO));
 
         int bidderId = 7;
         walletDAO.putWallet(new Wallet(1, bidderId, 1_000_000L, 250_000L, 1L, 1L));
@@ -53,7 +55,8 @@ class AuctionReservedBalanceReconciliationTest {
     void finishedAuctionsAreCapturedAndOnlyRunningAuctionsRemainReserved() {
         InMemoryAuctionDAO auctionDAO = new InMemoryAuctionDAO();
         InMemoryWalletDAO walletDAO = new InMemoryWalletDAO();
-        AuctionService auctionService = new AuctionService(auctionDAO, new EmptyAutoBidDAO(), new WalletService(walletDAO));
+        ServiceTestSupport.EmptyNotificationDAO notificationDAO = new ServiceTestSupport.EmptyNotificationDAO();
+        AuctionService auctionService = new AuctionService(auctionDAO, new EmptyAutoBidDAO(), new WalletService(walletDAO), new NotificationService(notificationDAO));
 
         int bidderId = 9;
         walletDAO.putWallet(new Wallet(1, bidderId, 1_000_000L, 600_000L, 1L, 1L));

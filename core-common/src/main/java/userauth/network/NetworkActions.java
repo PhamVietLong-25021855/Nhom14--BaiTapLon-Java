@@ -42,4 +42,7 @@ public final class NetworkActions {
     public static final String HOMEPAGE_ALL = "HOMEPAGE_ALL";
     public static final String HOMEPAGE_SAVE = "HOMEPAGE_SAVE";
     public static final String HOMEPAGE_DELETE = "HOMEPAGE_DELETE";
+
+    public static final String NOTIFICATION_CREATE = "NOTIFICATION_CREATE";
+    public static final String NOTIFICATION_GET = "NOTIFICATION_GET";
 }

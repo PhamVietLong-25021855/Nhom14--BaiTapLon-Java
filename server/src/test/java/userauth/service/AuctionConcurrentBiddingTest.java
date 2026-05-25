@@ -22,10 +22,12 @@ class AuctionConcurrentBiddingTest {
     void concurrentBidsOnSameAuctionKeepSingleHighestWinnerAndConsistentWalletReservations() throws Exception {
         ServiceTestSupport.InMemoryAuctionDAO auctionDAO = new ServiceTestSupport.InMemoryAuctionDAO();
         ServiceTestSupport.InMemoryWalletDAO walletDAO = new ServiceTestSupport.InMemoryWalletDAO();
+        ServiceTestSupport.EmptyNotificationDAO notificationDAO = new ServiceTestSupport.EmptyNotificationDAO();
         AuctionService auctionService = new AuctionService(
                 auctionDAO,
                 new ServiceTestSupport.EmptyAutoBidDAO(),
-                new WalletService(walletDAO)
+                new WalletService(walletDAO),
+                new NotificationService(notificationDAO)
         );
 
         int auctionId = 101;

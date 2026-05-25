@@ -1,10 +1,6 @@
 package userauth.server;
 
-import userauth.controller.AuctionController;
-import userauth.controller.AuthController;
-import userauth.controller.AutobidController;
-import userauth.controller.HomepageController;
-import userauth.controller.WalletController;
+import userauth.controller.*;
 import userauth.dao.*;
 import userauth.database.DatabaseInitializer;
 import userauth.service.*;
@@ -23,6 +19,7 @@ public final class ServerContext {
     private final WalletController walletController;
     private final WalletService walletService;
     private final AuctionScheduler scheduler;
+    private final NotificationController notificationController;
 
     public ServerContext(boolean startScheduler) {
         DatabaseInitializer.initialize();
@@ -31,6 +28,7 @@ public final class ServerContext {
         AuctionDAO auctionDAO = new AuctionDAOImpl();
         AutoBidDAO autoBidDAO = new AutoBidDAOImpl();
         WalletDAO walletDAO = new WalletDAOImpl();
+        NotificationDAO notificationDAO = new NotificationDAOImpl();
 
         AutoBidInitializer autoBidInitializer = new AutoBidInitializer(autoBidDAO, auctionDAO);
         this.walletService = new WalletService(walletDAO);
@@ -38,7 +36,10 @@ public final class ServerContext {
         this.authController = new AuthController(authService);
         this.walletController = new WalletController(walletService);
 
-        this.auctionService = new AuctionService(auctionDAO, autoBidDAO, walletService);
+        NotificationService notificationService = new NotificationService(notificationDAO);
+        this.notificationController = new NotificationController(notificationService);
+
+        this.auctionService = new AuctionService(auctionDAO, autoBidDAO, walletService, notificationService);
         this.auctionService.reconcileReservedBalances();
         this.auctionController = new AuctionController(this.auctionService);
 
@@ -47,6 +48,8 @@ public final class ServerContext {
 
         this.homepageContentService = new HomepageContentService();
         this.homepageController = new HomepageController(homepageContentService);
+
+
 
         this.scheduler = startScheduler ? new AuctionScheduler(this.auctionService) : null;
         if (this.scheduler != null) {
@@ -62,9 +65,7 @@ public final class ServerContext {
         return auctionController;
     }
 
-    public AuctionService getAuctionService() {
-        return auctionService;
-    }
+    public AuctionService getAuctionService() {return auctionService;}
 
     public AutobidController getAutobidController() {
         return autobidController;
@@ -78,13 +79,11 @@ public final class ServerContext {
         return homepageContentService;
     }
 
-    public WalletController getWalletController() {
-        return walletController;
-    }
+    public WalletController getWalletController() {return walletController;}
 
-    public WalletService getWalletService() {
-        return walletService;
-    }
+    public WalletService getWalletService() {return walletService;}
+
+    public NotificationController getNotificationController () {return notificationController;}
 
     public void stop() {
         if (scheduler != null) {

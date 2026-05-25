@@ -28,19 +28,21 @@ public class AuctionService implements userauth.api.AuctionApi {
     private final AuctionDAO auctionDAO;
     private final AutoBidDAO autoBidDAO;
     private final WalletService walletService;
+    private final NotificationService notificationService;
     private final ConcurrentHashMap<Integer, ReentrantLock> auctionLocks;
     private final ConcurrentHashMap<Integer, AdminEarlyCloseState> adminEarlyCloseStates;
     private final AuctionSettlementHandlerFactory settlementHandlerFactory;
     private final AuctionEventBus eventBus;
 
     public AuctionService(AuctionDAO auctionDAO, AutoBidDAO autoBidDAO) {
-        this(auctionDAO, autoBidDAO, null);
+        this(auctionDAO, autoBidDAO, null, null);
     }
 
-    public AuctionService(AuctionDAO auctionDAO, AutoBidDAO autoBidDAO, WalletService walletService) {
+    public AuctionService(AuctionDAO auctionDAO, AutoBidDAO autoBidDAO, WalletService walletService, NotificationService notificationService) {
         this.auctionDAO = auctionDAO;
         this.autoBidDAO = autoBidDAO;
         this.walletService = walletService;
+        this.notificationService = notificationService;
         this.auctionLocks = new ConcurrentHashMap<>();
         this.adminEarlyCloseStates = new ConcurrentHashMap<>();
         this.settlementHandlerFactory = new AuctionSettlementHandlerFactory();
@@ -61,6 +63,7 @@ public class AuctionService implements userauth.api.AuctionApi {
         validateImage(imageData);
         AuctionItem item = new AuctionItem(0, name, desc, startPrice, startTime, endTime, category, normalizeOptionalText(imageSource), imageData, sellerId);
         auctionDAO.saveAuction(item);
+        notificationService.createNotification(0, "New auction", "New auction has been created: " + name);
     }
 
     @Override
@@ -225,6 +228,12 @@ public class AuctionService implements userauth.api.AuctionApi {
         auctionDAO.updateAuction(item);
         adminEarlyCloseStates.remove(auctionId);
         eventBus.publish(AuctionEvent.statusChanged(item, item.getUpdatedAt(), "Auction closed manually."));
+        try {
+            notificationService.createNotification(0, "Auction closed", "Auction " + auctionId + " has been closed by" + sellerId);
+            notificationService.createNotification(item.getWinnerId(), "You won", "You have won " + auctionId + "auction");
+        } catch (ValidationException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -333,6 +342,12 @@ public class AuctionService implements userauth.api.AuctionApi {
                     auctionDAO.updateAuction(item);
                     adminEarlyCloseStates.remove(item.getId());
                     eventBus.publish(AuctionEvent.statusChanged(item, now, "Auction has finished."));
+                    try {
+                        notificationService.createNotification(0, "Auction closed", "Auction " + item.getId() + " has ran out of time");
+                        notificationService.createNotification(item.getWinnerId(), "You won", "You have won " + item.getId() + "auction");
+                    } catch (ValidationException e) {
+                        e.printStackTrace();
+                    }
                 }
             } finally {
                 lock.unlock();
@@ -419,6 +434,12 @@ public class AuctionService implements userauth.api.AuctionApi {
                     auctionDAO.updateAuction(item);
                     adminEarlyCloseStates.remove(auctionId);
                     eventBus.publish(AuctionEvent.statusChanged(item, now, "Auction finished after the admin early-close countdown."));
+                    try {
+                        notificationService.createNotification(0, "Auction closed", "Auction " + auctionId + " has been closed by admin");
+                        notificationService.createNotification(item.getWinnerId(), "You won", "You have won " + auctionId + "auction");
+                    } catch (ValidationException e) {
+                        e.printStackTrace();
+                    }
                 }
             } finally {
                 lock.unlock();
@@ -457,7 +478,10 @@ public class AuctionService implements userauth.api.AuctionApi {
             );
             if (nextBidder == null) return currentEventTime;
             double nextAmount = Math.min(item.getCurrentHighestBid() + nextBidder.getIncrement(), nextBidder.getMaxPrice());
-            if (nextAmount <= item.getCurrentHighestBid()) return currentEventTime;
+            if (nextAmount <= item.getCurrentHighestBid()) {
+                //notificationService.createNotification(nextBidder.getBidderId(),"One of your Autobid had stopped", "Your " + nextBidder.getId() + " autobid had stopped");
+                return currentEventTime;
+            };
             ensureBidFundsAvailable(nextBidder.getBidderId(), nextAmount, originalWinnerId, originalWinningAmount);
             currentEventTime++;
             pendingBids.add(new BidTransaction(0, item.getId(), nextBidder.getBidderId(), nextAmount, currentEventTime, "ACCEPTED"));

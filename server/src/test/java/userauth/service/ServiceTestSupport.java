@@ -2,15 +2,10 @@ package userauth.service;
 
 import userauth.dao.AuctionDAO;
 import userauth.dao.AutoBidDAO;
+import userauth.dao.NotificationDAO;
 import userauth.dao.WalletDAO;
 import userauth.exception.ValidationException;
-import userauth.model.AuctionItem;
-import userauth.model.AuctionStatus;
-import userauth.model.AutoBid;
-import userauth.model.BidTransaction;
-import userauth.model.TopUpTransaction;
-import userauth.model.Wallet;
-import userauth.model.WalletTransaction;
+import userauth.model.*;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -222,6 +217,19 @@ final class ServiceTestSupport {
             if (wallet.getReservedBalance() > wallet.getBalance()) {
                 throw new ValidationException("Reserved balance cannot exceed the wallet balance.");
             }
+        }
+    }
+
+    static final class EmptyNotificationDAO implements NotificationDAO {
+
+        @Override
+        public void saveNotification(Notification item) {
+
+        }
+
+        @Override
+        public List<Notification> findNotificationToUser(int user_id) {
+            return List.of();
         }
     }
 }

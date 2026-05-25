@@ -100,6 +100,10 @@ public final class AuctionRequestHandler {
                 context.getHomepageContentService().deleteAnnouncement(integer(request, "announcementId"));
                 yield "SUCCESS";
             }
+
+            case NetworkActions.NOTIFICATION_CREATE -> context.getNotificationController().createNotification(integer(request, "user_id"),str(request, "title"), str(request, "content"));
+            case NetworkActions.NOTIFICATION_GET -> context.getNotificationController().findUserNotification(integer(request,"user_id"));
+
             default -> throw new IllegalArgumentException("Unsupported network action: " + action);
         };
     }

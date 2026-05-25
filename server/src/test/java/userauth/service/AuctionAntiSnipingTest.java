@@ -12,7 +12,8 @@ class AuctionAntiSnipingTest {
     void bidInsideFinalWindowExtendsAuctionEndTime() throws Exception {
         ServiceTestSupport.InMemoryAuctionDAO auctionDAO = new ServiceTestSupport.InMemoryAuctionDAO();
         ServiceTestSupport.InMemoryWalletDAO walletDAO = new ServiceTestSupport.InMemoryWalletDAO();
-        AuctionService auctionService = auctionService(auctionDAO, walletDAO);
+        ServiceTestSupport.EmptyNotificationDAO notificationDAO = new ServiceTestSupport.EmptyNotificationDAO();
+        AuctionService auctionService = auctionService(auctionDAO, walletDAO, notificationDAO);
 
         int auctionId = 201;
         long beforeBid = System.currentTimeMillis();
@@ -32,7 +33,8 @@ class AuctionAntiSnipingTest {
     void bidOutsideFinalWindowDoesNotExtendAuctionEndTime() throws Exception {
         ServiceTestSupport.InMemoryAuctionDAO auctionDAO = new ServiceTestSupport.InMemoryAuctionDAO();
         ServiceTestSupport.InMemoryWalletDAO walletDAO = new ServiceTestSupport.InMemoryWalletDAO();
-        AuctionService auctionService = auctionService(auctionDAO, walletDAO);
+        ServiceTestSupport.EmptyNotificationDAO notificationDAO = new ServiceTestSupport.EmptyNotificationDAO();
+        AuctionService auctionService = auctionService(auctionDAO, walletDAO, notificationDAO);
 
         int auctionId = 202;
         long originalEndTime = System.currentTimeMillis() + AuctionRules.ANTI_SNIPING_WINDOW_MS + 20_000L;
@@ -50,7 +52,8 @@ class AuctionAntiSnipingTest {
     void antiSnipingExtensionsStopAtConfiguredLimit() throws Exception {
         ServiceTestSupport.InMemoryAuctionDAO auctionDAO = new ServiceTestSupport.InMemoryAuctionDAO();
         ServiceTestSupport.InMemoryWalletDAO walletDAO = new ServiceTestSupport.InMemoryWalletDAO();
-        AuctionService auctionService = auctionService(auctionDAO, walletDAO);
+        ServiceTestSupport.EmptyNotificationDAO notificationDAO = new ServiceTestSupport.EmptyNotificationDAO();
+        AuctionService auctionService = auctionService(auctionDAO, walletDAO,notificationDAO);
 
         int auctionId = 203;
         auctionDAO.putAuction(ServiceTestSupport.runningAuction(
@@ -84,12 +87,14 @@ class AuctionAntiSnipingTest {
 
     private AuctionService auctionService(
             ServiceTestSupport.InMemoryAuctionDAO auctionDAO,
-            ServiceTestSupport.InMemoryWalletDAO walletDAO
+            ServiceTestSupport.InMemoryWalletDAO walletDAO,
+            ServiceTestSupport.EmptyNotificationDAO emptyNotificationDAO
     ) {
         return new AuctionService(
                 auctionDAO,
                 new ServiceTestSupport.EmptyAutoBidDAO(),
-                new WalletService(walletDAO)
+                new WalletService(walletDAO),
+                new NotificationService(emptyNotificationDAO)
         );
     }
 }

@@ -28,6 +28,7 @@ import javafx.util.Duration;
 import javafx.util.StringConverter;
 import userauth.controller.AuctionController;
 import userauth.controller.AutobidController;
+import userauth.controller.NotificationController;
 import userauth.controller.WalletController;
 import userauth.event.AuctionEvent;
 import userauth.event.AuctionEventBus;
@@ -180,6 +181,7 @@ public class BidderDashboardViewController {
     private AuctionController auctionController;
     private AutobidController autobidController;
     private WalletController walletController;
+    private NotificationController notificationController;
     private User currentUser;
     private Timeline timeline;
     private final PauseTransition filterRefreshDebounce = new PauseTransition(Duration.millis(220));
@@ -298,6 +300,10 @@ public class BidderDashboardViewController {
 
     public void setWalletController(WalletController walletController) {
         this.walletController = walletController;
+    }
+
+    public void setNotificationController(NotificationController notificationController) {
+        this.notificationController = notificationController;
     }
 
     public void setUser(User user) {
@@ -594,6 +600,26 @@ public class BidderDashboardViewController {
                 ? auctionController.getAllBids()
                 : bidsByAuction.values().stream().flatMap(List::stream).toList();
         frame.showBidHistoryDialog(currentUser, auctions, bids);
+    }
+
+    @FXML
+    private void handleShowInbox() {
+        if (auctionController == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "AuctionController has not been assigned to the bidder screen.");
+            return;
+        }
+
+        if (currentUser == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current user information is unavailable.");
+            return;
+        }
+
+        if (frame == null) {
+            NotificationUtil.info(ownerWindow(), "Notification", "Connect this controller to AuthFrame to open bid history using FXML.");
+            return;
+        }
+        System.out.println("show");
+        frame.showInboxDialog(notificationController.findUserNotification(currentUser.getId()));
     }
 
     @FXML
