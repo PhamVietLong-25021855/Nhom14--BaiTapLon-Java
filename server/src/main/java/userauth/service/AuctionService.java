@@ -224,8 +224,8 @@ public class AuctionService implements userauth.api.AuctionApi {
         if (item.getStatus() == AuctionStatus.FINISHED || item.getStatus() == AuctionStatus.CANCELED || item.getStatus() == AuctionStatus.PAID)
             throw new AuctionClosedException("The auction has already ended or was cancelled.");
         item.setStatus(AuctionStatus.FINISHED);
-        item.setEndTime(System.currentTimeMillis());
-        item.setUpdatedAt(System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        finishAuction(item, now, "manual close");
         auctionDAO.updateAuction(item);
         adminEarlyCloseStates.remove(auctionId);
         eventBus.publish(AuctionEvent.statusChanged(item, item.getUpdatedAt(), "Auction closed manually."));
@@ -339,9 +339,7 @@ public class AuctionService implements userauth.api.AuctionApi {
                     continue;
                 }
                 if ((currentStatus == AuctionStatus.OPEN || currentStatus == AuctionStatus.RUNNING) && now >= item.getEndTime()) {
-                    item.setStatus(AuctionStatus.FINISHED);
-                    item.setEndTime(now);
-                    item.setUpdatedAt(now);
+                    finishAuction(item, now, "scheduled close");
                     auctionDAO.updateAuction(item);
                     adminEarlyCloseStates.remove(item.getId());
                     eventBus.publish(AuctionEvent.statusChanged(item, now, "Auction has finished."));
@@ -377,6 +375,7 @@ public class AuctionService implements userauth.api.AuctionApi {
         }
 
         try {
+            captureFinishedAuctionPayments();
             Map<Integer, Long> expectedReservedByUser = new HashMap<>();
             for (BidTransaction bid : auctionDAO.findAllBids()) {
                 if (bid.getBidderId() > 0) {
@@ -431,9 +430,7 @@ public class AuctionService implements userauth.api.AuctionApi {
                 state.lastTickAt = now;
                 state.remainingCounts--;
                 if (state.remainingCounts <= 0) {
-                    item.setStatus(AuctionStatus.FINISHED);
-                    item.setEndTime(now);
-                    item.setUpdatedAt(now);
+                    finishAuction(item, now, "admin early-close countdown");
                     auctionDAO.updateAuction(item);
                     adminEarlyCloseStates.remove(auctionId);
                     eventBus.publish(AuctionEvent.statusChanged(item, now, "Auction finished after the admin early-close countdown."));
@@ -568,6 +565,8 @@ public class AuctionService implements userauth.api.AuctionApi {
             AuctionItem item = auctionDAO.findAuctionById(auctionId);
             if (item == null) throw new ItemNotFoundException("Auction item not found.");
             if (item.getSellerId() != sellerId) throw new UnauthorizedException("Only the creator can settle this auction.");
+            if (targetStatus == AuctionStatus.PAID && item.getStatus() == AuctionStatus.PAID)
+                return;
             if (targetStatus == AuctionStatus.PAID && item.getStatus() != AuctionStatus.FINISHED)
                 throw new ValidationException("Only finished auctions can move to PAID.");
             if (targetStatus == AuctionStatus.CANCELED && item.getStatus() != AuctionStatus.FINISHED && item.getStatus() != AuctionStatus.PAID)
@@ -659,11 +658,60 @@ public class AuctionService implements userauth.api.AuctionApi {
         }
     }
 
+    private void finishAuction(AuctionItem item, long now, String context) {
+        item.setStatus(captureWinnerPayment(item, context) ? AuctionStatus.PAID : AuctionStatus.FINISHED);
+        item.setEndTime(now);
+        item.setUpdatedAt(now);
+    }
+
+    private void captureFinishedAuctionPayments() {
+        for (AuctionItem item : auctionDAO.findAllAuctions()) {
+            if (item.getStatus() != AuctionStatus.FINISHED) {
+                continue;
+            }
+            ReentrantLock lock = getLockForAuction(item.getId());
+            lock.lock();
+            try {
+                AuctionItem lockedItem = auctionDAO.findAuctionById(item.getId());
+                if (lockedItem == null || lockedItem.getStatus() != AuctionStatus.FINISHED) {
+                    continue;
+                }
+                if (captureWinnerPayment(lockedItem, "reserved balance reconciliation")) {
+                    long now = System.currentTimeMillis();
+                    lockedItem.setStatus(AuctionStatus.PAID);
+                    lockedItem.setUpdatedAt(now);
+                    auctionDAO.updateAuction(lockedItem);
+                    eventBus.publish(AuctionEvent.settled(
+                            lockedItem,
+                            now,
+                            "Auction payment was captured automatically."
+                    ));
+                }
+            } finally {
+                lock.unlock();
+            }
+        }
+    }
+
+    private boolean captureWinnerPayment(AuctionItem item, String context) {
+        if (walletService == null || item == null || item.getWinnerId() <= 0 || item.getCurrentHighestBid() <= 0) {
+            return false;
+        }
+        try {
+            walletService.captureReservedFunds(item.getWinnerId(), (long) item.getCurrentHighestBid());
+            return true;
+        } catch (ItemNotFoundException | ValidationException ex) {
+            System.err.println("Unable to capture wallet funds while finishing auction " +
+                    item.getId() + " (" + context + "): " + ex.getMessage());
+            return false;
+        }
+    }
+
     private boolean holdsReservedFunds(AuctionItem item) {
         if (item == null || item.getWinnerId() <= 0 || item.getCurrentHighestBid() <= 0) {
             return false;
         }
-        return item.getStatus() == AuctionStatus.RUNNING || item.getStatus() == AuctionStatus.FINISHED;
+        return item.getStatus() == AuctionStatus.RUNNING;
     }
 
     private static final class AdminEarlyCloseState {
