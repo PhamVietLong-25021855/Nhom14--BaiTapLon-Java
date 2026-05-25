@@ -52,7 +52,7 @@ public class NotificationDAOImpl implements  NotificationDAO{
                 }
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to read all auto bids from database: " + ex.getMessage(), ex);
+            throw new IllegalStateException("Unable to read all notification from database: " + ex.getMessage(), ex);
         }
         return notifications;
     }
