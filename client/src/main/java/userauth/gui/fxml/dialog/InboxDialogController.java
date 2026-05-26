@@ -33,7 +33,7 @@ public class InboxDialogController {
     public void loadNotifications(List<Notification> userNotifications) {
         try {
             for (Notification note : userNotifications) {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/userauth/gui.fxml/dialog/toast-notification.fxml"));
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/userauth/gui/fxml/dialog/toast-notification.fxml"));
                 Parent notificationView = loader.load();
 
                 ToastNotificationController controller = loader.getController();

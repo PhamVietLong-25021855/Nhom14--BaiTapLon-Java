@@ -220,8 +220,8 @@ public final class DatabaseInitializer {
                     user_id INT NOT NULL,
                     title VARCHAR(255) NOT NULL,
                     content TEXT NOT NULL,
-                    created_at BIGINT NOT NULL,
-                );        
+                    created_at BIGINT NOT NULL
+                )
                 """
         );
     }
@@ -374,7 +374,7 @@ public final class DatabaseInitializer {
                     title VARCHAR(255) NOT NULL,
                     content TEXT NOT NULL,
                     created_at BIGINT NOT NULL,
-                );
+                )
                 """
         );
     }
