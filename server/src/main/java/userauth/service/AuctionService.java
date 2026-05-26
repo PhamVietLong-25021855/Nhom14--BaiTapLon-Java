@@ -231,7 +231,7 @@ public class AuctionService implements userauth.api.AuctionApi {
         eventBus.publish(AuctionEvent.statusChanged(item, item.getUpdatedAt(), "Auction closed manually."));
         try {
             notificationService.createNotification(0, "Auction closed", "Auction " + auctionId + " has been closed by" + sellerId);
-            notificationService.createNotification(item.getWinnerId(), "You won", "You have won " + auctionId + "auction");
+            notificationService.createNotification(item.getWinnerId(), "You won", "You have won " + auctionId + " auction");
         } catch (ValidationException e) {
             e.printStackTrace();
         }

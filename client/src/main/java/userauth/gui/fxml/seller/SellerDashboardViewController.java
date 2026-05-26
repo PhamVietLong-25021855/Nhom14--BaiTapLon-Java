@@ -13,6 +13,7 @@ import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import userauth.controller.AuctionController;
+import userauth.controller.NotificationController;
 import userauth.event.AuctionEvent;
 import userauth.event.AuctionEventBus;
 import userauth.event.AuctionEventListener;
@@ -148,6 +149,7 @@ public class SellerDashboardViewController {
 
     private AuthFrame frame;
     private AuctionController auctionController;
+    private NotificationController notificationController;
     private User currentUser;
     private int editingId = -1;
     private Timeline refreshTimeline;
@@ -192,6 +194,10 @@ public class SellerDashboardViewController {
 
     public void setAuctionController(AuctionController auctionController) {
         this.auctionController = auctionController;
+    }
+
+    public void setNotificationController(NotificationController notificationController) {
+        this.notificationController = notificationController;
     }
 
     public void setUser(User user) {
@@ -497,6 +503,26 @@ public class SellerDashboardViewController {
         } else {
             NotificationUtil.info(ownerWindow(), "Notification", "The logout action is prepared. Connect this controller to AuthFrame when integrating.");
         }
+    }
+
+    @FXML
+    private void handleShowInbox() {
+        if (auctionController == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "AuctionController has not been assigned to the bidder screen.");
+            return;
+        }
+
+        if (currentUser == null) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Current user information is unavailable.");
+            return;
+        }
+
+        if (frame == null) {
+            NotificationUtil.info(ownerWindow(), "Notification", "Connect this controller to AuthFrame to open bid history using FXML.");
+            return;
+        }
+        System.out.println("show");
+        frame.showInboxDialog(notificationController.findUserNotification(currentUser.getId()));
     }
 
     private void updateMetrics(List<AuctionItem> myAuctions) {

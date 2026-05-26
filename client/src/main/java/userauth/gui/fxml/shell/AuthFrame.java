@@ -250,6 +250,7 @@ public class AuthFrame {
 
         sellerView.controller().setFrame(this);
         sellerView.controller().setAuctionController(auctionController);
+        sellerView.controller().setNotificationController(notificationController);
 
         bidderView.controller().setFrame(this);
         bidderView.controller().setAuctionController(auctionController);
