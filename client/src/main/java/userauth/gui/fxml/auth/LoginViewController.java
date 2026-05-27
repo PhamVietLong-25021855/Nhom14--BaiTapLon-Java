@@ -21,6 +21,12 @@ public class LoginViewController {
     private PasswordField txtPassword;
 
     @FXML
+    private TextField txtPasswordVisible;
+
+    @FXML
+    private CheckBox chkShowPassword;
+
+    @FXML
     private CheckBox chkRememberMe;
 
     @FXML
@@ -39,6 +45,13 @@ public class LoginViewController {
 
     @FXML
     private void initialize() {
+        if (txtPassword != null && txtPasswordVisible != null) {
+            txtPasswordVisible.textProperty().bindBidirectional(txtPassword.textProperty());
+        }
+        if (chkShowPassword != null) {
+            chkShowPassword.selectedProperty().addListener((observable, oldValue, showPassword) -> setPasswordVisible(showPassword, true));
+        }
+        setPasswordVisible(false, false);
         hideStatus();
         Platform.runLater(() -> UiEffects.playEntrance(authCard, 140, 24, 0));
     }
@@ -46,7 +59,7 @@ public class LoginViewController {
     @FXML
     private void handleLogin() {
         hideStatus();
-        clearFieldState(txtUsername, txtPassword);
+        clearFieldState(txtUsername, txtPassword, txtPasswordVisible);
 
         if (authController == null) {
             showErrorState("AuthController has not been assigned to LoginViewController.");
@@ -62,6 +75,7 @@ public class LoginViewController {
             }
             if (password.isBlank()) {
                 applyErrorState(txtPassword);
+                applyErrorState(txtPasswordVisible);
             }
             showErrorState("Please enter both username and password.");
             return;
@@ -80,6 +94,7 @@ public class LoginViewController {
                     setBusy(false);
                     if (user == null) {
                         applyErrorState(txtUsername, txtPassword);
+                        applyErrorState(txtPasswordVisible);
                         showErrorState("Login failed.");
                         errorHandler.accept("Login failed.");
                         return;
@@ -95,6 +110,7 @@ public class LoginViewController {
                             ? "Login failed."
                             : error.getMessage();
                     applyErrorState(txtUsername, txtPassword);
+                    applyErrorState(txtPasswordVisible);
                     showErrorState(message);
                     errorHandler.accept(message);
                 }
@@ -144,11 +160,14 @@ public class LoginViewController {
     private void clearInputs() {
         txtUsername.clear();
         txtPassword.clear();
+        if (chkShowPassword != null) {
+            chkShowPassword.setSelected(false);
+        }
         if (chkRememberMe != null) {
             chkRememberMe.setSelected(true);
         }
         hideStatus();
-        clearFieldState(txtUsername, txtPassword);
+        clearFieldState(txtUsername, txtPassword, txtPasswordVisible);
     }
 
     private void showErrorState(String message) {
@@ -193,6 +212,34 @@ public class LoginViewController {
     private void setBusy(boolean busy) {
         if (authCard != null) {
             authCard.setDisable(busy);
+        }
+    }
+
+    private void setPasswordVisible(boolean visible, boolean requestFocus) {
+        if (txtPassword == null || txtPasswordVisible == null) {
+            return;
+        }
+        txtPassword.setVisible(!visible);
+        txtPassword.setManaged(!visible);
+        txtPasswordVisible.setVisible(visible);
+        txtPasswordVisible.setManaged(visible);
+
+        Control activeField = visible ? txtPasswordVisible : txtPassword;
+        Control inactiveField = visible ? txtPassword : txtPasswordVisible;
+        if (inactiveField.getStyleClass().contains(INPUT_ERROR) && !activeField.getStyleClass().contains(INPUT_ERROR)) {
+            activeField.getStyleClass().add(INPUT_ERROR);
+        }
+        if (!inactiveField.getStyleClass().contains(INPUT_ERROR)) {
+            activeField.getStyleClass().remove(INPUT_ERROR);
+        }
+
+        if (requestFocus) {
+            Platform.runLater(() -> {
+                activeField.requestFocus();
+                if (activeField instanceof TextInputControl input) {
+                    input.positionCaret(input.getText() == null ? 0 : input.getText().length());
+                }
+            });
         }
     }
 }

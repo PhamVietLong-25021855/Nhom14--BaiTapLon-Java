@@ -70,11 +70,17 @@
                                         <Label styleClass="field-label" text="Username" />
                                         <TextField fx:id="txtUsername" promptText="Enter your username" />
                                         <Label styleClass="field-label" text="Password" />
-                                        <PasswordField fx:id="txtPassword" onAction="#handleLogin" promptText="Enter your password" />
+                                        <StackPane>
+                                            <children>
+                                                <PasswordField fx:id="txtPassword" onAction="#handleLogin" promptText="Enter your password" />
+                                                <TextField fx:id="txtPasswordVisible" managed="false" onAction="#handleLogin" promptText="Enter your password" visible="false" />
+                                            </children>
+                                        </StackPane>
                                     </children>
                                 </VBox>
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                                     <children>
+                                        <CheckBox fx:id="chkShowPassword" mnemonicParsing="false" styleClass="remember-box" text="Show password" />
                                         <CheckBox fx:id="chkRememberMe" mnemonicParsing="false" selected="true" styleClass="remember-box" text="Remember this login session" />
                                         <Region HBox.hgrow="ALWAYS" />
                                         <Button mnemonicParsing="false" onAction="#handleForgotPassword" styleClass="button auth-link-button" text="Forgot password?" />

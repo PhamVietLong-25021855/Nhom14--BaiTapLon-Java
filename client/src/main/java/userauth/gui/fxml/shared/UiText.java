@@ -302,6 +302,7 @@ public final class UiText {
         addRuntimeTranslations(values);
         addServiceTranslations(values);
         addDatabaseTranslations(values);
+        put(values, "Show password", "Hi\u1ec7n m\u1eadt kh\u1ea9u");
         return values;
     }
 
