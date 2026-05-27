@@ -127,12 +127,6 @@ public class LoginViewController {
         showHomeHandler.run();
     }
 
-    @FXML
-    private void handleForgotPassword() {
-        showErrorState("A dedicated password recovery flow is not available in this version.");
-        infoHandler.accept("Please contact an admin for password assistance.");
-    }
-
     public void setAuthController(AuthController authController) {
         this.authController = authController;
     }

@@ -82,8 +82,6 @@
                                     <children>
                                         <CheckBox fx:id="chkShowPassword" mnemonicParsing="false" styleClass="remember-box" text="Show password" />
                                         <CheckBox fx:id="chkRememberMe" mnemonicParsing="false" selected="true" styleClass="remember-box" text="Remember this login session" />
-                                        <Region HBox.hgrow="ALWAYS" />
-                                        <Button mnemonicParsing="false" onAction="#handleForgotPassword" styleClass="button auth-link-button" text="Forgot password?" />
                                     </children>
                                 </HBox>
                                 <Label fx:id="lblStatus" managed="false" styleClass="error-text" text="Status" visible="false" wrapText="true" />
