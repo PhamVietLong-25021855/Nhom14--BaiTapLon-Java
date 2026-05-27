@@ -1,6 +1,8 @@
 # Nhóm 14 - Hệ thống đấu giá trực tuyến
 
-Dự án JavaFX mô phỏng hệ thống đấu giá trực tuyến theo kiến trúc client-server. Client chỉ hiển thị giao diện và gửi request qua socket; server xử lý nghiệp vụ, quản lý ví, đấu giá, tự động đặt giá và truy cập MySQL.
+Dự án xây dựng hệ thống đấu giá trực tuyến theo kiến trúc client-server. Client là ứng dụng JavaFX dùng để hiển thị giao diện và gửi request qua socket; server xử lý nghiệp vụ đấu giá, tài khoản, ví điện tử, thông báo và truy cập cơ sở dữ liệu MySQL.
+
+Phạm vi hệ thống tập trung vào các luồng chính: đăng ký/đăng nhập, phân quyền người dùng, quản lý phiên đấu giá, đặt giá, tự động đặt giá, quản lý ví, thông báo và các thao tác quản trị cơ bản.
 
 ## Công nghệ sử dụng
 
@@ -8,78 +10,84 @@ Dự án JavaFX mô phỏng hệ thống đấu giá trực tuyến theo kiến 
 | --- | --- |
 | Ngôn ngữ | Java 21 |
 | Build tool | Maven multi-module |
-| Giao diện | JavaFX 21 |
-| Database | MySQL/Akamai DB |
-| Giao tiếp | Java Socket + request/response object |
+| Giao diện | JavaFX 21, FXML, CSS |
+| Backend | Java Socket Server |
+| Database | MySQL / Akamai DB |
+| Giao tiếp client-server | Object request/response qua socket |
 | Kiểm thử | JUnit 5 |
 
-## Chức năng chính
+## Môi trường và yêu cầu cài đặt
 
-- Đăng ký, đăng nhập, đổi mật khẩu và cập nhật hồ sơ.
-- Phân quyền `ADMIN`, `SELLER`, `BIDDER`.
-- Seller tạo, sửa, xóa/hủy và đóng phiên đấu giá.
-- Bidder xem phiên, đặt giá, dùng ví và cấu hình tự động đặt giá.
-- Admin quản lý tài khoản, thông báo trang chủ và lệnh đóng sớm phiên đấu giá.
-- Ví điện tử hỗ trợ nạp tiền, giữ tiền khi đang dẫn giá, hoàn tiền khi bị vượt giá và thu tiền khi phiên được xác nhận thanh toán.
-- Server có cache ngắn hạn, index database và các test JUnit cho logic quan trọng.
+- JDK 21 trở lên.
+- Maven 3.6.3 trở lên.
+- MySQL hoặc Akamai DB có thể truy cập từ máy chạy server.
+- Port TCP `5050` được mở nếu client kết nối đến server từ máy khác.
+- Biến môi trường `DB_PASSWORD` hoặc JVM property `-Ddb.password=...` để server kết nối database.
 
-## Cấu trúc project
+Kiểm tra phiên bản:
 
-```text
-pom.xml                         Parent Maven project
-core-common/                    Mã dùng chung cho client và server
-  src/main/java/userauth/api     Interface nghiệp vụ
-  src/main/java/userauth/model   Model domain
-  src/main/java/userauth/network Request/response qua socket
-  src/main/java/userauth/util    Tiện ích dùng chung
-  src/main/java/userauth/validation
-client/                         Ứng dụng JavaFX
-  src/main/java/userauth/remote  Remote service gọi server
-  src/main/java/userauth/gui     Controller JavaFX
-  src/main/resources             FXML/CSS
-server/                         Backend socket server
-  src/main/java/userauth/server  Server main, socket, request handler
-  src/main/java/userauth/service Nghiệp vụ
-  src/main/java/userauth/dao     Truy cập database
-  src/main/resources             Cấu hình database
-docs/                           Tài liệu kỹ thuật rút gọn
-scripts/                        Script hỗ trợ deploy/tách client-server
+```bash
+java -version
+mvn -version
 ```
 
-## Luồng xử lý
+## Cấu trúc thư mục
 
 ```text
-JavaFX Client
-  -> Remote*Service
-  -> AuctionRequest qua socket
-  -> AuctionRequestHandler
-  -> Controller
-  -> Service
-  -> DAO
-  -> MySQL
+.
+|-- pom.xml                         Parent Maven project
+|-- core-common/                    Mã dùng chung cho client và server
+|   |-- src/main/java/userauth/api
+|   |-- src/main/java/userauth/model
+|   |-- src/main/java/userauth/network
+|   |-- src/main/java/userauth/util
+|   `-- src/main/java/userauth/validation
+|-- server/                         Backend socket server
+|   |-- src/main/java/userauth/server
+|   |-- src/main/java/userauth/service
+|   |-- src/main/java/userauth/dao
+|   |-- src/main/java/userauth/database
+|   `-- src/main/resources/database.properties
+|-- client/                         Ứng dụng JavaFX
+|   |-- src/main/java/userauth/remote
+|   |-- src/main/java/userauth/gui
+|   `-- src/main/resources
+|-- docs/                           Tài liệu thiết kế, deploy, tối ưu
+|-- scripts/                        Script hỗ trợ deploy và tách gói
+`-- database_indexes.sql            Script bổ sung index database
 ```
-
-Server trả kết quả bằng `AuctionResponse`. Client không giữ mật khẩu database và không truy cập DAO trực tiếp.
 
 ## Cấu hình database
 
-File cấu hình chính nằm tại:
+File cấu hình mặc định:
 
 ```text
 server/src/main/resources/database.properties
 ```
 
-Mật khẩu không nên ghi cứng vào Git. Khi chạy server, truyền bằng biến môi trường hoặc JVM property:
+Mật khẩu database không nên ghi trực tiếp vào source code. Khi chạy server, đặt biến môi trường:
+
+Windows PowerShell:
 
 ```powershell
 $env:DB_PASSWORD="mat_khau_database"
 ```
 
+Linux/macOS:
+
 ```bash
 export DB_PASSWORD="mat_khau_database"
 ```
 
+Có thể truyền trực tiếp bằng JVM property:
+
+```bash
+java -Ddb.password="mat_khau_database" ...
+```
+
 ## Build và kiểm thử
+
+Chạy từ thư mục gốc của project.
 
 Chạy toàn bộ test:
 
@@ -87,98 +95,214 @@ Chạy toàn bộ test:
 mvn -ntp test
 ```
 
-Build toàn project:
+Build toàn bộ project:
 
 ```bash
 mvn -ntp package
 ```
 
-Build riêng server kèm module phụ thuộc:
+Build server kèm các module phụ thuộc:
 
 ```bash
 mvn -ntp -pl server -am package -DskipTests
 ```
 
-## Chạy server
+Build client kèm các module phụ thuộc:
 
-Sau khi build, chạy server bằng shaded jar:
+```bash
+mvn -ntp -pl client -am package -DskipTests
+```
+
+## Thứ tự chạy Server/Client
+
+### 1. Chạy server trước
+
+Build server:
+
+```bash
+mvn -ntp -pl server -am package -DskipTests
+```
+
+Windows PowerShell:
 
 ```powershell
 $env:DB_PASSWORD="mat_khau_database"
-java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -jar server\target\server-1.0.0-SNAPSHOT.jar
+java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -jar server/target/server-1.0.0-SNAPSHOT.jar
 ```
 
-Trên Linux/VPS:
+Linux/macOS:
 
 ```bash
 export DB_PASSWORD="mat_khau_database"
 java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -jar server/target/server-1.0.0-SNAPSHOT.jar
 ```
 
-Port mặc định của server là `5050`. Nếu client chạy từ máy khác, cần mở TCP `5050` trên firewall/VPS.
+Server mặc định lắng nghe tại port `5050`. Nếu chạy client trên máy khác, thay `127.0.0.1` bằng IP public hoặc domain của máy server.
 
-## Chạy client
+### Chạy server trên VPS riêng
 
-Từ thư mục `client`:
+#### 1. Đưa code mới lên VPS
+
+Cách khuyến nghị là đẩy code từ máy local lên GitHub, sau đó SSH vào VPS để kéo bản mới nhất.
+
+Trên máy local:
+
+```bash
+git status
+git add .
+git commit -m "cap nhat code"
+git push origin main
+```
+
+Trên VPS:
+
+```bash
+ssh root@172.104.50.54
+cd /root/Nhom14--BaiTapLon-Java-Long-BanGoc1
+git fetch origin main
+git checkout main
+git pull origin main
+```
+
+Nếu VPS chưa có source code, clone project lần đầu:
+
+```bash
+ssh root@172.104.50.54
+cd /root
+git clone https://github.com/PhamVietLong-25021855/Nhom14--BaiTapLon-Java.git Nhom14--BaiTapLon-Java-Long-BanGoc1
+cd /root/Nhom14--BaiTapLon-Java-Long-BanGoc1
+```
+
+Nếu không muốn dùng GitHub, có thể nén source ở máy local rồi copy trực tiếp lên VPS.
+
+Windows PowerShell, chạy từ thư mục gốc project:
+
+```powershell
+git archive --format=zip -o auction-source.zip HEAD
+scp .\auction-source.zip root@172.104.50.54:/root/auction-source.zip
+```
+
+Trên VPS:
+
+```bash
+mkdir -p /root/Nhom14--BaiTapLon-Java-Long-BanGoc1
+unzip -o /root/auction-source.zip -d /root/Nhom14--BaiTapLon-Java-Long-BanGoc1
+cd /root/Nhom14--BaiTapLon-Java-Long-BanGoc1
+```
+
+#### 2. Build và chạy server trên VPS
+
+SSH vào VPS:
+
+```bash
+ssh root@172.104.50.54
+```
+
+Vào thư mục project trên VPS:
+
+```bash
+cd /root/Nhom14--BaiTapLon-Java-Long-BanGoc1
+```
+
+Dừng server cũ nếu đang chạy:
+
+```bash
+pkill -f server-1.0.0-SNAPSHOT.jar
+```
+
+Cấu hình mật khẩu database:
+
+```bash
+export DB_PASSWORD="mat_khau_database"
+```
+
+Build lại `core-common` và `server`:
+
+```bash
+mvn clean install -pl core-common,server -am
+```
+
+Chạy server nền và ghi log vào `log.txt`:
+
+```bash
+nohup java -jar server/target/server-1.0.0-SNAPSHOT.jar > log.txt 2>&1 &
+```
+
+Kiểm tra server đã lắng nghe port `5050`:
+
+```bash
+ss -tulnp | grep 5050
+```
+
+Xem log server:
+
+```bash
+tail -f log.txt
+```
+
+### 2. Chạy client sau khi server đã sẵn sàng
+
+Cách 1: chạy bằng Maven, dùng được trên Windows/Linux/macOS.
+
+Windows PowerShell:
+
+```powershell
+$env:APP_SERVER_HOST="127.0.0.1"
+$env:APP_SERVER_PORT="5050"
+mvn -ntp -pl client -am javafx:run
+```
+
+Linux/macOS:
+
+```bash
+export APP_SERVER_HOST="127.0.0.1"
+export APP_SERVER_PORT="5050"
+mvn -ntp -pl client -am javafx:run
+```
+
+Cách 2: chạy nhanh trên Windows bằng script có sẵn:
+
+```powershell
+cd client
+.\run-client.ps1 -ServerHost "127.0.0.1" -ServerPort 5050
+```
+
+Nếu server nằm trên VPS:
 
 ```powershell
 cd client
 .\run-client.ps1 -ServerHost "IP_PUBLIC_HOAC_DOMAIN" -ServerPort 5050
 ```
 
-Hoặc chạy Maven trực tiếp từ root:
+## Chức năng đã hoàn thành
 
-```powershell
-mvn -pl client javafx:run "-Dmain.class=userauth.ClientLauncher" "-Dapp.server.host=127.0.0.1" "-Dapp.server.port=5050"
-```
+- Đăng ký, đăng nhập, đổi mật khẩu và cập nhật hồ sơ người dùng.
+- Phân quyền người dùng theo vai trò `ADMIN`, `SELLER`, `BIDDER`.
+- Seller tạo, sửa, xóa/hủy và đóng phiên đấu giá.
+- Bidder xem danh sách phiên đấu giá, xem chi tiết, đặt giá và xem lịch sử đặt giá.
+- Tự động đặt giá theo mức tối đa do bidder cấu hình.
+- Ví điện tử: nạp tiền, xem tổng số dư, số dư khả dụng và số tiền đang bị giữ.
+- Giữ tiền khi bidder đang dẫn đầu, hoàn tiền khi bị vượt giá, trừ tiền khi phiên được xác nhận thanh toán.
+- Admin quản lý tài khoản, thông báo trang chủ và lệnh đóng sớm phiên đấu giá.
+- Hệ thống thông báo/inbox cho các sự kiện quan trọng.
+- Server xử lý request qua socket, tách client khỏi truy cập database trực tiếp.
+- Database initializer và script index hỗ trợ khởi tạo/tối ưu các bảng chính.
+- Test JUnit cho các luồng quan trọng như validation, network request/response, cache, concurrent bidding, anti-sniping và settlement.
 
-Nếu server ở VPS nhưng chỉ mở SSH, dùng SSH tunnel trong `client/run-client-via-ssh.ps1`.
+## Tài liệu, báo cáo và video demo
 
-## Luồng ví và đặt giá
+- Báo cáo PDF: [Cập nhật link báo cáo PDF](docs/BAO_CAO_NHOM_14.pdf)
+- Video demo: [Cập nhật link video demo](https://example.com/video-demo)
+- Hướng dẫn deploy: [docs/DEPLOY-GUIDE.md](docs/DEPLOY-GUIDE.md)
+- Tài liệu tách client/server: [docs/split-client-server.md](docs/split-client-server.md)
+- Tài liệu design patterns: [docs/design-patterns.md](docs/design-patterns.md)
+- Tài liệu tối ưu: [docs/optimization-guide.md](docs/optimization-guide.md)
 
-Ví có 3 số liệu chính:
+## Ghi chú lỗi thường gặp
 
-| Trường | Ý nghĩa |
+| Lỗi | Cách kiểm tra |
 | --- | --- |
-| `balance` | Tổng số tiền trong ví |
-| `reservedBalance` | Tiền đang bị giữ cho giá dẫn đầu |
-| `availableBalance` | Tiền còn có thể dùng, bằng `balance - reservedBalance` |
-
-Ví dụ:
-
-| Thao tác | Balance | Reserved | Available |
-| --- | ---: | ---: | ---: |
-| Nạp 1,000,000 | 1,000,000 | 0 | 1,000,000 |
-| Đặt giá 500,000 | 1,000,000 | 500,000 | 500,000 |
-| Bị người khác vượt giá | 1,000,000 | 0 | 1,000,000 |
-| Thắng và được xác nhận PAID | 500,000 | 0 | 500,000 |
-
-Các nghiệp vụ chính nằm trong `WalletService`: giữ tiền khi đặt giá, giải phóng tiền khi bị vượt, thu tiền khi thanh toán và hoàn tiền khi hủy.
-
-## Tách client/server để deploy
-
-Script hỗ trợ tạo 2 gói runtime riêng:
-
-```powershell
-.\scripts\split-client-server.ps1
-```
-
-Kết quả nằm trong `dist/server` và `dist/client`. Gói client không chứa DAO, service backend, database config hoặc MySQL driver.
-
-## Tài liệu thêm
-
-- `client/README-CLIENT.md`: cách chạy client.
-- `server/README-SERVER.md`: cách chạy server.
-- `docs/DEPLOY-GUIDE.md`: checklist deploy VPS ngắn gọn.
-- `docs/optimization-guide.md`: các tối ưu hiệu năng đang dùng.
-- `docs/design-patterns.md`: các design pattern chính.
-- `docs/split-client-server.md`: cách tách gói client/server.
-
-## Lỗi thường gặp
-
-| Lỗi | Cách kiểm tra nhanh |
-| --- | --- |
-| Client không kết nối được server | Kiểm tra IP/domain, port `5050`, firewall và server log |
-| Server không kết nối được database | Kiểm tra `DB_PASSWORD`, host/port MySQL và trusted sources |
-| Không đặt giá được sau khi nạp tiền | Kiểm tra số dư ví, giá đặt có lớn hơn giá hiện tại không, và log `[Wallet]` |
-| FXML không load | Chạy `mvn test` để kiểm tra resource/controller consistency |
+| Client không kết nối được server | Kiểm tra IP/domain, port `5050`, firewall và log server |
+| Server không kết nối được database | Kiểm tra `DB_PASSWORD`, host/port MySQL và quyền truy cập database |
+| Không đặt giá được | Kiểm tra số dư khả dụng, giá hiện tại và quy tắc bước giá |
+| JavaFX không chạy | Kiểm tra JDK 21, Maven và plugin JavaFX |
