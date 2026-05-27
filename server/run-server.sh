@@ -1,212 +1,180 @@
 #!/usr/bin/env bash
-# run-server.sh — Chạy server trên Linux/VPS.
+# Run the auction server on Linux/macOS.
 #
-#   Usage:
-#     ./run-server.sh                         # default port 5050
-#     DB_PASSWORD=xxx ./run-server.sh         # với DB password
-#     ./run-server.sh 6060 0.0.0.0           # custom port và bind
-#
-#   Hoặc dùng deploy.sh cho toàn bộ hệ thống (server + client):
-#     ./deploy.sh
+# Usage:
+#   ./server/run-server.sh
+#   DB_PASSWORD=xxx ./server/run-server.sh
+#   ./server/run-server.sh 5050 0.0.0.0
+#   ./server/run-server.sh 5050 0.0.0.0 --skip-build
 
 set -euo pipefail
 
-# ── Resolve project root ──────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$ROOT_DIR"
 
-# ── Colours ─────────────────────────────────────────────────────────────────
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
-info()    { echo -e "${CYAN}[INFO]${NC}   $*"; }
-success() { echo -e "${GREEN}[OK]${NC}     $*"; }
-warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
-error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; exit 1; }
-
-# ── Defaults ─────────────────────────────────────────────────────────────────
-SERVER_PORT="${1:-${APP_SERVER_PORT:-5050}}"
-BIND_HOST="${2:-${APP_SERVER_BIND_HOST:-0.0.0.0}}"
 SKIP_BUILD=false
-SKIP_TESTS="${SKIP_TESTS:-false}"
+RUN_TESTS=false
+POSITIONAL_ARGS=()
 
-for arg in "${@:3}"; do
-    case "$arg" in
-        --skip-build)   SKIP_BUILD=true ;;
-        --skip-tests)   SKIP_TESTS=true ;;
-    esac
+for arg in "$@"; do
+  case "$arg" in
+    --skip-build) SKIP_BUILD=true ;;
+    --with-tests) RUN_TESTS=true ;;
+    -h|--help)
+      sed -n '2,10p' "$0"
+      exit 0
+      ;;
+    --*) echo "[ERROR] Unknown option: $arg" >&2; exit 1 ;;
+    *) POSITIONAL_ARGS+=("$arg") ;;
+  esac
 done
 
-JAR_FILE="server/target/auction-server.jar"
+SERVER_PORT="${POSITIONAL_ARGS[0]:-${APP_SERVER_PORT:-5050}}"
+BIND_HOST="${POSITIONAL_ARGS[1]:-${APP_SERVER_BIND_HOST:-0.0.0.0}}"
+
+if [ "${#POSITIONAL_ARGS[@]}" -gt 2 ]; then
+  echo "[ERROR] Too many positional arguments." >&2
+  exit 1
+fi
+
+JAR_FILE="server/target/server-1.0.0-SNAPSHOT.jar"
 LOG_DIR="logs"
-LOG_FILE="${LOG_DIR}/server.log"
-OLD_LOG_FILE="${LOG_DIR}/server.log.bak"
-STDERR_LOG="${LOG_DIR}/server.err.log"
-PID_FILE="${LOG_DIR}/server.pid"
-SEP=":"
+LOG_FILE="$LOG_DIR/server.log"
+ERR_FILE="$LOG_DIR/server.err.log"
+PID_FILE="$LOG_DIR/server.pid"
 
-# ── Validate DB_PASSWORD ──────────────────────────────────────────────────────
-if [ -z "${DB_PASSWORD:-}" ]; then
-    warn "DB_PASSWORD is not set. Server may fail if database.properties has wrong password."
-    warn "Set it:  export DB_PASSWORD='your_password'"
-fi
+info() { printf '[INFO] %s\n' "$*"; }
+ok() { printf '[OK] %s\n' "$*"; }
+warn() { printf '[WARN] %s\n' "$*"; }
+die() { printf '[ERROR] %s\n' "$*" >&2; exit 1; }
 
-# ── DB password injection ─────────────────────────────────────────────────────
-DB_PROPS="server/src/main/resources/database.properties"
-if [ -f "$DB_PROPS" ] && [ -n "${DB_PASSWORD:-}" ]; then
-    local escaped_pw
-    escaped_pw=$(echo "$DB_PASSWORD" | sed 's/[\/&]/\\&/g')
-    sed -i "s/^db\.password=.*/db\.password=$escaped_pw/" "$DB_PROPS"
-    info "DB password injected into $DB_PROPS"
-fi
+require_tool() {
+  command -v "$1" >/dev/null 2>&1 || die "$1 is not installed or not in PATH."
+}
 
-# ── Build ─────────────────────────────────────────────────────────────────────
-if [ "$SKIP_BUILD" = true ]; then
-    warn "Skipping build."
-else
-    info "Building project..."
-    local build_flags="-Dmaven.test.skip=true"
-    [ "$SKIP_TESTS" = true ] && build_flags="$build_flags -DskipTests"
-    if ! mvn clean package $build_flags; then
-        error "Build failed."
-    fi
-    success "Build complete."
-fi
+java_major() {
+  java -version 2>&1 | awk -F '"' '/version/ {
+    split($2, parts, ".");
+    if (parts[1] == "1") print parts[2]; else print parts[1];
+    exit;
+  }'
+}
 
-# ── Validate JAR ──────────────────────────────────────────────────────────────
-if [ ! -f "$JAR_FILE" ]; then
-    error "JAR not found: $JAR_FILE"
-fi
-local jar_size; jar_size=$(stat -c%s "$JAR_FILE" 2>/dev/null || stat -f%z "$JAR_FILE" 2>/dev/null || echo 0)
-[ "$jar_size" -eq 0 ] && error "JAR is empty."
-local jar_size_mb; jar_size_mb=$(echo "scale=2; $jar_size / 1048576" | bc 2>/dev/null || echo "$((jar_size / 1048576))")
-[ "$jar_size" -lt 1048576 ] && warn "JAR suspiciously small (${jar_size_mb} MB)."
-success "JAR validated: $JAR_FILE (${jar_size_mb} MB)"
+jar_size_bytes() {
+  stat -c%s "$1" 2>/dev/null || stat -f%z "$1" 2>/dev/null || echo 0
+}
 
-# ── Build classpath ────────────────────────────────────────────────────────────
-cp="$JAR_FILE"
-if [ -d "server/target/dependency" ]; then
-    for jar in server/target/dependency/*.jar; do
-        [ -f "$jar" ] && cp="$cp${SEP}$jar"
-    done
-fi
-
-# ── Stop existing server ───────────────────────────────────────────────────────
-info "Stopping any running server..."
-
-if [ -f "$PID_FILE" ]; then
-    local old_pid; old_pid=$(cat "$PID_FILE" 2>/dev/null || true)
-    if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
-        info "Stopping PID $old_pid gracefully..."
-        kill "$old_pid" 2>/dev/null || true
-        for i in $(seq 1 10); do
-            if ! kill -0 "$old_pid" 2>/dev/null; then
-                success "Server stopped gracefully."
-                break
-            fi
-            sleep 1
-        done
-        if kill -0 "$old_pid" 2>/dev/null; then
-            warn "Force killing PID $old_pid..."
-            kill -9 "$old_pid" 2>/dev/null || true
-        fi
+stop_existing_server() {
+  if [ -f "$PID_FILE" ]; then
+    pid="$(cat "$PID_FILE" 2>/dev/null || true)"
+    if [ -n "${pid:-}" ] && kill -0 "$pid" 2>/dev/null; then
+      info "Stopping server PID $pid..."
+      kill "$pid" 2>/dev/null || true
+      for _ in 1 2 3 4 5; do
+        kill -0 "$pid" 2>/dev/null || break
+        sleep 1
+      done
+      kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
     fi
     rm -f "$PID_FILE"
-fi
+  fi
 
-for pattern in "AuctionServerMain" "auction-server.jar" "ServerMain"; do
-    local pids; pids=$(pgrep -f "$pattern" 2>/dev/null || true)
-    [ -n "$pids" ] && {
-        warn "Killing stray: $pids"
-        echo "$pids" | xargs kill 2>/dev/null || true
-        sleep 1
-        echo "$pids" | xargs kill -9 2>/dev/null || true
+  if command -v pgrep >/dev/null 2>&1; then
+    pids="$(pgrep -f 'userauth.server.AuctionServerMain|server-1.0.0-SNAPSHOT.jar' 2>/dev/null || true)"
+    if [ -n "${pids:-}" ]; then
+      warn "Stopping old server process(es): $pids"
+      for pid in $pids; do
+        kill "$pid" 2>/dev/null || true
+      done
+    fi
+  fi
+}
+
+port_is_listening() {
+  if command -v ss >/dev/null 2>&1; then
+    ss -tuln 2>/dev/null | grep -q ":$SERVER_PORT "
+    return $?
+  fi
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -nP -iTCP:"$SERVER_PORT" -sTCP:LISTEN >/dev/null 2>&1
+    return $?
+  fi
+  if command -v netstat >/dev/null 2>&1; then
+    # shellcheck disable=SC1087
+    netstat -an 2>/dev/null | grep -E "[.:]$SERVER_PORT[[:space:]].*LISTEN" >/dev/null
+    return $?
+  fi
+  return 1
+}
+
+wait_for_startup() {
+  pid="$1"
+  info "Waiting for server on ${BIND_HOST}:${SERVER_PORT}..."
+  for _ in $(seq 1 60); do
+    kill -0 "$pid" 2>/dev/null || {
+      [ -f "$ERR_FILE" ] && tail -40 "$ERR_FILE" >&2 || true
+      [ -f "$LOG_FILE" ] && tail -40 "$LOG_FILE" >&2 || true
+      die "Server stopped during startup."
     }
-done
 
-sleep 2
-
-# ── Setup logs ────────────────────────────────────────────────────────────────
-mkdir -p "$LOG_DIR"
-
-if [ -f "$LOG_FILE" ]; then
-    local log_size; log_size=$(du -h "$LOG_FILE" | cut -f1)
-    info "Backing up old log ($log_size)..."
-    [ -f "$OLD_LOG_FILE" ] && rm -f "$OLD_LOG_FILE"
-    mv "$LOG_FILE" "$OLD_LOG_FILE"
-fi
-
-# ── Start server ─────────────────────────────────────────────────────────────
-info "Starting server on ${BIND_HOST}:${SERVER_PORT}..."
-
-nohup java \
-    -Xmx512m \
-    -Xms128m \
-    -Djava.awt.headless=true \
-    "-Dapp.server.port=$SERVER_PORT" \
-    "-Dapp.server.bind.host=$BIND_HOST" \
-    -cp "$cp" \
-    userauth.server.AuctionServerMain \
-    >> "$LOG_FILE" 2>> "$STDERR_LOG" &
-
-local server_pid=$!
-echo "$server_pid" > "$PID_FILE"
-success "Server started (PID $server_pid)."
-
-# ── Wait for startup ──────────────────────────────────────────────────────────
-info "Waiting for startup (max 60 seconds)..."
-local startup_ok=false
-for i in $(seq 1 60); do
+    if port_is_listening; then
+      ok "Port $SERVER_PORT is listening."
+      return 0
+    fi
+    if [ -f "$LOG_FILE" ] && grep -q "\[AuctionServer\] Listening on" "$LOG_FILE"; then
+      ok "Server startup confirmed from log."
+      return 0
+    fi
     sleep 1
-    if ! kill -0 "$server_pid" 2>/dev/null; then
-        local stderr_content=""
-        [ -f "$STDERR_LOG" ] && stderr_content=$(cat "$STDERR_LOG")
-        [ -z "$stderr_content" ] && [ -f "$LOG_FILE" ] && stderr_content=$(tail -30 "$LOG_FILE")
-        error "Server died during startup.${stderr_content:+$'\n'$stderr_content}"
-    fi
-    if command -v ss &> /dev/null; then
-        local port_check; port_check=$(ss -tlpn 2>/dev/null | grep ":$SERVER_PORT" || true)
-    elif command -v netstat &> /dev/null; then
-        local port_check; port_check=$(netstat -tlpn 2>/dev/null | grep ":$SERVER_PORT" || true)
-    fi
-    if [ -n "${port_check:-}" ]; then
-        startup_ok=true
-        success "Port $SERVER_PORT is listening."
-        break
-    fi
-    if [ -f "$LOG_FILE" ] && grep -q "Listening on\|Server started" "$LOG_FILE" 2>/dev/null; then
-        startup_ok=true
-        success "Server startup confirmed in log."
-        break
-    fi
-    [ $((i % 10)) -eq 0 ] && info "  Still waiting... ($i seconds)"
-done
+  done
+  warn "Could not confirm startup. Check $LOG_FILE and $ERR_FILE."
+}
 
-if [ "$startup_ok" != true ]; then
-    if ! kill -0 "$server_pid" 2>/dev/null; then
-        local stderr_content=""
-        [ -f "$STDERR_LOG" ] && stderr_content=$(cat "$STDERR_LOG")
-        [ -z "$stderr_content" ] && [ -f "$LOG_FILE" ] && stderr_content=$(tail -30 "$LOG_FILE")
-        error "Server died.${stderr_content:+$'\n'$stderr_content}"
-    fi
-    warn "Could not confirm startup via port check. Check $LOG_FILE."
+require_tool java
+require_tool mvn
+
+major="$(java_major)"
+[ "${major:-0}" -ge 21 ] || die "JDK 21 or newer is required. Current major version: ${major:-unknown}."
+
+if [ -z "${DB_PASSWORD:-}" ]; then
+  warn "DB_PASSWORD is not set. Server will use database.properties or JVM properties."
 fi
 
-# ── Verify DB ─────────────────────────────────────────────────────────────────
-if [ -f "$LOG_FILE" ]; then
-    if grep -q "\[Database\] Connected\|Connected successfully\|Database initialized" "$LOG_FILE" 2>/dev/null; then
-        success "Database: Connected"
-    elif grep -qE "Could not connect|Connection refused|Communications link" "$LOG_FILE" 2>/dev/null; then
-        warn "Database connection issues. Check $LOG_FILE."
-    fi
+if [ "$SKIP_BUILD" != true ]; then
+  info "Building server module..."
+  if [ "$RUN_TESTS" = true ]; then
+    mvn -ntp -pl core-common,server -am clean install
+  else
+    mvn -ntp -pl core-common,server -am clean install -DskipTests
+  fi
 fi
 
-echo ""
-success "=========================================="
-success "  Server deployed successfully!"
-success "  PID:     $server_pid"
-success "  Port:    ${BIND_HOST}:${SERVER_PORT}"
-success "  Log:     $LOG_FILE"
-success "=========================================="
-echo ""
-info "To follow logs:   tail -f $LOG_FILE"
-info "To stop server:  kill \$(cat $PID_FILE)"
-echo ""
+[ -f "$JAR_FILE" ] || die "Server jar not found: $JAR_FILE"
+[ "$(jar_size_bytes "$JAR_FILE")" -gt 0 ] || die "Server jar is empty: $JAR_FILE"
+
+mkdir -p "$LOG_DIR"
+[ -f "$LOG_FILE" ] && mv "$LOG_FILE" "$LOG_FILE.bak"
+[ -f "$ERR_FILE" ] && mv "$ERR_FILE" "$ERR_FILE.bak"
+
+stop_existing_server
+
+info "Starting server on ${BIND_HOST}:${SERVER_PORT}..."
+nohup java \
+  -Xms128m \
+  -Xmx512m \
+  -Djava.awt.headless=true \
+  -Dapp.server.port="$SERVER_PORT" \
+  -Dapp.server.bind.host="$BIND_HOST" \
+  -jar "$JAR_FILE" \
+  >"$LOG_FILE" 2>"$ERR_FILE" &
+
+server_pid=$!
+echo "$server_pid" > "$PID_FILE"
+
+ok "Server started. PID: $server_pid"
+wait_for_startup "$server_pid"
+
+info "Log: $LOG_FILE"
+info "Error log: $ERR_FILE"
+info "Stop: kill \$(cat $PID_FILE)"

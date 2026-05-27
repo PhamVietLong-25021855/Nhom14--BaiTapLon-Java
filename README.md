@@ -137,6 +137,14 @@ export DB_PASSWORD="mat_khau_database"
 java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -jar server/target/server-1.0.0-SNAPSHOT.jar
 ```
 
+Hoặc dùng script Linux/macOS có sẵn:
+
+```bash
+export DB_PASSWORD="mat_khau_database"
+chmod +x server/run-server.sh
+./server/run-server.sh 5050 0.0.0.0
+```
+
 Server mặc định lắng nghe tại port `5050`. Nếu chạy client trên máy khác, thay `127.0.0.1` bằng IP public hoặc domain của máy server.
 
 ### Chạy server trên VPS riêng
@@ -249,7 +257,8 @@ Windows PowerShell:
 ```powershell
 $env:APP_SERVER_HOST="127.0.0.1"
 $env:APP_SERVER_PORT="5050"
-mvn -ntp -pl client -am javafx:run
+mvn -ntp -pl client -am install -DskipTests
+mvn -ntp -f client/pom.xml javafx:run
 ```
 
 Linux/macOS:
@@ -257,7 +266,8 @@ Linux/macOS:
 ```bash
 export APP_SERVER_HOST="127.0.0.1"
 export APP_SERVER_PORT="5050"
-mvn -ntp -pl client -am javafx:run
+mvn -ntp -pl client -am install -DskipTests
+mvn -ntp -f client/pom.xml javafx:run
 ```
 
 Cách 2: chạy nhanh trên Windows bằng script có sẵn:
