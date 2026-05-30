@@ -1580,20 +1580,23 @@ public class BidderDashboardViewController {
             return;
         }
 
+        if (shouldAnnounceWinner(event)) {
+            showWinnerAnnouncement(
+                    event.auctionId(),
+                    auctionNameById(event.auctionId()),
+                    event.winnerId(),
+                    event.currentHighestBid()
+            );
+        }
+
         if (event.auctionId() == lastSelectedAuctionId) {
             switch (event.type()) {
                 case ANTI_SNIPING_EXTENDED ->
                         setBidStatus("Anti-sniping extended the auction until " + AuctionViewFormatter.formatDateTimeWithSeconds(event.endTime()) + ".", false);
-                case SETTLED -> {
-                    setBidStatus(event.summary(), event.status() == AuctionStatus.CANCELED);
-                    if (isFinishedStatus(event.status())) {
-                        showWinnerAnnouncement(event.auctionId(), selectedAuctionName(), event.winnerId(), event.currentHighestBid());
-                    }
-                }
+                case SETTLED -> setBidStatus(event.summary(), event.status() == AuctionStatus.CANCELED);
                 case STATUS_CHANGED -> {
                     if (isFinishedStatus(event.status())) {
                         setBidStatus("Auction finished. Waiting for seller settlement.", false);
-                        showWinnerAnnouncement(event.auctionId(), selectedAuctionName(), event.winnerId(), event.currentHighestBid());
                     }
                 }
                 case BID_ACTIVITY -> {
@@ -1604,9 +1607,34 @@ public class BidderDashboardViewController {
         refreshData();
     }
 
-    private String selectedAuctionName() {
+    private boolean shouldAnnounceWinner(AuctionEvent event) {
+        return event.winnerId() > 0
+                && isFinishedStatus(event.status())
+                && (event.type() == AuctionEvent.AuctionEventType.SETTLED
+                || event.type() == AuctionEvent.AuctionEventType.STATUS_CHANGED);
+    }
+
+    private String auctionNameById(int auctionId) {
         AuctionItem selected = tableAuctions == null ? null : tableAuctions.getSelectionModel().getSelectedItem();
-        return selected == null ? UiText.text("Selected auction") : selected.getName();
+        if (selected != null && selected.getId() == auctionId) {
+            return selected.getName();
+        }
+
+        if (tableAuctions != null) {
+            for (AuctionItem auction : tableAuctions.getItems()) {
+                if (auction != null && auction.getId() == auctionId) {
+                    return auction.getName();
+                }
+            }
+        }
+
+        for (AuctionItem auction : allAuctionsSnapshot) {
+            if (auction != null && auction.getId() == auctionId) {
+                return auction.getName();
+            }
+        }
+
+        return UiText.text("Auction #") + auctionId;
     }
 
     private void registerAutobidFormListeners() {
