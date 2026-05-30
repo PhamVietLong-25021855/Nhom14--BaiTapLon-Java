@@ -52,10 +52,17 @@ public final class AuctionRequestHandler {
                     dbl(request, "startPrice"), lng(request, "startTime"), lng(request, "endTime"), str(request, "category"),
                     str(request, "imageSource"), (byte[]) request.get("imageData"));
             case NetworkActions.AUCTION_DELETE -> context.getAuctionController().deleteAuction(integer(request, "auctionId"), integer(request, "sellerId"));
+            case NetworkActions.AUCTION_ADMIN_DELETE -> {
+                context.getAuctionService().deleteAuctionAsAdmin(integer(request, "auctionId"));
+                yield "SUCCESS";
+            }
+            case NetworkActions.AUCTION_GET -> context.getAuctionController().getAuctionById(integer(request, "auctionId"));
             case NetworkActions.AUCTION_BY_SELLER -> context.getAuctionController().getAuctionsBySeller(integer(request, "sellerId"));
             case NetworkActions.AUCTION_ALL -> context.getAuctionController().getAllAuctions();
+            case NetworkActions.AUCTION_ALL_SUMMARIES -> context.getAuctionController().getAllAuctionSummaries();
             case NetworkActions.AUCTION_BIDS -> context.getAuctionController().getBidsForAuction(integer(request, "auctionId"));
             case NetworkActions.AUCTION_ALL_BIDS -> context.getAuctionController().getAllBids();
+            case NetworkActions.AUCTION_BID_COUNT -> context.getAuctionController().countAllBids();
             case NetworkActions.AUCTION_PLACE_BID -> context.getAuctionController().placeBid(
                     integer(request, "auctionId"), integer(request, "bidderId"), dbl(request, "amount"));
             case NetworkActions.AUCTION_CLOSE -> context.getAuctionController().closeAuction(integer(request, "auctionId"), integer(request, "sellerId"));
@@ -71,7 +78,7 @@ public final class AuctionRequestHandler {
             }
             case NetworkActions.AUCTION_EARLY_CLOSES -> context.getAuctionController().getAdminEarlyCloseCountdowns();
             case NetworkActions.AUCTION_REFRESH_STATUSES -> {
-                context.getAuctionController().getAllAuctions();
+                context.getAuctionController().refreshStatuses();
                 yield "SUCCESS";
             }
 

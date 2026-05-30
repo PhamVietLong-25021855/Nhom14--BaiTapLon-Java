@@ -121,6 +121,11 @@ class AuctionReservedBalanceReconciliationTest {
         }
 
         @Override
+        public void updateAuctionState(AuctionItem item) {
+            auctions.put(item.getId(), item);
+        }
+
+        @Override
         public void deleteAuction(int id) {
             auctions.remove(id);
         }
@@ -133,6 +138,47 @@ class AuctionReservedBalanceReconciliationTest {
         @Override
         public List<AuctionItem> findAllAuctions() {
             return new ArrayList<>(auctions.values());
+        }
+
+        @Override
+        public List<AuctionItem> findAllAuctionSummaries() {
+            return findAllAuctions();
+        }
+
+        @Override
+        public List<AuctionItem> findAuctionsBySeller(int sellerId) {
+            return auctions.values().stream()
+                    .filter(item -> item.getSellerId() == sellerId)
+                    .toList();
+        }
+
+        @Override
+        public List<AuctionItem> findStatusRefreshCandidates(long now) {
+            return auctions.values().stream()
+                    .filter(item -> item.getStatus() == AuctionStatus.RUNNING ||
+                            (item.getStatus() == AuctionStatus.OPEN && now >= item.getStartTime()))
+                    .toList();
+        }
+
+        @Override
+        public List<Integer> findAllAuctionIds() {
+            return auctions.keySet().stream().sorted().toList();
+        }
+
+        @Override
+        public List<AuctionItem> findFinishedAuctions() {
+            return auctions.values().stream()
+                    .filter(item -> item.getStatus() == AuctionStatus.FINISHED)
+                    .toList();
+        }
+
+        @Override
+        public List<AuctionItem> findAuctionsHoldingReservedFunds() {
+            return auctions.values().stream()
+                    .filter(item -> item.getStatus() == AuctionStatus.RUNNING)
+                    .filter(item -> item.getWinnerId() > 0)
+                    .filter(item -> item.getCurrentHighestBid() > 0)
+                    .toList();
         }
 
         @Override
@@ -150,6 +196,11 @@ class AuctionReservedBalanceReconciliationTest {
             return bids.stream()
                     .filter(bid -> bid.getAuctionId() == auctionId)
                     .toList();
+        }
+
+        @Override
+        public int countAllBids() {
+            return bids.size();
         }
     }
 

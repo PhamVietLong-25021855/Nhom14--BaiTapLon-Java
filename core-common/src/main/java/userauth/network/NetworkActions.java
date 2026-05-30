@@ -16,10 +16,14 @@ public final class NetworkActions {
     public static final String AUCTION_CREATE = "AUCTION_CREATE";
     public static final String AUCTION_UPDATE = "AUCTION_UPDATE";
     public static final String AUCTION_DELETE = "AUCTION_DELETE";
+    public static final String AUCTION_ADMIN_DELETE = "AUCTION_ADMIN_DELETE";
+    public static final String AUCTION_GET = "AUCTION_GET";
     public static final String AUCTION_BY_SELLER = "AUCTION_BY_SELLER";
     public static final String AUCTION_ALL = "AUCTION_ALL";
+    public static final String AUCTION_ALL_SUMMARIES = "AUCTION_ALL_SUMMARIES";
     public static final String AUCTION_BIDS = "AUCTION_BIDS";
     public static final String AUCTION_ALL_BIDS = "AUCTION_ALL_BIDS";
+    public static final String AUCTION_BID_COUNT = "AUCTION_BID_COUNT";
     public static final String AUCTION_PLACE_BID = "AUCTION_PLACE_BID";
     public static final String AUCTION_CLOSE = "AUCTION_CLOSE";
     public static final String AUCTION_MARK_PAID = "AUCTION_MARK_PAID";

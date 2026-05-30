@@ -269,6 +269,36 @@ public class AdminDashboardViewController {
     }
 
     @FXML
+    private void handleDeleteAuction() {
+        if (!hasAuctionManagementContext()) {
+            return;
+        }
+        if (actionInProgress) {
+            return;
+        }
+
+        AuctionItem selected = getSelectedAuction("Please select an auction to delete.");
+        if (selected == null) {
+            return;
+        }
+
+        boolean confirmed = NotificationUtil.confirm(
+                ownerWindow(),
+                "Confirm",
+                "Delete this auction? If it has bids, it will be cancelled and reserved bidder funds will be released."
+        );
+        if (!confirmed) {
+            return;
+        }
+
+        int auctionId = selected.getId();
+        runActionAsync(
+                () -> auctionController.deleteAuctionAsAdmin(currentUser, auctionId),
+                "Auction deleted or cancelled successfully."
+        );
+    }
+
+    @FXML
     private void handleToggleStatus() {
         if (authController == null) {
             NotificationUtil.warning(ownerWindow(), "Notification", "AuthController has not been assigned to the admin screen.");
@@ -367,9 +397,9 @@ public class AdminDashboardViewController {
     private AdminSnapshot loadAdminSnapshot(String sortOption) {
         List<User> users = authController.getAllUsersList();
         Map<Integer, Integer> countdowns = auctionController.getAdminEarlyCloseCountdowns();
-        List<AuctionItem> auctions = new ArrayList<>(auctionController.getAllAuctions());
+        List<AuctionItem> auctions = new ArrayList<>(auctionController.getAllAuctionSummaries());
         sortAuctions(auctions, sortOption);
-        int totalBids = auctionController.getAllBids().size();
+        int totalBids = auctionController.countAllBids();
         return new AdminSnapshot(users, auctions, countdowns, totalBids);
     }
 

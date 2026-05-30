@@ -87,17 +87,25 @@ public final class DatabaseInitializer {
         if (!config.isMySql()) {
             return false;
         }
-        String normalizedSql = sql.toLowerCase();
+        String normalizedSql = sql.toLowerCase().replaceAll("\\s+", " ").trim();
         if (normalizedSql.startsWith("alter table") && normalizedSql.contains("add column")) {
             return ex.getErrorCode() == 1060 || "42S21".equals(ex.getSQLState());
         }
         if (normalizedSql.contains("add constraint") && normalizedSql.contains("check")) {
             return ex.getErrorCode() == 1061 || "42S21".equals(ex.getSQLState()) || ex.getErrorCode() == 3822;
         }
-        if (normalizedSql.contains("create index") || normalizedSql.contains("add index")) {
+        if (isIndexCreationStatement(normalizedSql)) {
             return ex.getErrorCode() == 1061 || "42000".equals(ex.getSQLState());
         }
         return false;
+    }
+
+    private static boolean isIndexCreationStatement(String normalizedSql) {
+        return normalizedSql.contains("create index") ||
+                normalizedSql.contains("create unique index") ||
+                normalizedSql.contains("add index") ||
+                normalizedSql.contains("add unique index") ||
+                normalizedSql.contains("add unique key");
     }
 
     private static List<String> mysqlCreateStatements() {
@@ -237,6 +245,10 @@ public final class DatabaseInitializer {
                 "DROP TRIGGER IF EXISTS trigger_auto_bid",
                 "DROP TRIGGER IF EXISTS trigger_auto_bid_on_new_rule",
                 "DROP FUNCTION IF EXISTS handle_auto_bidding",
+                "ALTER TABLE auctions ADD INDEX idx_auctions_status_time (status, start_time, end_time)",
+                "ALTER TABLE auctions ADD INDEX idx_auctions_seller (seller_id)",
+                "ALTER TABLE bids ADD INDEX idx_bids_auction_time (auction_id, bid_time, id)",
+                "ALTER TABLE auto_bids ADD UNIQUE INDEX ux_auto_bids_auction_bidder (auction_id, bidder_id)",
                 "CREATE INDEX IF NOT EXISTS idx_topup_user_time ON topup_transactions(user_id, transaction_time DESC)",
                 "ALTER TABLE wallets ADD CONSTRAINT chk_wallets_balance CHECK (balance >= 0)",
                 "ALTER TABLE wallets ADD CONSTRAINT chk_wallets_reserved CHECK (reserved_balance >= 0)",
@@ -373,7 +385,7 @@ public final class DatabaseInitializer {
                     user_id INT NOT NULL,
                     title VARCHAR(255) NOT NULL,
                     content TEXT NOT NULL,
-                    created_at BIGINT NOT NULL,
+                    created_at BIGINT NOT NULL
                 )
                 """
         );
@@ -389,6 +401,9 @@ public final class DatabaseInitializer {
                 "ALTER TABLE wallets ADD CONSTRAINT chk_wallets_balance CHECK (balance >= 0)",
                 "ALTER TABLE wallets ADD CONSTRAINT chk_wallets_reserved CHECK (reserved_balance >= 0)",
                 "UPDATE auto_bids SET created_at = COALESCE(created_at, id), updated_at = COALESCE(updated_at, created_at, id) WHERE created_at IS NULL OR updated_at IS NULL",
+                "CREATE INDEX IF NOT EXISTS idx_auctions_status_time ON auctions(status, start_time, end_time)",
+                "CREATE INDEX IF NOT EXISTS idx_auctions_seller ON auctions(seller_id)",
+                "CREATE INDEX IF NOT EXISTS idx_bids_auction_time ON bids(auction_id, bid_time, id)",
                 "CREATE UNIQUE INDEX IF NOT EXISTS ux_auto_bids_auction_bidder ON auto_bids (auction_id, bidder_id)",
                 "CREATE INDEX IF NOT EXISTS idx_topup_user_time ON topup_transactions(user_id, transaction_time DESC)",
                 "CREATE INDEX IF NOT EXISTS idx_wallet_tx_user_time ON wallet_transactions(user_id, created_at DESC)",

@@ -348,7 +348,7 @@
         </HBox>
         <StackPane fx:id="winnerOverlay" alignment="CENTER" maxHeight="Infinity" maxWidth="Infinity" mouseTransparent="true" visible="false">
             <children>
-                <VBox alignment="CENTER" maxWidth="330.0" prefWidth="330.0" spacing="8.0" styleClass="winner-announcement-card">
+                <VBox alignment="CENTER" maxHeight="165.0" maxWidth="330.0" minHeight="165.0" prefHeight="165.0" prefWidth="330.0" spacing="6.0" styleClass="winner-announcement-card">
                     <children>
                         <Label fx:id="lblWinnerTitle" styleClass="winner-announcement-title" text="Auction finished" />
                         <Label fx:id="lblWinnerMessage" maxWidth="Infinity" styleClass="winner-announcement-message" text="Winner: -" textAlignment="CENTER" wrapText="true" />

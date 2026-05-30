@@ -28,6 +28,11 @@ public class AuctionDAOImpl implements AuctionDAO {
                 category = ?, image_source = ?, image_data = ?, updated_at = ?, seller_id = ?, winner_id = ?, status = ?, anti_sniping_extensions = ?
             WHERE id = ?
             """;
+    private static final String UPDATE_AUCTION_STATE_SQL = """
+            UPDATE auctions
+            SET current_highest_bid = ?, end_time = ?, updated_at = ?, winner_id = ?, status = ?, anti_sniping_extensions = ?
+            WHERE id = ?
+            """;
     private static final String DELETE_BIDS_BY_AUCTION_SQL = "DELETE FROM bids WHERE auction_id = ?";
     private static final String DELETE_AUCTION_SQL = "DELETE FROM auctions WHERE id = ?";
     private static final String FIND_AUCTION_BY_ID_SQL = """
@@ -40,6 +45,41 @@ public class AuctionDAOImpl implements AuctionDAO {
             SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
                    category, image_source, image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions
             FROM auctions
+            ORDER BY id
+            """;
+    private static final String FIND_ALL_AUCTION_SUMMARIES_SQL = """
+            SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
+                   category, image_source, NULL AS image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions
+            FROM auctions
+            ORDER BY id
+            """;
+    private static final String FIND_AUCTIONS_BY_SELLER_SQL = """
+            SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
+                   category, image_source, image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions
+            FROM auctions
+            WHERE seller_id = ?
+            ORDER BY id
+            """;
+    private static final String FIND_STATUS_REFRESH_CANDIDATES_SQL = """
+            SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
+                   category, image_source, NULL AS image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions
+            FROM auctions
+            WHERE status = 'RUNNING' OR (status = 'OPEN' AND ? >= start_time)
+            ORDER BY id
+            """;
+    private static final String FIND_ALL_AUCTION_IDS_SQL = "SELECT id FROM auctions ORDER BY id";
+    private static final String FIND_FINISHED_AUCTIONS_SQL = """
+            SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
+                   category, image_source, NULL AS image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions
+            FROM auctions
+            WHERE status = 'FINISHED'
+            ORDER BY id
+            """;
+    private static final String FIND_RESERVED_FUNDS_AUCTIONS_SQL = """
+            SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
+                   category, image_source, NULL AS image_data, created_at, updated_at, seller_id, winner_id, status, anti_sniping_extensions
+            FROM auctions
+            WHERE status = 'RUNNING' AND winner_id IS NOT NULL AND current_highest_bid > 0
             ORDER BY id
             """;
     private static final String INSERT_BID_SQL = """
@@ -57,6 +97,7 @@ public class AuctionDAOImpl implements AuctionDAO {
             FROM bids
             ORDER BY auction_id, bid_time, id
             """;
+    private static final String COUNT_ALL_BIDS_SQL = "SELECT COUNT(*) FROM bids";
 
     @Override
     public void saveAuction(AuctionItem item) {
@@ -84,6 +125,31 @@ public class AuctionDAOImpl implements AuctionDAO {
         } catch (SQLException ex) {
             throw new IllegalStateException(
                     "Unable to update the auction in PostgreSQL. SQLState=" + ex.getSQLState() +
+                            ", detail=" + ex.getMessage(),
+                    ex
+            );
+        }
+    }
+
+    @Override
+    public void updateAuctionState(AuctionItem item) {
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(UPDATE_AUCTION_STATE_SQL)) {
+            statement.setDouble(1, item.getCurrentHighestBid());
+            statement.setLong(2, item.getEndTime());
+            statement.setLong(3, item.getUpdatedAt());
+            if (item.getWinnerId() <= 0) {
+                statement.setNull(4, Types.INTEGER);
+            } else {
+                statement.setInt(4, item.getWinnerId());
+            }
+            statement.setString(5, item.getStatus().name());
+            statement.setInt(6, item.getAntiSnipingExtensionCount());
+            statement.setInt(7, item.getId());
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new IllegalStateException(
+                    "Unable to update auction state in PostgreSQL. SQLState=" + ex.getSQLState() +
                             ", detail=" + ex.getMessage(),
                     ex
             );
@@ -131,19 +197,77 @@ public class AuctionDAOImpl implements AuctionDAO {
 
     @Override
     public List<AuctionItem> findAllAuctions() {
+        return findAuctions(FIND_ALL_AUCTIONS_SQL);
+    }
+
+    @Override
+    public List<AuctionItem> findAllAuctionSummaries() {
+        return findAuctions(FIND_ALL_AUCTION_SUMMARIES_SQL);
+    }
+
+    @Override
+    public List<AuctionItem> findAuctionsBySeller(int sellerId) {
         List<AuctionItem> auctions = new ArrayList<>();
 
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
-             PreparedStatement statement = connection.prepareStatement(FIND_ALL_AUCTIONS_SQL);
-             ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                auctions.add(mapAuction(resultSet));
+             PreparedStatement statement = connection.prepareStatement(FIND_AUCTIONS_BY_SELLER_SQL)) {
+            statement.setInt(1, sellerId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    auctions.add(mapAuction(resultSet));
+                }
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Unable to read the auction list from PostgreSQL.", ex);
+            throw new IllegalStateException("Unable to read seller auctions from PostgreSQL.", ex);
         }
 
         return auctions;
+    }
+
+    @Override
+    public List<AuctionItem> findStatusRefreshCandidates(long now) {
+        List<AuctionItem> auctions = new ArrayList<>();
+
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_STATUS_REFRESH_CANDIDATES_SQL)) {
+            statement.setLong(1, now);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    auctions.add(mapAuction(resultSet));
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to read auction status refresh candidates from PostgreSQL.", ex);
+        }
+
+        return auctions;
+    }
+
+    @Override
+    public List<Integer> findAllAuctionIds() {
+        List<Integer> ids = new ArrayList<>();
+
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_ALL_AUCTION_IDS_SQL);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                ids.add(resultSet.getInt("id"));
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to read auction ids from PostgreSQL.", ex);
+        }
+
+        return ids;
+    }
+
+    @Override
+    public List<AuctionItem> findFinishedAuctions() {
+        return findAuctions(FIND_FINISHED_AUCTIONS_SQL);
+    }
+
+    @Override
+    public List<AuctionItem> findAuctionsHoldingReservedFunds() {
+        return findAuctions(FIND_RESERVED_FUNDS_AUCTIONS_SQL);
     }
 
     @Override
@@ -201,6 +325,33 @@ public class AuctionDAOImpl implements AuctionDAO {
         }
 
         return bids;
+    }
+
+    @Override
+    public int countAllBids() {
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(COUNT_ALL_BIDS_SQL);
+             ResultSet resultSet = statement.executeQuery()) {
+            return resultSet.next() ? resultSet.getInt(1) : 0;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to count bid transactions in PostgreSQL.", ex);
+        }
+    }
+
+    private List<AuctionItem> findAuctions(String sql) {
+        List<AuctionItem> auctions = new ArrayList<>();
+
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                auctions.add(mapAuction(resultSet));
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to read the auction list from PostgreSQL.", ex);
+        }
+
+        return auctions;
     }
 
     private void bindAuctionForInsert(PreparedStatement statement, AuctionItem item) throws SQLException {

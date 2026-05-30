@@ -18,10 +18,14 @@ public interface AuctionApi {
                        long startTime, long endTime, String category, String imageSource, byte[] imageData)
             throws ItemNotFoundException, UnauthorizedException, ValidationException;
     void deleteAuction(int auctionId, int sellerId) throws ItemNotFoundException, UnauthorizedException;
+    void deleteAuctionAsAdmin(int auctionId) throws ItemNotFoundException;
+    AuctionItem getAuctionById(int auctionId) throws ItemNotFoundException;
     List<AuctionItem> getAuctionsBySeller(int sellerId);
     List<AuctionItem> getAllAuctions();
+    List<AuctionItem> getAllAuctionSummaries();
     List<BidTransaction> getBidsForAuction(int auctionId);
     List<BidTransaction> getAllBids();
+    int countAllBids();
     void placeBid(int auctionId, int bidderId, double amount)
             throws ItemNotFoundException, AuctionClosedException, InvalidBidException;
     void closeAuctionManually(int auctionId, int sellerId)

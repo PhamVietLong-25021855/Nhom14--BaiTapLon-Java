@@ -61,6 +61,11 @@ final class ServiceTestSupport {
         }
 
         @Override
+        public synchronized void updateAuctionState(AuctionItem item) {
+            auctions.put(item.getId(), item);
+        }
+
+        @Override
         public synchronized void deleteAuction(int id) {
             auctions.remove(id);
         }
@@ -73,6 +78,47 @@ final class ServiceTestSupport {
         @Override
         public synchronized List<AuctionItem> findAllAuctions() {
             return new ArrayList<>(auctions.values());
+        }
+
+        @Override
+        public synchronized List<AuctionItem> findAllAuctionSummaries() {
+            return findAllAuctions();
+        }
+
+        @Override
+        public synchronized List<AuctionItem> findAuctionsBySeller(int sellerId) {
+            return auctions.values().stream()
+                    .filter(item -> item.getSellerId() == sellerId)
+                    .toList();
+        }
+
+        @Override
+        public synchronized List<AuctionItem> findStatusRefreshCandidates(long now) {
+            return auctions.values().stream()
+                    .filter(item -> item.getStatus() == AuctionStatus.RUNNING ||
+                            (item.getStatus() == AuctionStatus.OPEN && now >= item.getStartTime()))
+                    .toList();
+        }
+
+        @Override
+        public synchronized List<Integer> findAllAuctionIds() {
+            return auctions.keySet().stream().sorted().toList();
+        }
+
+        @Override
+        public synchronized List<AuctionItem> findFinishedAuctions() {
+            return auctions.values().stream()
+                    .filter(item -> item.getStatus() == AuctionStatus.FINISHED)
+                    .toList();
+        }
+
+        @Override
+        public synchronized List<AuctionItem> findAuctionsHoldingReservedFunds() {
+            return auctions.values().stream()
+                    .filter(item -> item.getStatus() == AuctionStatus.RUNNING)
+                    .filter(item -> item.getWinnerId() > 0)
+                    .filter(item -> item.getCurrentHighestBid() > 0)
+                    .toList();
         }
 
         @Override
@@ -93,6 +139,11 @@ final class ServiceTestSupport {
             return orderedBids(bids.stream()
                     .filter(bid -> bid.getAuctionId() == auctionId)
                     .toList());
+        }
+
+        @Override
+        public synchronized int countAllBids() {
+            return bids.size();
         }
 
         private List<BidTransaction> orderedBids(List<BidTransaction> source) {

@@ -154,6 +154,7 @@
                                                 <Button mnemonicParsing="false" onAction="#handleRefreshAuctions" text="REFRESH AUCTIONS" styleClass="button ghost-button"/>
                                                 <Button mnemonicParsing="false" onAction="#handleStartEarlyCloseCountdown" text="START 3-COUNTDOWN" styleClass="button warning-button"/>
                                                 <Button mnemonicParsing="false" onAction="#handleCancelEarlyCloseCountdown" text="CANCEL COUNTDOWN" styleClass="button ghost-button"/>
+                                                <Button mnemonicParsing="false" onAction="#handleDeleteAuction" text="DELETE PRODUCT" styleClass="button danger-button"/>
                                             </children>
                                         </HBox>
                                         <TableView fx:id="tableAuctions" prefHeight="340.0" VBox.vgrow="ALWAYS">

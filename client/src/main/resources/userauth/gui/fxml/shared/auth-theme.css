@@ -1502,7 +1502,7 @@
 }
 
 .winner-announcement-card {
-    -fx-padding: 22 26 22 26;
+    -fx-padding: 14 20 14 20;
     -fx-background-color: linear-gradient(to bottom right, rgba(255, 255, 255, 0.99), rgba(237, 248, 245, 0.98));
     -fx-background-radius: 18;
     -fx-border-color: rgba(18, 145, 124, 0.34);
@@ -1512,7 +1512,7 @@
 }
 
 .winner-announcement-title {
-    -fx-font-size: 18px;
+    -fx-font-size: 17px;
     -fx-font-weight: 900;
     -fx-text-background-color: #000000;
     -fx-text-base-color: #000000;
@@ -1520,7 +1520,7 @@
 }
 
 .winner-announcement-message {
-    -fx-font-size: 15px;
+    -fx-font-size: 14px;
     -fx-font-weight: 700;
     -fx-text-alignment: center;
     -fx-text-background-color: #000000;

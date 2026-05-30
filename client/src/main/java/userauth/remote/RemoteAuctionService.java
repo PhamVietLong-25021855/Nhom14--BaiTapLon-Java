@@ -45,6 +45,17 @@ public class RemoteAuctionService implements AuctionApi {
     }
 
     @Override
+    public void deleteAuctionAsAdmin(int auctionId) throws ItemNotFoundException {
+        String result = result(NetworkActions.AUCTION_ADMIN_DELETE, "auctionId", auctionId);
+        if (!"SUCCESS".equals(result)) throw new ItemNotFoundException(result);
+    }
+
+    @Override
+    public AuctionItem getAuctionById(int auctionId) throws ItemNotFoundException {
+        return (AuctionItem) client.call(NetworkActions.AUCTION_GET, "auctionId", auctionId);
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public List<AuctionItem> getAuctionsBySeller(int sellerId) {
         return (List<AuctionItem>) client.call(NetworkActions.AUCTION_BY_SELLER, "sellerId", sellerId);
@@ -58,6 +69,12 @@ public class RemoteAuctionService implements AuctionApi {
 
     @Override
     @SuppressWarnings("unchecked")
+    public List<AuctionItem> getAllAuctionSummaries() {
+        return (List<AuctionItem>) client.call(NetworkActions.AUCTION_ALL_SUMMARIES);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
     public List<BidTransaction> getBidsForAuction(int auctionId) {
         return (List<BidTransaction>) client.call(NetworkActions.AUCTION_BIDS, "auctionId", auctionId);
     }
@@ -66,6 +83,12 @@ public class RemoteAuctionService implements AuctionApi {
     @SuppressWarnings("unchecked")
     public List<BidTransaction> getAllBids() {
         return (List<BidTransaction>) client.call(NetworkActions.AUCTION_ALL_BIDS);
+    }
+
+    @Override
+    public int countAllBids() {
+        Object result = client.call(NetworkActions.AUCTION_BID_COUNT);
+        return result instanceof Number number ? number.intValue() : Integer.parseInt(String.valueOf(result));
     }
 
     @Override

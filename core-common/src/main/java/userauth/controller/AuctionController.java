@@ -8,6 +8,7 @@ import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
 import userauth.model.AuctionItem;
 import userauth.model.BidTransaction;
+import userauth.model.Role;
 import userauth.model.User;
 
 import java.util.List;
@@ -49,6 +50,22 @@ public class AuctionController {
         }
     }
 
+    public String deleteAuctionAsAdmin(User currentUser, int auctionId) {
+        if (currentUser == null || currentUser.getRole() != Role.ADMIN) {
+            return "Only an admin can delete this auction.";
+        }
+        try {
+            auctionService.deleteAuctionAsAdmin(auctionId);
+            return "SUCCESS";
+        } catch (ItemNotFoundException e) {
+            return e.getMessage();
+        }
+    }
+
+    public AuctionItem getAuctionById(int auctionId) throws ItemNotFoundException {
+        return auctionService.getAuctionById(auctionId);
+    }
+
     public List<AuctionItem> getAuctionsBySeller(int sellerId) {
         return auctionService.getAuctionsBySeller(sellerId);
     }
@@ -57,12 +74,20 @@ public class AuctionController {
         return auctionService.getAllAuctions();
     }
 
+    public List<AuctionItem> getAllAuctionSummaries() {
+        return auctionService.getAllAuctionSummaries();
+    }
+
     public List<BidTransaction> getBidsForAuction(int auctionId) {
         return auctionService.getBidsForAuction(auctionId);
     }
 
     public List<BidTransaction> getAllBids() {
         return auctionService.getAllBids();
+    }
+
+    public int countAllBids() {
+        return auctionService.countAllBids();
     }
 
     public String placeBid(int auctionId, int bidderId, double amount) {
