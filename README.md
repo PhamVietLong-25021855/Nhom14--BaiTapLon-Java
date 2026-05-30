@@ -316,3 +316,4 @@ cd client
 | Server không kết nối được database | Kiểm tra `DB_PASSWORD`, host/port MySQL và quyền truy cập database |
 | Không đặt giá được | Kiểm tra số dư khả dụng, giá hiện tại và quy tắc bước giá |
 | JavaFX không chạy | Kiểm tra JDK 21, Maven và plugin JavaFX |
+- Do sever đã được chạy trên VPS riêng nên ta không cần chạy sever nữa mà chỉ cần chạy mỗi file ClientLaucher thôi. 

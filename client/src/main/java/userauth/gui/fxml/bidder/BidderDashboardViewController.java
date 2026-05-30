@@ -177,6 +177,15 @@ public class BidderDashboardViewController {
     @FXML
     private TableView<AutoBid> tableAutoBid;
 
+    @FXML
+    private StackPane winnerOverlay;
+
+    @FXML
+    private Label lblWinnerTitle;
+
+    @FXML
+    private Label lblWinnerMessage;
+
     private AuthFrame frame;
     private AuctionController auctionController;
     private AutobidController autobidController;
@@ -190,6 +199,7 @@ public class BidderDashboardViewController {
     private int lastSelectedAuctionId = -1;
     private int lastSelectedWinnerId = -1;
     private double lastSelectedHighestBid = -1;
+    private AuctionStatus lastSelectedStatus;
     private long refreshTicket;
     private int editingAutobidId = -1;
     private boolean bidActionInProgress;
@@ -197,6 +207,8 @@ public class BidderDashboardViewController {
     private boolean autobidFormDirty;
     private boolean autobidFormProgrammaticUpdate;
     private boolean suppressAutobidSelectionSync;
+    private final Set<Integer> winnerAnnouncementsShown = new HashSet<>();
+    private PauseTransition winnerOverlayAutoHide;
     private final AuctionEventListener auctionEventListener = event -> Platform.runLater(() -> handleAuctionEvent(event));
     private boolean observerRegistered;
 
@@ -317,6 +329,8 @@ public class BidderDashboardViewController {
         lastSelectedAuctionId = -1;
         lastSelectedWinnerId = -1;
         lastSelectedHighestBid = -1;
+        lastSelectedStatus = null;
+        winnerAnnouncementsShown.clear();
         txtBidAmount.clear();
         updateWalletSummary(null);
     }
@@ -841,6 +855,7 @@ public class BidderDashboardViewController {
         lastSelectedAuctionId = auction.getId();
         lastSelectedWinnerId = auction.getWinnerId();
         lastSelectedHighestBid = auction.getCurrentHighestBid();
+        lastSelectedStatus = auction.getStatus();
     }
 
     private void notifySelectedAuctionStateChanges(AuctionItem auction) {
@@ -862,6 +877,21 @@ public class BidderDashboardViewController {
             setBidStatus("You are currently leading.", false);
             NotificationUtil.success(ownerWindow(), "Leading", "You currently have the highest bid in this auction.");
         }
+
+        if (hasJustFinishedWithWinner(auction)) {
+            showWinnerAnnouncement(auction.getId(), auction.getName(), auction.getWinnerId(), auction.getCurrentHighestBid());
+        }
+    }
+
+    private boolean hasJustFinishedWithWinner(AuctionItem auction) {
+        return auction != null
+                && auction.getWinnerId() > 0
+                && isFinishedStatus(auction.getStatus())
+                && !isFinishedStatus(lastSelectedStatus);
+    }
+
+    private boolean isFinishedStatus(AuctionStatus status) {
+        return status == AuctionStatus.FINISHED || status == AuctionStatus.PAID;
     }
 
     private void applyStatusChip(AuctionItem auction) {
@@ -925,6 +955,10 @@ public class BidderDashboardViewController {
     }
 
     private void showEmptySelectionState() {
+        lastSelectedAuctionId = -1;
+        lastSelectedWinnerId = -1;
+        lastSelectedHighestBid = -1;
+        lastSelectedStatus = null;
         lblDetailName.setText(UiText.text("Select an auction to view details"));
         AuctionImageUtil.applyAuctionImage(imgDetailAuction, lblDetailImageInitial, null, null, "A");
         lblDetailDescription.setText(UiText.text("The product description will appear here."));
@@ -968,6 +1002,41 @@ public class BidderDashboardViewController {
         if (!lblBidStatus.getStyleClass().contains("success-text")) {
             lblBidStatus.getStyleClass().add("success-text");
         }
+    }
+
+    private void showWinnerAnnouncement(int auctionId, String auctionName, int winnerId, double winningBid) {
+        if (winnerOverlay == null || lblWinnerTitle == null || lblWinnerMessage == null || winnerId <= 0) {
+            return;
+        }
+        if (!winnerAnnouncementsShown.add(auctionId)) {
+            return;
+        }
+
+        boolean currentUserWon = currentUser != null && winnerId == currentUser.getId();
+        String winnerText = currentUserWon
+                ? UiText.text("You won this auction")
+                : UiText.text("Winner: ") + UiText.text("Bidder #") + winnerId;
+
+        lblWinnerTitle.setText(UiText.text("Auction finished"));
+        lblWinnerMessage.setText(winnerText + "\n"
+                + safeText(auctionName, UiText.text("Selected auction")) + " - "
+                + AuctionViewFormatter.formatMoney(winningBid));
+
+        if (winnerOverlayAutoHide != null) {
+            winnerOverlayAutoHide.stop();
+        }
+        winnerOverlay.setVisible(true);
+        winnerOverlay.toFront();
+        UiEffects.playEntrance(winnerOverlay, 0, 0, 10);
+
+        winnerOverlayAutoHide = new PauseTransition(Duration.seconds(5));
+        winnerOverlayAutoHide.setOnFinished(event -> {
+            winnerOverlay.setVisible(false);
+            winnerOverlay.setOpacity(1);
+            winnerOverlay.setTranslateX(0);
+            winnerOverlay.setTranslateY(0);
+        });
+        winnerOverlayAutoHide.play();
     }
 
     private Label createLabel(String text, String styleClass) {
@@ -1277,10 +1346,16 @@ public class BidderDashboardViewController {
             switch (event.type()) {
                 case ANTI_SNIPING_EXTENDED ->
                         setBidStatus("Anti-sniping extended the auction until " + AuctionViewFormatter.formatDateTimeWithSeconds(event.endTime()) + ".", false);
-                case SETTLED -> setBidStatus(event.summary(), event.status() == AuctionStatus.CANCELED);
+                case SETTLED -> {
+                    setBidStatus(event.summary(), event.status() == AuctionStatus.CANCELED);
+                    if (isFinishedStatus(event.status())) {
+                        showWinnerAnnouncement(event.auctionId(), selectedAuctionName(), event.winnerId(), event.currentHighestBid());
+                    }
+                }
                 case STATUS_CHANGED -> {
-                    if (event.status() == AuctionStatus.FINISHED) {
+                    if (isFinishedStatus(event.status())) {
                         setBidStatus("Auction finished. Waiting for seller settlement.", false);
+                        showWinnerAnnouncement(event.auctionId(), selectedAuctionName(), event.winnerId(), event.currentHighestBid());
                     }
                 }
                 case BID_ACTIVITY -> {
@@ -1289,6 +1364,11 @@ public class BidderDashboardViewController {
         }
 
         refreshData();
+    }
+
+    private String selectedAuctionName() {
+        AuctionItem selected = tableAuctions == null ? null : tableAuctions.getSelectionModel().getSelectedItem();
+        return selected == null ? UiText.text("Selected auction") : selected.getName();
     }
 
     private void registerAutobidFormListeners() {

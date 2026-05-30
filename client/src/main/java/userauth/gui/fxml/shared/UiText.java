@@ -303,6 +303,10 @@ public final class UiText {
         addServiceTranslations(values);
         addDatabaseTranslations(values);
         put(values, "Show password", "Hi\u1ec7n m\u1eadt kh\u1ea9u");
+        put(values, "Auction finished", "Phi\u00ean \u0111\u1ea5u gi\u00e1 \u0111\u00e3 k\u1ebft th\u00fac");
+        put(values, "Winner: ", "Ng\u01b0\u1eddi chi\u1ebfn th\u1eafng: ");
+        put(values, "You won this auction", "B\u1ea1n \u0111\u00e3 th\u1eafng phi\u00ean \u0111\u1ea5u gi\u00e1 n\u00e0y");
+        put(values, "Selected auction", "Phi\u00ean \u0111\u1ea5u gi\u00e1 \u0111\u00e3 ch\u1ecdn");
         return values;
     }
 
