@@ -82,6 +82,14 @@ public class AuthService implements AuthApi {
         return userDAO.findAll();
     }
 
+    public User getUserById(int userId) throws UnauthorizedException {
+        User user = userDAO.findById(userId);
+        if (user == null) {
+            throw new UnauthorizedException("User not found.");
+        }
+        return user;
+    }
+
     public void changePassword(String username, String oldPassword, String newPassword)
             throws ValidationException, UnauthorizedException {
         User user = requireExistingUser(username);
@@ -133,6 +141,9 @@ public class AuthService implements AuthApi {
         }
         if (target.getId() == admin.getId()) {
             throw new ValidationException("You cannot lock your own account.");
+        }
+        if (target.getRole() == Role.ADMIN) {
+            throw new ValidationException("Admin accounts cannot be locked.");
         }
 
         target.setStatus("ACTIVE".equals(target.getStatus()) ? "BLOCKED" : "ACTIVE");

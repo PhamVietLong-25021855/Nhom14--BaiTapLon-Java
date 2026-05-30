@@ -27,6 +27,7 @@ import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import userauth.controller.AuctionController;
+import userauth.controller.AuthController;
 import userauth.controller.AutobidController;
 import userauth.controller.NotificationController;
 import userauth.controller.WalletController;
@@ -188,6 +189,7 @@ public class BidderDashboardViewController {
     private Label lblWinnerMessage;
 
     private AuthFrame frame;
+    private AuthController authController;
     private AuctionController auctionController;
     private AutobidController autobidController;
     private WalletController walletController;
@@ -318,6 +320,10 @@ public class BidderDashboardViewController {
         this.frame = frame;
     }
 
+    public void setAuthController(AuthController authController) {
+        this.authController = authController;
+    }
+
     public void setAuctionController(AuctionController auctionController) {
         this.auctionController = auctionController;
     }
@@ -421,6 +427,9 @@ public class BidderDashboardViewController {
                 },
                 error -> {
                     auctionRefreshInProgress = false;
+                    if (handleAccountLockError(error)) {
+                        return;
+                    }
                     if (ticket != refreshTicket) {
                         refreshData();
                     }
@@ -1280,6 +1289,7 @@ public class BidderDashboardViewController {
     }
 
     private BidderSnapshot loadBidderSnapshot(String keyword, String statusFilter) {
+        ensureCurrentAccountActive();
         List<AuctionItem> allAuctions = auctionController.getAllAuctionSummaries();
         List<AuctionItem> visibleAuctions = allAuctions.stream()
                 .filter(item -> item.getStatus() != AuctionStatus.CANCELED)
@@ -1293,6 +1303,36 @@ public class BidderDashboardViewController {
                 .toList();
 
         return new BidderSnapshot(visibleAuctions, filteredAuctions);
+    }
+
+    private void ensureCurrentAccountActive() {
+        if (authController == null || currentUser == null) {
+            return;
+        }
+        User latest = authController.getUserById(currentUser.getId());
+        if (latest == null || "BLOCKED".equals(latest.getStatus())) {
+            throw new IllegalStateException("Your account has been locked.");
+        }
+        currentUser.setStatus(latest.getStatus());
+        currentUser.setUpdatedAt(latest.getUpdatedAt());
+    }
+
+    private boolean handleAccountLockError(Throwable error) {
+        if (!isAccountLockedError(error)) {
+            return false;
+        }
+        currentUser = null;
+        deactivate();
+        NotificationUtil.warning(ownerWindow(), "Notification", "Your account has been locked. Please contact an admin.");
+        if (frame != null) {
+            frame.showLogin();
+        }
+        return true;
+    }
+
+    private boolean isAccountLockedError(Throwable error) {
+        String message = error == null ? "" : String.valueOf(error.getMessage());
+        return message.contains("account has been locked") || message.contains("User not found");
     }
 
     private void applyBidderSnapshot(BidderSnapshot snapshot, int selectedId) {

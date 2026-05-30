@@ -45,6 +45,15 @@ public class RemoteAuthService implements AuthApi {
     }
 
     @Override
+    public User getUserById(int userId) throws UnauthorizedException {
+        try {
+            return (User) client.call(NetworkActions.AUTH_GET_USER, "userId", userId);
+        } catch (RemoteServerException ex) {
+            throw new UnauthorizedException(ex.getMessage());
+        }
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public List<User> getAllUsers() {
         return (List<User>) client.call(NetworkActions.AUTH_ALL_USERS);

@@ -7,6 +7,7 @@ public final class NetworkActions {
 
     public static final String AUTH_REGISTER = "AUTH_REGISTER";
     public static final String AUTH_LOGIN = "AUTH_LOGIN";
+    public static final String AUTH_GET_USER = "AUTH_GET_USER";
     public static final String AUTH_ALL_USERS = "AUTH_ALL_USERS";
     public static final String AUTH_CHANGE_PASSWORD = "AUTH_CHANGE_PASSWORD";
     public static final String AUTH_UPDATE_PROFILE = "AUTH_UPDATE_PROFILE";

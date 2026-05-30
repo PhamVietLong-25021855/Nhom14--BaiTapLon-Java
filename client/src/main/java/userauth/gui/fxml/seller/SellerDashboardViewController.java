@@ -13,6 +13,7 @@ import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import userauth.controller.AuctionController;
+import userauth.controller.AuthController;
 import userauth.controller.NotificationController;
 import userauth.event.AuctionEvent;
 import userauth.event.AuctionEventBus;
@@ -148,6 +149,7 @@ public class SellerDashboardViewController {
     private Label lblPreviewMode;
 
     private AuthFrame frame;
+    private AuthController authController;
     private AuctionController auctionController;
     private NotificationController notificationController;
     private User currentUser;
@@ -190,6 +192,10 @@ public class SellerDashboardViewController {
 
     public void setFrame(AuthFrame frame) {
         this.frame = frame;
+    }
+
+    public void setAuthController(AuthController authController) {
+        this.authController = authController;
     }
 
     public void setAuctionController(AuctionController auctionController) {
@@ -237,9 +243,12 @@ public class SellerDashboardViewController {
         int sellerId = currentUser.getId();
 
         UiAsync.run(
-                () -> auctionController.getAuctionsBySeller(sellerId).stream()
-                        .filter(item -> item.getStatus() != AuctionStatus.CANCELED)
-                        .collect(Collectors.toList()),
+                () -> {
+                    ensureCurrentAccountActive();
+                    return auctionController.getAuctionsBySeller(sellerId).stream()
+                            .filter(item -> item.getStatus() != AuctionStatus.CANCELED)
+                            .collect(Collectors.toList());
+                },
                 myAuctions -> {
                     if (ticket != refreshTicket) {
                         return;
@@ -250,8 +259,39 @@ public class SellerDashboardViewController {
                     tableAuctions.refresh();
                 },
                 error -> {
+                    handleAccountLockError(error);
                 }
         );
+    }
+
+    private void ensureCurrentAccountActive() {
+        if (authController == null || currentUser == null) {
+            return;
+        }
+        User latest = authController.getUserById(currentUser.getId());
+        if (latest == null || "BLOCKED".equals(latest.getStatus())) {
+            throw new IllegalStateException("Your account has been locked.");
+        }
+        currentUser.setStatus(latest.getStatus());
+        currentUser.setUpdatedAt(latest.getUpdatedAt());
+    }
+
+    private boolean handleAccountLockError(Throwable error) {
+        if (!isAccountLockedError(error)) {
+            return false;
+        }
+        currentUser = null;
+        deactivate();
+        NotificationUtil.warning(ownerWindow(), "Notification", "Your account has been locked. Please contact an admin.");
+        if (frame != null) {
+            frame.showLogin();
+        }
+        return true;
+    }
+
+    private boolean isAccountLockedError(Throwable error) {
+        String message = error == null ? "" : String.valueOf(error.getMessage());
+        return message.contains("account has been locked") || message.contains("User not found");
     }
 
     @FXML

@@ -33,6 +33,7 @@ public final class AuctionRequestHandler {
                     str(request, "username"), str(request, "password"), str(request, "fullName"),
                     str(request, "email"), (Role) request.get("role"));
             case NetworkActions.AUTH_LOGIN -> context.getAuthController().login(str(request, "username"), str(request, "password"));
+            case NetworkActions.AUTH_GET_USER -> context.getAuthController().getUserById(integer(request, "userId"));
             case NetworkActions.AUTH_ALL_USERS -> context.getAuthController().getAllUsersList();
             case NetworkActions.AUTH_CHANGE_PASSWORD -> context.getAuthController().changePassword(
                     str(request, "username"), str(request, "oldPassword"), str(request, "newPassword"));

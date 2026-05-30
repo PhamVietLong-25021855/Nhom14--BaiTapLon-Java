@@ -35,6 +35,14 @@ public class AuthController {
         }
     }
 
+    public User getUserById(int userId) {
+        try {
+            return authService.getUserById(userId);
+        } catch (UnauthorizedException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+
     public List<User> getAllUsersList() {
         return authService.getAllUsers();
     }

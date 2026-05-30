@@ -10,6 +10,7 @@ import java.util.List;
 public interface AuthApi {
     void register(String username, String password, String fullName, String email, Role role) throws ValidationException;
     User login(String username, String password) throws UnauthorizedException;
+    User getUserById(int userId) throws UnauthorizedException;
     List<User> getAllUsers();
     void changePassword(String username, String oldPassword, String newPassword) throws ValidationException, UnauthorizedException;
     User updateProfile(String username, String fullName, String email) throws ValidationException, UnauthorizedException;

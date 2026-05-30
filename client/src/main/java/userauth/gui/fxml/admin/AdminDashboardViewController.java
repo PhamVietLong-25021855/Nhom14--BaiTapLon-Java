@@ -317,6 +317,10 @@ public class AdminDashboardViewController {
         if (selected == null) {
             return;
         }
+        if (selected.getRole() == userauth.model.Role.ADMIN) {
+            NotificationUtil.warning(ownerWindow(), "Notification", "Admin accounts cannot be locked.");
+            return;
+        }
 
         int selectedUserId = selected.getId();
         runActionAsync(

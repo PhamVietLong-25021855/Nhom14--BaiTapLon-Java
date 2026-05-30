@@ -249,10 +249,12 @@ public class AuthFrame {
         adminHomepageView.controller().setHomepageController(homepageController);
 
         sellerView.controller().setFrame(this);
+        sellerView.controller().setAuthController(authController);
         sellerView.controller().setAuctionController(auctionController);
         sellerView.controller().setNotificationController(notificationController);
 
         bidderView.controller().setFrame(this);
+        bidderView.controller().setAuthController(authController);
         bidderView.controller().setAuctionController(auctionController);
         bidderView.controller().setAutobidController(autobidController);
         bidderView.controller().setWalletController(walletController);
