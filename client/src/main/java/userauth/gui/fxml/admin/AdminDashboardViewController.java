@@ -21,6 +21,7 @@ import userauth.model.User;
 
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class AdminDashboardViewController {
     private static final String SORT_DEFAULT = "Default";
@@ -397,7 +398,9 @@ public class AdminDashboardViewController {
     private AdminSnapshot loadAdminSnapshot(String sortOption) {
         List<User> users = authController.getAllUsersList();
         Map<Integer, Integer> countdowns = auctionController.getAdminEarlyCloseCountdowns();
-        List<AuctionItem> auctions = new ArrayList<>(auctionController.getAllAuctionSummaries());
+        List<AuctionItem> auctions = auctionController.getAllAuctionSummaries().stream()
+                .filter(item -> item.getStatus() != AuctionStatus.CANCELED)
+                .collect(Collectors.toCollection(ArrayList::new));
         sortAuctions(auctions, sortOption);
         int totalBids = auctionController.countAllBids();
         return new AdminSnapshot(users, auctions, countdowns, totalBids);
