@@ -110,9 +110,6 @@ public class SellerDashboardViewController {
     private Label lblSellerName;
 
     @FXML
-    private Label lblSellerRole;
-
-    @FXML
     private Label lblTotalAuctions;
 
     @FXML
@@ -216,7 +213,6 @@ public class SellerDashboardViewController {
                 ? "@" + UiText.text("Seller")
                 : "@" + abbreviate(safeText(user.getUsername(), UiText.text("Seller")), 18);
         lblSellerName.setText(displayName);
-        lblSellerRole.setText(user == null ? "Role: SELLER | ID: -" : "Role: SELLER | ID: " + user.getId());
         lblSellerSidebar.setText(sidebarName);
         resetForm();
     }

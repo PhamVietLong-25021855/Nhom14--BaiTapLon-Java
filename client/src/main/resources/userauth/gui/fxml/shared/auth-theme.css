@@ -1512,6 +1512,7 @@
 }
 
 .winner-announcement-title {
+    -fx-alignment: center;
     -fx-font-size: 17px;
     -fx-font-weight: 900;
     -fx-text-background-color: #000000;
@@ -1520,6 +1521,7 @@
 }
 
 .winner-announcement-message {
+    -fx-alignment: center;
     -fx-font-size: 14px;
     -fx-font-weight: 700;
     -fx-text-alignment: center;
