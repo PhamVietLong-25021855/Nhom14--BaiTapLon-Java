@@ -62,7 +62,7 @@
                                         <VBox minWidth="240.0" prefWidth="260.0" spacing="2.0" styleClass="user-pill bidder-user-pill">
                                             <children>
                                                 <Label fx:id="lblUserName" maxWidth="Infinity" styleClass="user-name" text="Bidder" textOverrun="ELLIPSIS" />
-                                                <Label styleClass="user-role" text="Role: BIDDER" />
+                                                <Label fx:id="lblUserRole" styleClass="user-role" text="Role: BIDDER | ID: -" />
                                             </children>
                                         </VBox>
                                         <MenuButton mnemonicParsing="false" styleClass="button settings-menu-button" text="SETTINGS">

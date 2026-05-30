@@ -96,6 +96,9 @@ public class BidderDashboardViewController {
     private Label lblUserName;
 
     @FXML
+    private Label lblUserRole;
+
+    @FXML
     private Label lblRunningCount;
 
     @FXML
@@ -346,6 +349,7 @@ public class BidderDashboardViewController {
                 ? "@" + UiText.text("Bidder")
                 : "@" + abbreviate(safeText(user.getUsername(), UiText.text("Bidder")), 18);
         lblUserName.setText(displayName);
+        lblUserRole.setText(user == null ? "Role: BIDDER | ID: -" : "Role: BIDDER | ID: " + user.getId());
         lblSidebarUser.setText(sidebarName);
         refreshTicket++;
         auctionRefreshInProgress = false;

@@ -65,7 +65,7 @@
                                         <VBox minWidth="240.0" prefWidth="260.0" spacing="2.0" styleClass="user-pill seller-user-pill">
                                             <children>
                                                 <Label fx:id="lblSellerName" maxWidth="Infinity" styleClass="user-name" text="Seller" textOverrun="ELLIPSIS" />
-                                                <Label styleClass="user-role" text="Role: SELLER" />
+                                                <Label fx:id="lblSellerRole" styleClass="user-role" text="Role: SELLER | ID: -" />
                                             </children>
                                         </VBox>
                                         <MenuButton mnemonicParsing="false" styleClass="button settings-menu-button" text="SETTINGS">
