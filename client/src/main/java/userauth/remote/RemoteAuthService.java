@@ -8,6 +8,7 @@ import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
 import userauth.model.Role;
 import userauth.model.User;
+import userauth.network.AuthenticatedUserResponse;
 import userauth.network.NetworkActions;
 
 import java.util.List;
@@ -37,11 +38,28 @@ public class RemoteAuthService implements AuthApi {
         } catch (RemoteServerException ex) {
             throw new UnauthorizedException(ex.getMessage());
         }
+        if (result instanceof AuthenticatedUserResponse response) {
+            client.setSessionToken(response.sessionToken());
+            return response.user();
+        }
         if (result instanceof User user) {
             return user;
         }
         String message = result != null ? result.toString() : "Login failed.";
         throw new UnauthorizedException(message);
+    }
+
+    @Override
+    public void logout() {
+        try {
+            if (client.hasSession()) {
+                client.call(NetworkActions.AUTH_LOGOUT);
+            }
+        } catch (RuntimeException ignored) {
+            // Clearing the local token must still work if the remote session already expired.
+        } finally {
+            client.clearSession();
+        }
     }
 
     @Override

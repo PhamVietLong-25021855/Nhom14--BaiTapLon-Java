@@ -9,10 +9,10 @@ Phạm vi hệ thống tập trung vào các luồng chính: đăng ký/đăng n
 | Thành phần | Công nghệ |
 | --- | --- |
 | Ngôn ngữ | Java 21 |
-| Build tool | Maven multi-module |
+| Công cụ đóng gói | Maven multi-module |
 | Giao diện | JavaFX 21, FXML, CSS |
-| Backend | Java Socket Server |
-| Database | MySQL / Akamai DB |
+| Phía server | Java Socket Server |
+| Cơ sở dữ liệu | MySQL / Akamai DB |
 | Giao tiếp client-server | Object request/response qua socket |
 | Kiểm thử | JUnit 5 |
 
@@ -35,14 +35,14 @@ mvn -version
 
 ```text
 .
-|-- pom.xml                         Parent Maven project
+|-- pom.xml                         Project Maven cha
 |-- core-common/                    Mã dùng chung cho client và server
 |   |-- src/main/java/userauth/api
 |   |-- src/main/java/userauth/model
 |   |-- src/main/java/userauth/network
 |   |-- src/main/java/userauth/util
 |   `-- src/main/java/userauth/validation
-|-- server/                         Backend socket server
+|-- server/                         Server socket phía xử lý nghiệp vụ
 |   |-- src/main/java/userauth/server
 |   |-- src/main/java/userauth/service
 |   |-- src/main/java/userauth/dao
@@ -52,8 +52,8 @@ mvn -version
 |   |-- src/main/java/userauth/remote
 |   |-- src/main/java/userauth/gui
 |   `-- src/main/resources
-|-- docs/                           Tài liệu thiết kế, deploy, tối ưu
-|-- scripts/                        Script hỗ trợ deploy và tách gói
+|-- docs/                           Tài liệu thiết kế, triển khai, tối ưu
+|-- scripts/                        Script hỗ trợ triển khai và tách gói
 `-- database_indexes.sql            Script bổ sung index database
 ```
 
@@ -65,7 +65,7 @@ File cấu hình mặc định:
 server/src/main/resources/database.properties
 ```
 
-Mật khẩu database không nên ghi trực tiếp vào source code. Khi chạy server, đặt biến môi trường:
+Mật khẩu database không nên ghi trực tiếp vào mã nguồn. Khi chạy server, đặt biến môi trường:
 
 Windows PowerShell:
 
@@ -85,7 +85,7 @@ Có thể truyền trực tiếp bằng JVM property:
 java -Ddb.password="mat_khau_database" ...
 ```
 
-## Build và kiểm thử
+## Đóng gói và kiểm thử
 
 Chạy từ thư mục gốc của project.
 
@@ -95,29 +95,29 @@ Chạy toàn bộ test:
 mvn -ntp test
 ```
 
-Build toàn bộ project:
+Đóng gói toàn bộ project:
 
 ```bash
 mvn -ntp package
 ```
 
-Build server kèm các module phụ thuộc:
+Đóng gói server kèm các module phụ thuộc:
 
 ```bash
 mvn -ntp -pl server -am package -DskipTests
 ```
 
-Build client kèm các module phụ thuộc:
+Đóng gói client kèm các module phụ thuộc:
 
 ```bash
 mvn -ntp -pl client -am package -DskipTests
 ```
 
-## Thứ tự chạy Server/Client
+## Thứ tự chạy server/client
 
 ### 1. Chạy server trước
 
-Build server:
+Đóng gói server:
 
 ```bash
 mvn -ntp -pl server -am package -DskipTests
@@ -151,9 +151,9 @@ Server mặc định lắng nghe tại port `5050`. Nếu chạy client trên m�
 
 #### 1. Đưa code mới lên VPS
 
-Cách khuyến nghị là đẩy code từ máy local lên GitHub, sau đó SSH vào VPS để kéo bản mới nhất.
+Cách khuyến nghị là đẩy code từ máy cá nhân lên GitHub, sau đó SSH vào VPS để kéo bản mới nhất.
 
-Trên máy local:
+Trên máy cá nhân:
 
 ```bash
 git status
@@ -172,7 +172,7 @@ git checkout main
 git pull origin main
 ```
 
-Nếu VPS chưa có source code, clone project lần đầu:
+Nếu VPS chưa có mã nguồn, clone project lần đầu:
 
 ```bash
 ssh root@172.104.50.54
@@ -181,7 +181,7 @@ git clone https://github.com/PhamVietLong-25021855/Nhom14--BaiTapLon-Java.git Nh
 cd /root/Nhom14--BaiTapLon-Java-Long-BanGoc1
 ```
 
-Nếu không muốn dùng GitHub, có thể nén source ở máy local rồi copy trực tiếp lên VPS.
+Nếu không muốn dùng GitHub, có thể nén mã nguồn ở máy cá nhân rồi sao chép trực tiếp lên VPS.
 
 Windows PowerShell, chạy từ thư mục gốc project:
 
@@ -198,7 +198,7 @@ unzip -o /root/auction-source.zip -d /root/Nhom14--BaiTapLon-Java-Long-BanGoc1
 cd /root/Nhom14--BaiTapLon-Java-Long-BanGoc1
 ```
 
-#### 2. Build và chạy server trên VPS
+#### 2. Đóng gói và chạy server trên VPS
 
 SSH vào VPS:
 
@@ -224,7 +224,7 @@ Cấu hình mật khẩu database:
 export DB_PASSWORD="mat_khau_database"
 ```
 
-Build lại `core-common` và `server`:
+Đóng gói lại `core-common` và `server`:
 
 ```bash
 mvn clean install -pl core-common,server -am
@@ -299,13 +299,13 @@ cd client
 - Database initializer và script index hỗ trợ khởi tạo/tối ưu các bảng chính.
 - Test JUnit cho các luồng quan trọng như validation, network request/response, cache, concurrent bidding, anti-sniping và settlement.
 
-## Tài liệu, báo cáo và video demo
+## Tài liệu, báo cáo và video minh họa
 
 - Báo cáo PDF: [Cập nhật link báo cáo PDF](docs/BAO_CAO_NHOM_14.pdf)
-- Video demo: [Cập nhật link video demo](https://example.com/video-demo)
-- Hướng dẫn deploy: [docs/DEPLOY-GUIDE.md](docs/DEPLOY-GUIDE.md)
+- Video minh họa: [Cập nhật link video minh họa](https://example.com/video-demo)
+- Hướng dẫn triển khai: [docs/DEPLOY-GUIDE.md](docs/DEPLOY-GUIDE.md)
 - Tài liệu tách client/server: [docs/split-client-server.md](docs/split-client-server.md)
-- Tài liệu design patterns: [docs/design-patterns.md](docs/design-patterns.md)
+- Tài liệu mẫu thiết kế: [docs/design-patterns.md](docs/design-patterns.md)
 - Tài liệu tối ưu: [docs/optimization-guide.md](docs/optimization-guide.md)
 
 ## Ghi chú lỗi thường gặp
@@ -316,4 +316,4 @@ cd client
 | Server không kết nối được database | Kiểm tra `DB_PASSWORD`, host/port MySQL và quyền truy cập database |
 | Không đặt giá được | Kiểm tra số dư khả dụng, giá hiện tại và quy tắc bước giá |
 | JavaFX không chạy | Kiểm tra JDK 21, Maven và plugin JavaFX |
-- Do sever đã được chạy trên VPS riêng nên ta không cần chạy sever nữa mà chỉ cần chạy mỗi file ClientLaucher thôi. 
+- Do server đã được chạy trên VPS riêng nên không cần chạy server cục bộ nữa; chỉ cần chạy file `ClientLauncher`.

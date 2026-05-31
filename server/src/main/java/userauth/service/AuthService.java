@@ -78,6 +78,11 @@ public class AuthService implements AuthApi {
         return user;
     }
 
+    @Override
+    public void logout() {
+        // Local service instances do not own remote sessions.
+    }
+
     public List<User> getAllUsers() {
         return userDAO.findAll();
     }

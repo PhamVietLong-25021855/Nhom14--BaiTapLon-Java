@@ -118,6 +118,7 @@ public class AuthFrame {
 
     public void showLogin() {
         deactivateLiveViews();
+        authController.logout();
         switchView(loginView.root());
     }
 

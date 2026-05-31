@@ -1,4 +1,7 @@
-.idea/
+.idea/*
+!.idea/runConfigurations/
+.idea/runConfigurations/*
+!.idea/runConfigurations/ClientLauncher.xml
 
 *.class
 target/

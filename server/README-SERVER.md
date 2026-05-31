@@ -1,8 +1,8 @@
-# Server
+# Tài liệu server
 
 Server là tiến trình duy nhất truy cập database. Client gửi `AuctionRequest` qua socket, server xử lý bằng controller/service/DAO và trả `AuctionResponse`.
 
-## Build server
+## Đóng gói server
 
 Từ root project:
 
@@ -10,7 +10,7 @@ Từ root project:
 mvn -ntp -pl server -am package -DskipTests
 ```
 
-File chạy chính sau build:
+File chạy chính sau khi đóng gói:
 
 ```text
 server/target/server-1.0.0-SNAPSHOT.jar
@@ -35,5 +35,5 @@ java -Dapp.server.port=5050 -Dapp.server.bind.host=0.0.0.0 -jar server/target/se
 ## Cổng và database
 
 - App server mặc định dùng TCP `5050`.
-- MySQL config nằm ở `server/src/main/resources/database.properties`.
+- Cấu hình MySQL nằm ở `server/src/main/resources/database.properties`.
 - Không commit mật khẩu thật; truyền bằng `DB_PASSWORD` hoặc JVM property.

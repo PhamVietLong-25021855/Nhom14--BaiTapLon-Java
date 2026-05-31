@@ -7,6 +7,7 @@ public final class NetworkActions {
 
     public static final String AUTH_REGISTER = "AUTH_REGISTER";
     public static final String AUTH_LOGIN = "AUTH_LOGIN";
+    public static final String AUTH_LOGOUT = "AUTH_LOGOUT";
     public static final String AUTH_GET_USER = "AUTH_GET_USER";
     public static final String AUTH_ALL_USERS = "AUTH_ALL_USERS";
     public static final String AUTH_CHANGE_PASSWORD = "AUTH_CHANGE_PASSWORD";
@@ -25,6 +26,7 @@ public final class NetworkActions {
     public static final String AUCTION_BIDS = "AUCTION_BIDS";
     public static final String AUCTION_ALL_BIDS = "AUCTION_ALL_BIDS";
     public static final String AUCTION_BID_COUNT = "AUCTION_BID_COUNT";
+    public static final String AUCTION_BID_COUNTS = "AUCTION_BID_COUNTS";
     public static final String AUCTION_PLACE_BID = "AUCTION_PLACE_BID";
     public static final String AUCTION_CLOSE = "AUCTION_CLOSE";
     public static final String AUCTION_MARK_PAID = "AUCTION_MARK_PAID";

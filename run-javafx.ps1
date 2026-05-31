@@ -12,7 +12,10 @@ param(
     [string]$DbPassword,
     [string]$DbSslMode,
     [string]$DbSchema,
-    [switch]$DisableScheduler
+    [switch]$DisableScheduler,
+    [switch]$Tls,
+    [string]$TrustStore,
+    [string]$TrustStorePassword
 )
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -38,6 +41,15 @@ if ($ServerHost) {
     $mvnArgs += "-Dapp.server.host=$ServerHost"
 }
 $mvnArgs += "-Dapp.server.port=$ServerPort"
+if ($Tls) {
+    $mvnArgs += "-Dapp.server.tls.enabled=true"
+}
+if ($TrustStore) {
+    $mvnArgs += "-Djavax.net.ssl.trustStore=$TrustStore"
+}
+if ($TrustStorePassword) {
+    $mvnArgs += "-Djavax.net.ssl.trustStorePassword=$TrustStorePassword"
+}
 
 if ($DbUrl) {
     $mvnArgs += "-Ddb.url=$DbUrl"

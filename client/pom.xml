@@ -15,13 +15,6 @@
     <name>auction-house-client</name>
 
     <dependencies>
-        <!-- Shared backend/frontend data models and utilities -->
-        <dependency>
-            <groupId>com.baitaplon</groupId>
-            <artifactId>core-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <!-- UI Dependencies (Versions are managed by the parent POM) -->
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -38,6 +31,26 @@
     <build>
         <testSourceDirectory>src/test</testSourceDirectory>
         <plugins>
+            <!-- Allow `cd client; mvn clean javafx:run` to use the current shared source instead of a stale core-common jar from ~/.m2. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>add-core-common-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/../core-common/src/main/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- Plugin to run the JavaFX GUI application directly -->
             <plugin>
                 <groupId>org.openjfx</groupId>

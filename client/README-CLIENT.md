@@ -13,13 +13,13 @@ cd client
 
 Nếu không truyền `-ServerHost`, script sẽ đọc `APP_SERVER_HOST`; nếu biến này không có, mặc định dùng `172.104.50.54`.
 
-## Chạy bằng Maven từ root
+## Chạy bằng Maven từ thư mục gốc
 
 ```powershell
 mvn -pl client javafx:run "-Dmain.class=userauth.ClientLauncher" "-Dapp.server.host=127.0.0.1" "-Dapp.server.port=5050"
 ```
 
-## Chạy qua SSH tunnel
+## Chạy qua đường hầm SSH
 
 Dùng khi VPS chỉ mở SSH hoặc không muốn mở public port cho app:
 
@@ -30,22 +30,22 @@ cd client
 
 Giữ cửa sổ SSH mở trong lúc dùng client.
 
-## JDK 25 / IntelliJ warnings
+## Cảnh báo JDK 25 / IntelliJ
 
-This project targets Java 21 and JavaFX 21. If IntelliJ runs
-`userauth.ClientLauncher` directly with JDK 25, JavaFX can print warnings about
-unnamed modules, native access, or `sun.misc.Unsafe`. They are JVM/runtime
-warnings, not server connection errors.
+Project này hướng tới Java 21 và JavaFX 21. Nếu IntelliJ chạy trực tiếp
+`userauth.ClientLauncher` bằng JDK 25, JavaFX có thể in cảnh báo về module chưa
+đặt tên, quyền truy cập native hoặc `sun.misc.Unsafe`. Đây là cảnh báo của JVM/môi trường chạy,
+không phải lỗi kết nối server.
 
-Recommended: set the IntelliJ Project SDK and Run Configuration JRE to JDK 21.
+Khuyến nghị: đặt Project SDK của IntelliJ và JRE trong cấu hình chạy về JDK 21.
 
-If you keep JDK 25, add this VM option to the IntelliJ Application run
-configuration:
+Nếu vẫn dùng JDK 25, thêm VM option sau vào cấu hình chạy Application của
+IntelliJ:
 
 ```text
 --enable-native-access=ALL-UNNAMED
 ```
 
-To avoid the `Unsupported JavaFX configuration` warning too, run the client via
-the Maven JavaFX goal or the PowerShell script instead of IntelliJ's direct
-classpath launcher.
+Để tránh thêm cảnh báo `Unsupported JavaFX configuration`, nên chạy client qua
+mục tiêu Maven JavaFX hoặc script PowerShell thay vì trình chạy classpath trực tiếp
+của IntelliJ.

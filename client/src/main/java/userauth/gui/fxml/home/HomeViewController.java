@@ -11,6 +11,7 @@ import javafx.scene.shape.Circle;
 import javafx.util.Duration;
 import userauth.controller.AuctionController;
 import userauth.controller.HomepageController;
+import userauth.exception.ItemNotFoundException;
 import userauth.gui.fxml.shared.*;
 import userauth.model.AuctionItem;
 import userauth.model.AuctionStatus;
@@ -85,6 +86,10 @@ public class HomeViewController {
     private long animationTicket;
     private long refreshTicket;
     private List<AuctionItem> lastAuctions = List.of();
+    private Map<Integer, Integer> lastBidCounts = Map.of();
+    private final Map<Integer, byte[]> auctionImageDataCache = new HashMap<>();
+    private final Map<Integer, String> auctionImageSourceCache = new HashMap<>();
+    private final Set<Integer> auctionImageLoadAttempts = new HashSet<>();
     private AuctionController auctionController;
     private HomepageController homepageController;
 
@@ -232,12 +237,14 @@ public class HomeViewController {
                 "home/home-auction-card.fxml",
                 "component"
         );
+        applyCachedAuctionImage(auction);
         view.controller().setAuction(auction, bidCount);
+        refreshAuctionImageIfNeeded(auction);
         return (VBox) view.root();
     }
 
     private HomeSnapshot loadHomeSnapshot() {
-        List<AuctionItem> auctions = auctionController == null ? List.of() : auctionController.getAllAuctions();
+        List<AuctionItem> auctions = auctionController == null ? List.of() : auctionController.getAllAuctionSummaries();
         List<HomepageAnnouncement> announcements = homepageController == null ? List.of() : homepageController.getAllAnnouncements();
         return new HomeSnapshot(auctions, announcements);
     }
@@ -261,25 +268,64 @@ public class HomeViewController {
         statUpcomingValue.setText(String.valueOf(upcomingCount));
         statAnnouncementValue.setText(String.valueOf(snapshot.announcements().size()));
 
-        renderAuctionCards(snapshot.auctions(), Map.of());
+        renderAuctionCards(snapshot.auctions(), lastBidCounts);
         renderAnnouncementCards(snapshot.announcements(), auctionLookup);
         requestScrollRevealUpdate();
     }
 
     private Map<Integer, Integer> loadBidCounts() {
-        Map<Integer, Integer> bidCounts = new HashMap<>();
         if (auctionController == null) {
-            return bidCounts;
+            return Map.of();
         }
-        for (BidTransaction bid : auctionController.getAllBids()) {
-            bidCounts.merge(bid.getAuctionId(), 1, Integer::sum);
-        }
-        return bidCounts;
+        return auctionController.getBidCounts();
     }
 
     private void applyBidCounts(Map<Integer, Integer> bidCounts) {
-        renderAuctionCards(lastAuctions, bidCounts);
+        lastBidCounts = bidCounts == null ? Map.of() : bidCounts;
+        renderAuctionCards(lastAuctions, lastBidCounts);
         requestScrollRevealUpdate();
+    }
+
+    private void applyCachedAuctionImage(AuctionItem auction) {
+        byte[] imageData = auctionImageDataCache.get(auction.getId());
+        if (imageData != null && imageData.length > 0) {
+            auction.setImageData(imageData);
+        }
+        String imageSource = auctionImageSourceCache.get(auction.getId());
+        if (imageSource != null) {
+            auction.setImageSource(imageSource);
+        }
+    }
+
+    private void refreshAuctionImageIfNeeded(AuctionItem auction) {
+        if (auctionController == null
+                || auction == null
+                || (auction.getImageData() != null && auction.getImageData().length > 0)
+                || !auctionImageLoadAttempts.add(auction.getId())) {
+            return;
+        }
+        UiAsync.run(
+                () -> loadAuctionDetail(auction.getId()),
+                detailedAuction -> {
+                    if (detailedAuction == null || detailedAuction.getImageData() == null
+                            || detailedAuction.getImageData().length == 0) {
+                        return;
+                    }
+                    auctionImageDataCache.put(detailedAuction.getId(), detailedAuction.getImageData());
+                    auctionImageSourceCache.put(detailedAuction.getId(), detailedAuction.getImageSource());
+                    renderAuctionCards(lastAuctions, lastBidCounts);
+                },
+                error -> {
+                }
+        );
+    }
+
+    private AuctionItem loadAuctionDetail(int auctionId) {
+        try {
+            return auctionController.getAuctionById(auctionId);
+        } catch (ItemNotFoundException ex) {
+            throw new IllegalStateException(ex.getMessage(), ex);
+        }
     }
 
     private VBox loadAnnouncementCard(HomepageAnnouncement announcement, AuctionItem linkedAuction) {

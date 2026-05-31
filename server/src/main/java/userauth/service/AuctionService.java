@@ -196,6 +196,15 @@ public class AuctionService implements userauth.api.AuctionApi {
         return auctionDAO.countAllBids();
     }
 
+    @Override
+    public Map<Integer, Integer> getBidCounts() {
+        Map<Integer, Integer> counts = new HashMap<>();
+        for (BidTransaction bid : auctionDAO.findAllBids()) {
+            counts.merge(bid.getAuctionId(), 1, Integer::sum);
+        }
+        return counts;
+    }
+
      @Override
      public void placeBid(int auctionId, int bidderId, double amount)
              throws ItemNotFoundException, AuctionClosedException, InvalidBidException {

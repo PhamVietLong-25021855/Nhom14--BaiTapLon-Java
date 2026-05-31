@@ -48,6 +48,7 @@ public class BidderDashboardViewController {
     private static final String FILTER_FINISHED = "Finished";
     private static final long ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
     private static final double LIVE_REFRESH_INTERVAL_SECONDS = 2.0;
+    private static final int BACKGROUND_DETAIL_REFRESH_TICKS = 5;
 
     @FXML
     private TableView<AuctionItem> tableAuctions;
@@ -94,6 +95,9 @@ public class BidderDashboardViewController {
 
     @FXML
     private Label lblUserName;
+
+    @FXML
+    private Label lblUserMeta;
 
     @FXML
     private Label lblRunningCount;
@@ -204,6 +208,7 @@ public class BidderDashboardViewController {
     private double lastSelectedHighestBid = -1;
     private AuctionStatus lastSelectedStatus;
     private long refreshTicket;
+    private int backgroundRefreshTick;
     private boolean auctionRefreshInProgress;
     private boolean bidsRefreshInProgress;
     private boolean autobidRefreshInProgress;
@@ -342,10 +347,12 @@ public class BidderDashboardViewController {
     public void setUser(User user) {
         this.currentUser = user;
         String displayName = user == null ? UiText.text("Bidder") : abbreviate(resolveDisplayName(user), 26);
+        String userMeta = formatUserMeta(user, "BIDDER");
         String sidebarName = user == null
                 ? "@" + UiText.text("Bidder")
-                : "@" + abbreviate(safeText(user.getUsername(), UiText.text("Bidder")), 18);
+                : "@" + abbreviate(safeText(user.getUsername(), UiText.text("Bidder")), 18) + "\n" + userMeta;
         lblUserName.setText(displayName);
+        lblUserMeta.setText(userMeta);
         lblSidebarUser.setText(sidebarName);
         refreshTicket++;
         auctionRefreshInProgress = false;
@@ -369,6 +376,7 @@ public class BidderDashboardViewController {
 
     public void activate() {
         active = true;
+        backgroundRefreshTick = 0;
         registerAuctionObserver();
         refreshData();
         if (timeline != null && timeline.getStatus() != Animation.Status.RUNNING) {
@@ -379,6 +387,7 @@ public class BidderDashboardViewController {
     public void deactivate() {
         active = false;
         refreshTicket++;
+        backgroundRefreshTick = 0;
         auctionRefreshInProgress = false;
         bidsRefreshInProgress = false;
         autobidRefreshInProgress = false;
@@ -404,19 +413,25 @@ public class BidderDashboardViewController {
         String keyword = txtSearch.getText() == null ? "" : txtSearch.getText().trim().toLowerCase(Locale.ROOT);
         String statusFilter = cbStatusFilter.getValue();
 
-        refreshAuctionSnapshot(keyword, statusFilter, requestedSelectedId, ticket);
+        refreshAuctionSnapshot(keyword, statusFilter, requestedSelectedId, ticket, true);
         refreshSelectedBidsSnapshot(requestedSelectedId, ticket);
         refreshAutobidSnapshot(ticket);
         refreshWalletSnapshot(ticket);
     }
 
-    private void refreshAuctionSnapshot(String keyword, String statusFilter, int requestedSelectedId, long ticket) {
+    private void refreshAuctionSnapshot(
+            String keyword,
+            String statusFilter,
+            int requestedSelectedId,
+            long ticket,
+            boolean validateAccount
+    ) {
         if (auctionRefreshInProgress) {
             return;
         }
         auctionRefreshInProgress = true;
         UiAsync.run(
-                () -> loadBidderSnapshot(keyword, statusFilter),
+                () -> loadBidderSnapshot(keyword, statusFilter, validateAccount),
                 snapshot -> {
                     auctionRefreshInProgress = false;
                     if (ticket != refreshTicket) {
@@ -1224,14 +1239,26 @@ public class BidderDashboardViewController {
     }
 
     private void refreshDataFromTimer() {
+        boolean refreshBackgroundDetails = ++backgroundRefreshTick >= BACKGROUND_DETAIL_REFRESH_TICKS;
+        if (refreshBackgroundDetails) {
+            backgroundRefreshTick = 0;
+        }
         if (isUserTypingInBidderForm()) {
-            refreshAuctionListOnly();
+            refreshAuctionListOnly(refreshBackgroundDetails);
+            if (refreshBackgroundDetails) {
+                refreshWalletSnapshot(refreshTicket);
+            }
             return;
         }
-        refreshData();
+        refreshAuctionListOnly(refreshBackgroundDetails);
+        refreshSelectedBidsSnapshot(selectedAuctionId(), refreshTicket);
+        if (refreshBackgroundDetails) {
+            refreshAutobidSnapshot(refreshTicket);
+            refreshWalletSnapshot(refreshTicket);
+        }
     }
 
-    private void refreshAuctionListOnly() {
+    private void refreshAuctionListOnly(boolean validateAccount) {
         if (!active || auctionController == null || currentUser == null) {
             return;
         }
@@ -1240,8 +1267,7 @@ public class BidderDashboardViewController {
         String keyword = txtSearch.getText() == null ? "" : txtSearch.getText().trim().toLowerCase(Locale.ROOT);
         String statusFilter = cbStatusFilter.getValue();
 
-        refreshAuctionSnapshot(keyword, statusFilter, requestedSelectedId, ticket);
-        refreshWalletSnapshot(ticket);
+        refreshAuctionSnapshot(keyword, statusFilter, requestedSelectedId, ticket, validateAccount);
     }
 
     private boolean isUserTypingInBidderForm() {
@@ -1288,8 +1314,10 @@ public class BidderDashboardViewController {
                 && auction.getWinnerId() == currentUser.getId();
     }
 
-    private BidderSnapshot loadBidderSnapshot(String keyword, String statusFilter) {
-        ensureCurrentAccountActive();
+    private BidderSnapshot loadBidderSnapshot(String keyword, String statusFilter, boolean validateAccount) {
+        if (validateAccount) {
+            ensureCurrentAccountActive();
+        }
         List<AuctionItem> allAuctions = auctionController.getAllAuctionSummaries();
         List<AuctionItem> visibleAuctions = allAuctions.stream()
                 .filter(item -> item.getStatus() != AuctionStatus.CANCELED)
@@ -1460,6 +1488,13 @@ public class BidderDashboardViewController {
             return fullName;
         }
         return safeText(user.getUsername(), UiText.text("Bidder"));
+    }
+
+    private String formatUserMeta(User user, String fallbackRole) {
+        if (user == null) {
+            return "ID: - | Role: " + fallbackRole;
+        }
+        return "ID: " + user.getId() + " | Role: " + safeText(user.getRoleName(), fallbackRole);
     }
 
     private String safeText(String value, String fallback) {
