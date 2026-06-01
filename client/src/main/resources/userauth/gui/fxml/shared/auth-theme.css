@@ -1538,7 +1538,14 @@
 }
 
 .inbox-dialog-root {
+    -fx-background-color:
+        radial-gradient(center 14% 12%, radius 42%, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0) 62%),
+        radial-gradient(center 88% 20%, radius 38%, rgba(52, 184, 157, 0.18), rgba(52, 184, 157, 0) 66%),
+        linear-gradient(to bottom right, #d9e5f2, #c9d8e9 52%, #b9cbe0);
     -fx-background-radius: 34;
+    -fx-border-color: rgba(31, 60, 96, 0.52);
+    -fx-border-radius: 34;
+    -fx-border-width: 2;
 }
 
 .inbox-dialog-card {
