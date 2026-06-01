@@ -59,6 +59,9 @@ public class SellerDashboardViewController {
     private TableColumn<AuctionItem, String> colStartPrice;
 
     @FXML
+    private TableColumn<AuctionItem, String> colBidStep;
+
+    @FXML
     private TableColumn<AuctionItem, String> colCurrentBid;
 
     @FXML
@@ -81,6 +84,9 @@ public class SellerDashboardViewController {
 
     @FXML
     private TextField txtPrice;
+
+    @FXML
+    private TextField txtBidStep;
 
     @FXML
     private TextField txtCategory;
@@ -149,6 +155,9 @@ public class SellerDashboardViewController {
     private Label lblPreviewPrice;
 
     @FXML
+    private Label lblPreviewBidStep;
+
+    @FXML
     private Label lblPreviewMode;
 
     private AuthFrame frame;
@@ -169,6 +178,7 @@ public class SellerDashboardViewController {
     @FXML
     private void initialize() {
         UiInput.installMoneyInput(txtPrice);
+        UiInput.installMoneyInput(txtBidStep);
         installTimeInput(txtStartTime);
         installTimeInput(txtEndTime);
         setDefaultSchedule();
@@ -179,6 +189,7 @@ public class SellerDashboardViewController {
         colName.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getName()));
         colCategory.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getCategory()));
         colStartPrice.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatMoney(data.getValue().getStartPrice())));
+        colBidStep.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatBidStep(data.getValue())));
         colCurrentBid.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatMoney(data.getValue().getCurrentHighestBid())));
         colStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(UiText.auctionStatus(data.getValue().getStatus())));
         colStartTime.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatDateTime(data.getValue().getStartTime())));
@@ -327,6 +338,7 @@ public class SellerDashboardViewController {
             String imageSource = resolveImageSourceForSave(rawImageInput);
             byte[] imageData = workingImageData;
             double price = UiInput.parsePositiveDecimal(txtPrice.getText(), "Starting price");
+            double bidStep = UiInput.parsePositiveDecimal(txtBidStep.getText(), "Bid step");
             long start = readScheduleTimestamp(dateStart, txtStartTime, "Start date and time");
             long end = readScheduleTimestamp(dateEnd, txtEndTime, "End date and time");
             validateSchedule(start, end);
@@ -335,8 +347,8 @@ public class SellerDashboardViewController {
 
             runActionAsync(
                     currentEditingId == -1
-                            ? () -> auctionController.createAuction(name, desc, price, start, end, category, imageSource, imageData, sellerId)
-                            : () -> auctionController.updateAuction(currentEditingId, sellerId, name, desc, price, start, end, category, imageSource, imageData),
+                            ? () -> auctionController.createAuction(name, desc, price, start, end, category, imageSource, imageData, bidStep, sellerId)
+                            : () -> auctionController.updateAuction(currentEditingId, sellerId, name, desc, price, start, end, category, imageSource, imageData, bidStep),
                     "Auction saved successfully.",
                     () -> {
                         resetForm();
@@ -392,6 +404,7 @@ public class SellerDashboardViewController {
         txtName.setText(item.getName());
         txtCategory.setText(item.getCategory());
         txtPrice.setText(String.valueOf(item.getStartPrice()));
+        txtBidStep.setText(AuctionViewFormatter.formatMoney(item.getBidStep()));
         txtDesc.setText(item.getDescription());
         txtImageSource.setText(item.getImageSource() == null ? "" : item.getImageSource());
 
@@ -590,6 +603,7 @@ public class SellerDashboardViewController {
         txtCategory.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtImageSource.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtPrice.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
+        txtBidStep.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         dateStart.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         txtStartTime.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         dateEnd.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
@@ -609,6 +623,7 @@ public class SellerDashboardViewController {
                 : txtDesc.getText().trim();
         String category = txtCategory.getText() == null || txtCategory.getText().isBlank() ? UiText.text("Category") : txtCategory.getText().trim();
         String price = parsePricePreview();
+        String bidStep = parseBidStepPreview();
 
         AuctionImageUtil.applyAuctionImage(imgPreviewImage, lblPreviewInitial, workingImageData, workingImagePreviewSource, name);
         lblPreviewName.setText(name);
@@ -616,6 +631,7 @@ public class SellerDashboardViewController {
         lblPreviewCategory.setText(category);
         updateSchedulePreview();
         lblPreviewPrice.setText(price);
+        lblPreviewBidStep.setText(bidStep);
         lblPreviewMode.setText(editingId == -1
                 ? UiText.text("Creating a new auction")
                 : UiText.text("Editing auction") + " #" + editingId);
@@ -630,6 +646,25 @@ public class SellerDashboardViewController {
             return AuctionViewFormatter.formatMoney(UiInput.parseDecimal(value));
         } catch (NumberFormatException ex) {
             return UiText.text("Invalid price");
+        }
+    }
+
+    private String parseBidStepPreview() {
+        try {
+            String priceValue = txtPrice.getText() == null ? "" : txtPrice.getText().trim();
+            String bidStepValue = txtBidStep.getText() == null ? "" : txtBidStep.getText().trim();
+            if (priceValue.isBlank() || bidStepValue.isBlank()) {
+                return "0 (0%)";
+            }
+            double price = UiInput.parseDecimal(priceValue);
+            double bidStep = UiInput.parseDecimal(bidStepValue);
+            if (price <= 0 || bidStep < 0) {
+                return UiText.text("Invalid bid step");
+            }
+            AuctionItem preview = new AuctionItem(0, "", "", price, System.currentTimeMillis(), System.currentTimeMillis() + 1, "", null, null, bidStep, 0);
+            return AuctionViewFormatter.formatBidStep(preview);
+        } catch (NumberFormatException ex) {
+            return UiText.text("Invalid bid step");
         }
     }
 
@@ -680,6 +715,7 @@ public class SellerDashboardViewController {
         txtName.clear();
         txtDesc.clear();
         txtPrice.clear();
+        txtBidStep.clear();
         txtCategory.clear();
         txtImageSource.clear();
         setDefaultSchedule();
@@ -949,6 +985,9 @@ public class SellerDashboardViewController {
         }
         if (txtPrice != null) {
             txtPrice.setDisable(busy);
+        }
+        if (txtBidStep != null) {
+            txtBidStep.setDisable(busy);
         }
         if (txtCategory != null) {
             txtCategory.setDisable(busy);

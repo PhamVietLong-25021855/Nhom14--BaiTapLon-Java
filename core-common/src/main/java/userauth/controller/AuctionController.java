@@ -22,9 +22,9 @@ public class AuctionController {
     }
 
     public String createAuction(String name, String desc, double startPrice, long startTime, long endTime,
-                              String category, String imageSource, byte[] imageData, int sellerId) {
+                              String category, String imageSource, byte[] imageData, double bidStep, int sellerId) {
         try {
-            auctionService.createAuction(name, desc, startPrice, startTime, endTime, category, imageSource, imageData, sellerId);
+            auctionService.createAuction(name, desc, startPrice, startTime, endTime, category, imageSource, imageData, bidStep, sellerId);
             return "SUCCESS";
         } catch (ValidationException e) {
             return e.getMessage();
@@ -32,9 +32,9 @@ public class AuctionController {
     }
 
     public String updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice,
-                              long startTime, long endTime, String category, String imageSource, byte[] imageData) {
+                              long startTime, long endTime, String category, String imageSource, byte[] imageData, double bidStep) {
         try {
-            auctionService.updateAuction(auctionId, sellerId, name, desc, startPrice, startTime, endTime, category, imageSource, imageData);
+            auctionService.updateAuction(auctionId, sellerId, name, desc, startPrice, startTime, endTime, category, imageSource, imageData, bidStep);
             return "SUCCESS";
         } catch (ItemNotFoundException | UnauthorizedException | ValidationException e) {
             return e.getMessage();

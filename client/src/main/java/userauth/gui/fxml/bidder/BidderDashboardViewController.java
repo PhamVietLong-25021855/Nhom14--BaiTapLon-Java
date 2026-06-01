@@ -145,6 +145,9 @@ public class BidderDashboardViewController {
     private Label lblDetailStartPrice;
 
     @FXML
+    private Label lblDetailBidStep;
+
+    @FXML
     private Label lblDetailLeader;
 
     @FXML
@@ -559,6 +562,14 @@ public class BidderDashboardViewController {
 
         try {
             double amount = UiInput.parsePositiveDecimal(bidInput, "Bid amount");
+            double minimumAllowedBid = minimumAllowedBid(selected);
+            if (amount < minimumAllowedBid) {
+                String message = "Minimum allowed bid is " + AuctionViewFormatter.formatMoney(minimumAllowedBid)
+                        + " because the bid step is " + AuctionViewFormatter.formatBidStep(selected) + ".";
+                setBidStatus(message, true);
+                NotificationUtil.warning(ownerWindow(), "Notification", message);
+                return;
+            }
             int auctionId = selected.getId();
             int bidderId = currentUser.getId();
             setBid(amount,auctionId,bidderId);
@@ -962,6 +973,7 @@ public class BidderDashboardViewController {
                 : auction.getDescription());
         lblDetailCurrentBid.setText(AuctionViewFormatter.formatMoney(auction.getCurrentHighestBid()));
         lblDetailStartPrice.setText(AuctionViewFormatter.formatMoney(auction.getStartPrice()));
+        lblDetailBidStep.setText(AuctionViewFormatter.formatBidStep(auction));
         lblDetailLeader.setText(formatLeader(auction));
         lblDetailSchedule.setText(AuctionViewFormatter.formatScheduleRange(auction));
         lblDetailCategory.setText(auction.getCategory());
@@ -972,6 +984,15 @@ public class BidderDashboardViewController {
         updateBidTrend(bids);
         syncAutobidFormToAuction(auction.getId());
         updateBidControlsForAuction(auction);
+        if (txtBidAmount != null) {
+            txtBidAmount.setPromptText("Min: " + AuctionViewFormatter.formatMinimumBid(auction));
+        }
+        if (incrementAutobid != null) {
+            incrementAutobid.setPromptText("At least " + AuctionViewFormatter.formatMoney(auction.getBidStep()));
+        }
+        if (!bidActionInProgress) {
+            setBidStatus(buildMinimumBidMessage(auction), false);
+        }
 
         lastSelectedAuctionId = auction.getId();
         lastSelectedWinnerId = auction.getWinnerId();
@@ -1139,6 +1160,7 @@ public class BidderDashboardViewController {
         lblDetailDescription.setText(UiText.text("The product description will appear here."));
         lblDetailCurrentBid.setText("0");
         lblDetailStartPrice.setText("-");
+        lblDetailBidStep.setText("-");
         lblDetailLeader.setText("-");
         lblDetailSchedule.setText("-");
         lblDetailCategory.setText("-");
@@ -1148,6 +1170,12 @@ public class BidderDashboardViewController {
         lblDetailTimeLeft.getStyleClass().setAll("status-chip", "status-chip-neutral");
         lblDetailTimeLeft.setText(UiText.text("Remaining") + ": -");
         chartBidTrend.getData().clear();
+        if (txtBidAmount != null) {
+            txtBidAmount.setPromptText("Example: 1500000");
+        }
+        if (incrementAutobid != null) {
+            incrementAutobid.setPromptText("Enter increment");
+        }
         updateBidControlsForAuction(null);
     }
 
@@ -1473,6 +1501,7 @@ public class BidderDashboardViewController {
         target.setImageData(source.getImageData());
         target.setCreatedAt(source.getCreatedAt());
         target.setUpdatedAt(source.getUpdatedAt());
+        target.setBidStep(source.getBidStep());
         target.setSellerId(source.getSellerId());
         target.setWinnerId(source.getWinnerId());
         target.setStatus(source.getStatus());
@@ -1599,6 +1628,18 @@ public class BidderDashboardViewController {
             return value;
         }
         return value.substring(0, Math.max(0, maxLength - 3)) + "...";
+    }
+
+    private double minimumAllowedBid(AuctionItem auction) {
+        return auction.getCurrentHighestBid() + auction.getBidStep();
+    }
+
+    private String buildMinimumBidMessage(AuctionItem auction) {
+        if (auction == null) {
+            return "Select an auction to view details.";
+        }
+        return "Minimum next bid: " + AuctionViewFormatter.formatMoney(minimumAllowedBid(auction))
+                + " | Step: " + AuctionViewFormatter.formatBidStep(auction);
     }
 
     private record BidderSnapshot(

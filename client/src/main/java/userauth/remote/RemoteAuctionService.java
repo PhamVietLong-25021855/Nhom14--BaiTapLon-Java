@@ -19,22 +19,22 @@ public class RemoteAuctionService implements AuctionApi {
 
     @Override
     public void createAuction(String name, String desc, double startPrice, long startTime, long endTime,
-                              String category, String imageSource, byte[] imageData, int sellerId) throws ValidationException {
+                              String category, String imageSource, byte[] imageData, double bidStep, int sellerId) throws ValidationException {
         String result = result(NetworkActions.AUCTION_CREATE,
                 "name", name, "desc", desc, "startPrice", startPrice, "startTime", startTime,
                 "endTime", endTime, "category", category, "imageSource", imageSource,
-                "imageData", imageData, "sellerId", sellerId);
+                "imageData", imageData, "bidStep", bidStep, "sellerId", sellerId);
         if (!"SUCCESS".equals(result)) throw new ValidationException(result);
     }
 
     @Override
     public void updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice, long startTime,
-                              long endTime, String category, String imageSource, byte[] imageData)
+                              long endTime, String category, String imageSource, byte[] imageData, double bidStep)
             throws ItemNotFoundException, UnauthorizedException, ValidationException {
         String result = result(NetworkActions.AUCTION_UPDATE,
                 "auctionId", auctionId, "sellerId", sellerId, "name", name, "desc", desc,
                 "startPrice", startPrice, "startTime", startTime, "endTime", endTime,
-                "category", category, "imageSource", imageSource, "imageData", imageData);
+                "category", category, "imageSource", imageSource, "imageData", imageData, "bidStep", bidStep);
         if (!"SUCCESS".equals(result)) throw new ValidationException(result);
     }
 

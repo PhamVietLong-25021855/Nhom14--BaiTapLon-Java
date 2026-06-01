@@ -240,6 +240,12 @@
                                                                         </VBox>
                                                                         <VBox spacing="4.0" styleClass="detail-meta-box" HBox.hgrow="ALWAYS">
                                                                             <children>
+                                                                                <Label styleClass="detail-meta-label" text="BID STEP" />
+                                                                                <Label fx:id="lblDetailBidStep" styleClass="detail-meta-value" text="-" wrapText="true" />
+                                                                            </children>
+                                                                        </VBox>
+                                                                        <VBox spacing="4.0" styleClass="detail-meta-box" HBox.hgrow="ALWAYS">
+                                                                            <children>
                                                                                 <Label styleClass="detail-meta-label" text="LEADING BIDDER" />
                                                                                 <Label fx:id="lblDetailLeader" styleClass="detail-meta-value" text="-" wrapText="true" />
                                                                             </children>

@@ -20,7 +20,7 @@ public class AutobidService implements AutobidApi {
     }
 
     public void createAutobid(int bidderId, int auctionId, double maxPrice, double increment)
-            throws ValidationException {
+            throws ValidationException, ItemNotFoundException {
         if (maxPrice <= 0) {
             throw new ValidationException("Max price must be greater than 0.");
         }
@@ -29,6 +29,10 @@ public class AutobidService implements AutobidApi {
         }
         if (increment > maxPrice) {
             throw new ValidationException("Increment cannot be greater than max price.");
+        }
+        double minimumIncrement = auctionService == null ? 0.0 : auctionService.requireAuction(auctionId).getBidStep();
+        if (increment < minimumIncrement) {
+            throw new ValidationException("Increment must be at least " + minimumIncrement + " to satisfy the auction bid step.");
         }
         AutoBid existing = autoBidDAO.findAutoBidByAuctionBidder(auctionId, bidderId);
         if (existing != null) {
@@ -66,6 +70,10 @@ public class AutobidService implements AutobidApi {
         }
         if (increment > maxPrice) {
             throw new ValidationException("Increment cannot be greater than max price.");
+        }
+        double minimumIncrement = auctionService == null ? 0.0 : auctionService.requireAuction(item.getAuctionId()).getBidStep();
+        if (increment < minimumIncrement) {
+            throw new ValidationException("Increment must be at least " + minimumIncrement + " to satisfy the auction bid step.");
         }
         item.setMaxPrice(maxPrice);
         item.setIncrement(increment);

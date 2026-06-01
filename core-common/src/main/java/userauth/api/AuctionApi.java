@@ -13,9 +13,9 @@ import java.util.Map;
 
 public interface AuctionApi {
     void createAuction(String name, String desc, double startPrice, long startTime, long endTime,
-                       String category, String imageSource, byte[] imageData, int sellerId) throws ValidationException;
+                       String category, String imageSource, byte[] imageData, double bidStep, int sellerId) throws ValidationException;
     void updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice,
-                       long startTime, long endTime, String category, String imageSource, byte[] imageData)
+                       long startTime, long endTime, String category, String imageSource, byte[] imageData, double bidStep)
             throws ItemNotFoundException, UnauthorizedException, ValidationException;
     void deleteAuction(int auctionId, int sellerId) throws ItemNotFoundException, UnauthorizedException;
     void deleteAuctionAsAdmin(int auctionId) throws ItemNotFoundException;

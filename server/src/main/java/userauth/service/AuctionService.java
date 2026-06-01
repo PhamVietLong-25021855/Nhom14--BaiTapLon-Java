@@ -53,26 +53,40 @@ public class AuctionService implements userauth.api.AuctionApi {
         this.statusRefreshLock = new ReentrantLock();
     }
 
+    public void createAuction(String name, String desc, double startPrice, long startTime, long endTime,
+                              String category, String imageSource, byte[] imageData, int sellerId) throws ValidationException {
+        createAuction(name, desc, startPrice, startTime, endTime, category, imageSource, imageData,
+                startPrice * AuctionRules.MIN_BID_STEP_PERCENT, sellerId);
+    }
+
+    public void updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice,
+                              long startTime, long endTime, String category, String imageSource, byte[] imageData)
+            throws ItemNotFoundException, UnauthorizedException, ValidationException {
+        updateAuction(auctionId, sellerId, name, desc, startPrice, startTime, endTime, category, imageSource, imageData,
+                startPrice * AuctionRules.MIN_BID_STEP_PERCENT);
+    }
+
     private ReentrantLock getLockForAuction(int auctionId) {
         return auctionLocks.computeIfAbsent(auctionId, ignored -> new ReentrantLock());
     }
 
     @Override
     public void createAuction(String name, String desc, double startPrice, long startTime, long endTime,
-                             String category, String imageSource, byte[] imageData, int sellerId) throws ValidationException {
+                             String category, String imageSource, byte[] imageData, double bidStep, int sellerId) throws ValidationException {
         if (name == null || name.trim().isEmpty()) throw new ValidationException("Product name cannot be empty.");
         if (startPrice <= 0) throw new ValidationException("Starting price must be greater than 0.");
         if (startTime >= endTime) throw new ValidationException("Start time must be earlier than end time.");
         if (endTime <= System.currentTimeMillis()) throw new ValidationException("Cannot create an expired auction.");
         validateImage(imageData);
-        AuctionItem item = new AuctionItem(0, name, desc, startPrice, startTime, endTime, category, normalizeOptionalText(imageSource), imageData, sellerId);
+        validateBidStep(startPrice, bidStep);
+        AuctionItem item = new AuctionItem(0, name, desc, startPrice, startTime, endTime, category, normalizeOptionalText(imageSource), imageData, bidStep, sellerId);
         auctionDAO.saveAuction(item);
         notificationService.createNotification(0, "New auction", "New auction has been created: " + name);
     }
 
     @Override
     public void updateAuction(int auctionId, int sellerId, String name, String desc, double startPrice,
-                             long startTime, long endTime, String category, String imageSource, byte[] imageData)
+                             long startTime, long endTime, String category, String imageSource, byte[] imageData, double bidStep)
             throws ItemNotFoundException, UnauthorizedException, ValidationException {
         AuctionItem item = auctionDAO.findAuctionById(auctionId);
         if (item == null) throw new ItemNotFoundException("Auction item not found.");
@@ -85,10 +99,11 @@ public class AuctionService implements userauth.api.AuctionApi {
         if (startPrice <= 0) throw new ValidationException("Starting price must be greater than 0.");
         if (startTime >= endTime) throw new ValidationException("Start time must be earlier than end time.");
         validateImage(imageData);
+        validateBidStep(startPrice, bidStep);
         item.setName(name); item.setDescription(desc); item.setStartPrice(startPrice);
         item.setCurrentHighestBid(startPrice); item.setStartTime(startTime); item.setEndTime(endTime);
         item.setCategory(category); item.setImageSource(normalizeOptionalText(imageSource));
-        item.setImageData(imageData); item.setAntiSnipingExtensionCount(0);
+        item.setImageData(imageData); item.setBidStep(bidStep); item.setAntiSnipingExtensionCount(0);
         item.setUpdatedAt(System.currentTimeMillis());
         auctionDAO.updateAuction(item);
     }
@@ -220,10 +235,9 @@ public class AuctionService implements userauth.api.AuctionApi {
                  throw new AuctionClosedException("The current time is not valid for bidding.");
              if (item.getWinnerId() == bidderId)
                  throw new InvalidBidException("You are already the leading bidder for this auction.");
-             if (amount <= item.getStartPrice())
-                 throw new InvalidBidException("The amount must be higher than the starting price (" + item.getStartPrice() + ").");
-             if (amount <= item.getCurrentHighestBid())
-                 throw new InvalidBidException("The amount must be higher than the current price (" + item.getCurrentHighestBid() + ").");
+             double minimumAllowedBid = getMinimumAllowedBid(item);
+             if (amount < minimumAllowedBid)
+                 throw new InvalidBidException("The amount must be at least " + minimumAllowedBid + " because the bid step is " + item.getBidStep() + ".");
              int originalWinnerId = item.getWinnerId();
              double originalWinningAmount = originalWinnerId > 0 ? item.getCurrentHighestBid() : 0.0;
 
@@ -586,7 +600,8 @@ public class AuctionService implements userauth.api.AuctionApi {
                     originalWinningAmount
             );
             if (nextBidder == null) return currentEventTime;
-            double nextAmount = Math.min(item.getCurrentHighestBid() + nextBidder.getIncrement(), nextBidder.getMaxPrice());
+            double nextStep = Math.max(item.getBidStep(), nextBidder.getIncrement());
+            double nextAmount = Math.min(item.getCurrentHighestBid() + nextStep, nextBidder.getMaxPrice());
             if (nextAmount <= item.getCurrentHighestBid()) {
                 //notificationService.createNotification(nextBidder.getBidderId(),"One of your Autobid had stopped", "Your " + nextBidder.getId() + " autobid had stopped");
                 return currentEventTime;
@@ -638,6 +653,28 @@ public class AuctionService implements userauth.api.AuctionApi {
         eventBus.publish(AuctionEvent.bidActivity(item, item.getUpdatedAt()));
         if (antiSnipingExtended) eventBus.publish(AuctionEvent.antiSnipingExtended(item, item.getUpdatedAt()));
         return true;
+    }
+
+    public AuctionItem requireAuction(int auctionId) throws ItemNotFoundException {
+        AuctionItem item = auctionDAO.findAuctionById(auctionId);
+        if (item == null) {
+            throw new ItemNotFoundException("Auction item not found.");
+        }
+        return item;
+    }
+
+    public double getMinimumAllowedBid(AuctionItem item) {
+        return item.getCurrentHighestBid() + Math.max(item.getBidStep(), 0.0);
+    }
+
+    private void validateBidStep(double startPrice, double bidStep) throws ValidationException {
+        double minBidStep = startPrice * AuctionRules.MIN_BID_STEP_PERCENT;
+        double maxBidStep = startPrice * AuctionRules.MAX_BID_STEP_PERCENT;
+        if (bidStep < minBidStep || bidStep > maxBidStep) {
+            throw new ValidationException(
+                    "Bid step must be between " + minBidStep + " and " + maxBidStep + "."
+            );
+        }
     }
 
     private boolean applyAntiSniping(AuctionItem item, long now, long eventTime) {

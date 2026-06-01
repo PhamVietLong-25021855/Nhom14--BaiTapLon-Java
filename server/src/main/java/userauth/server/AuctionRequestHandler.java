@@ -90,14 +90,14 @@ public final class AuctionRequestHandler {
                 yield context.getAuctionController().createAuction(
                     str(request, "name"), str(request, "desc"), dbl(request, "startPrice"), lng(request, "startTime"),
                     lng(request, "endTime"), str(request, "category"), str(request, "imageSource"),
-                    (byte[]) request.get("imageData"), principal.userId());
+                    (byte[]) request.get("imageData"), dbl(request, "bidStep"), principal.userId());
             }
             case NetworkActions.AUCTION_UPDATE -> {
                 AuctionSessionManager.Session principal = requireRole(request, Role.SELLER);
                 yield context.getAuctionController().updateAuction(
                     integer(request, "auctionId"), principal.userId(), str(request, "name"), str(request, "desc"),
                     dbl(request, "startPrice"), lng(request, "startTime"), lng(request, "endTime"), str(request, "category"),
-                    str(request, "imageSource"), (byte[]) request.get("imageData"));
+                    str(request, "imageSource"), (byte[]) request.get("imageData"), dbl(request, "bidStep"));
             }
             case NetworkActions.AUCTION_DELETE -> {
                 AuctionSessionManager.Session principal = requireRole(request, Role.SELLER);
