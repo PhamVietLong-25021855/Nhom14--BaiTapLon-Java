@@ -13,10 +13,27 @@ cd client
 
 Nếu không truyền `-ServerHost`, script sẽ đọc `APP_SERVER_HOST`; nếu biến này không có, mặc định dùng `172.104.50.54`.
 
+## Chạy sau khi gửi file ZIP sang máy Windows khác
+
+Máy nhận ZIP chỉ cần cài JDK 21 và có Internet trong lần chạy đầu tiên.
+Không cần cài Maven hoặc tải riêng JavaFX SDK: Maven Wrapper sẽ tải Maven 3.9.9, sau đó Maven tải plugin và các thư viện JavaFX 21 được khai báo trong `client/pom.xml`.
+
+Từ thư mục gốc sau khi giải nén:
+
+```powershell
+.\run-javafx.cmd
+```
+
+File `run-javafx.cmd` sẽ gọi PowerShell với `-ExecutionPolicy Bypass`, tránh lỗi chữ ký số khi chạy script trên máy mới.
+Nếu JDK 21 nằm ở thư mục riêng, đặt `JDK21_HOME` hoặc `JAVA_HOME` trước khi chạy script.
+
+Trong IntelliJ, chọn run configuration Maven có tên `ClientLauncher`. Cấu hình này chạy `clean javafx:run`, nên Maven sẽ build lại client trước khi mở giao diện.
+Không bấm trực tiếp nút Run cạnh hàm `main()` trong `ClientLauncher.java` trên máy mới, vì đó là Java Application runner và không thể gọi Maven trước khi compile.
+
 ## Chạy bằng Maven từ thư mục gốc
 
 ```powershell
-mvn -pl client javafx:run "-Dmain.class=userauth.ClientLauncher" "-Dapp.server.host=127.0.0.1" "-Dapp.server.port=5050"
+.\mvnw.cmd -f client/pom.xml clean javafx:run "-Dapp.server.host=127.0.0.1" "-Dapp.server.port=5050"
 ```
 
 ## Chạy qua đường hầm SSH

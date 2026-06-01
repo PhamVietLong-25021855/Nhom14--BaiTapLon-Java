@@ -19,7 +19,7 @@ Phạm vi hệ thống tập trung vào các luồng chính: đăng ký/đăng n
 ## Môi trường và yêu cầu cài đặt
 
 - JDK 21 trở lên.
-- Maven 3.6.3 trở lên.
+- Maven 3.6.3 trở lên, hoặc dùng Maven Wrapper đi kèm project (`mvnw.cmd` / `mvnw`).
 - MySQL hoặc Akamai DB có thể truy cập từ máy chạy server.
 - Port TCP `5050` được mở nếu client kết nối đến server từ máy khác.
 - Biến môi trường `DB_PASSWORD` hoặc JVM property `-Ddb.password=...` để server kết nối database.
@@ -28,7 +28,13 @@ Kiểm tra phiên bản:
 
 ```bash
 java -version
-mvn -version
+./mvnw -version
+```
+
+Trên Windows có thể dùng:
+
+```powershell
+.\mvnw.cmd -version
 ```
 
 ## Cấu trúc thư mục
@@ -250,15 +256,36 @@ tail -f log.txt
 
 ### 2. Chạy client sau khi server đã sẵn sàng
 
-Cách 1: chạy bằng Maven, dùng được trên Windows/Linux/macOS.
+#### Cách khuyến nghị trên Windows sau khi giải nén ZIP
+
+Máy mới chỉ cần cài JDK 21 và có Internet trong lần chạy đầu tiên. Không cần cài Maven hoặc tải JavaFX SDK riêng.
+
+Chạy từ thư mục gốc project:
+
+```powershell
+.\run-javafx.cmd
+```
+
+File này sẽ tự gọi PowerShell với `-ExecutionPolicy Bypass`, dùng Maven Wrapper `mvnw.cmd`, tải Maven 3.9.9 nếu chưa có, tải JavaFX 21 qua Maven, build lại client và chạy `userauth.ClientLauncher`.
+
+Nếu server không dùng IP mặc định, truyền host/port:
+
+```powershell
+.\run-javafx.cmd -ServerHost "IP_PUBLIC_HOAC_DOMAIN" -ServerPort 5050
+```
+
+Khi đóng ZIP gửi sang máy khác, cần giữ nguyên các file/thư mục: `.mvn/`, `mvnw.cmd`, `mvnw`, `run-javafx.cmd`, `run-javafx.ps1`, `pom.xml`, `client/`, `core-common/`.
+
+#### Chạy bằng Maven Wrapper
+
+Dùng được trên Windows/Linux/macOS.
 
 Windows PowerShell:
 
 ```powershell
 $env:APP_SERVER_HOST="127.0.0.1"
 $env:APP_SERVER_PORT="5050"
-mvn -ntp -pl client -am install -DskipTests
-mvn -ntp -f client/pom.xml javafx:run
+.\mvnw.cmd -ntp -f client/pom.xml clean javafx:run
 ```
 
 Linux/macOS:
@@ -266,22 +293,19 @@ Linux/macOS:
 ```bash
 export APP_SERVER_HOST="127.0.0.1"
 export APP_SERVER_PORT="5050"
-mvn -ntp -pl client -am install -DskipTests
-mvn -ntp -f client/pom.xml javafx:run
+./mvnw -ntp -f client/pom.xml clean javafx:run
 ```
 
 Cách 2: chạy nhanh trên Windows bằng script có sẵn:
 
 ```powershell
-cd client
-.\run-client.ps1 -ServerHost "127.0.0.1" -ServerPort 5050
+.\run-javafx.cmd -ServerHost "127.0.0.1" -ServerPort 5050
 ```
 
 Nếu server nằm trên VPS:
 
 ```powershell
-cd client
-.\run-client.ps1 -ServerHost "IP_PUBLIC_HOAC_DOMAIN" -ServerPort 5050
+.\run-javafx.cmd -ServerHost "IP_PUBLIC_HOAC_DOMAIN" -ServerPort 5050
 ```
 
 ## Chức năng đã hoàn thành
@@ -315,5 +339,7 @@ cd client
 | Client không kết nối được server | Kiểm tra IP/domain, port `5050`, firewall và log server |
 | Server không kết nối được database | Kiểm tra `DB_PASSWORD`, host/port MySQL và quyền truy cập database |
 | Không đặt giá được | Kiểm tra số dư khả dụng, giá hiện tại và quy tắc bước giá |
-| JavaFX không chạy | Kiểm tra JDK 21, Maven và plugin JavaFX |
-- Do server đã được chạy trên VPS riêng nên không cần chạy server cục bộ nữa; chỉ cần chạy file `ClientLauncher`.
+| JavaFX không chạy | Chạy `.\run-javafx.cmd`; kiểm tra JDK 21 và Internet trong lần chạy đầu |
+| `local class incompatible` hoặc `serialVersionUID` | Client và server đang lệch phiên bản code; build/deploy lại server VPS cùng bản code với client |
+
+Do server đã được chạy trên VPS riêng nên không cần chạy server cục bộ nữa; trên Windows chỉ cần chạy `.\run-javafx.cmd` từ thư mục gốc project.
