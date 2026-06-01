@@ -281,7 +281,7 @@ public class BidderDashboardViewController {
                 });
         tableAuctions.setItems(displayedAuctions);
         tableAuctions.setRowFactory(this::createAuctionRow);
-        tableAuctions.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        tableAuctions.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         auctionTableInteractionRelease.setOnFinished(event -> finishAuctionTableInteraction());
         tableAuctions.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> beginAuctionTableInteraction());
         tableAuctions.addEventFilter(MouseEvent.MOUSE_DRAGGED, event -> beginAuctionTableInteraction());
@@ -1329,7 +1329,7 @@ public class BidderDashboardViewController {
     }
 
     private void handleAuctionTableScroll(ScrollEvent event) {
-        if (event.getDeltaY() == 0) {
+        if (event.getDeltaX() == 0 && event.getDeltaY() == 0) {
             return;
         }
         beginAuctionTableInteraction();
