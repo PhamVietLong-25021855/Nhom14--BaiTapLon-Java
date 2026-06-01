@@ -236,6 +236,17 @@ public final class AuctionRequestHandler {
                 requireSelf(principal, integer(request, "user_id"));
                 yield context.getNotificationController().findUserNotification(principal.userId());
             }
+            case NetworkActions.NOTIFICATION_DELETE -> {
+                AuctionSessionManager.Session principal = requireAuthenticated(request);
+                requireSelf(principal, integer(request, "user_id"));
+                yield context.getNotificationController().deleteNotification(
+                        principal.userId(), integer(request, "notification_id"));
+            }
+            case NetworkActions.NOTIFICATION_DELETE_ALL -> {
+                AuctionSessionManager.Session principal = requireAuthenticated(request);
+                requireSelf(principal, integer(request, "user_id"));
+                yield context.getNotificationController().deleteUserNotifications(principal.userId());
+            }
 
             default -> throw new IllegalArgumentException("Unsupported network action: " + action);
         };

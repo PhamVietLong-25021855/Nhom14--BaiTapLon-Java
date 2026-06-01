@@ -52,4 +52,6 @@ public final class NetworkActions {
 
     public static final String NOTIFICATION_CREATE = "NOTIFICATION_CREATE";
     public static final String NOTIFICATION_GET = "NOTIFICATION_GET";
+    public static final String NOTIFICATION_DELETE = "NOTIFICATION_DELETE";
+    public static final String NOTIFICATION_DELETE_ALL = "NOTIFICATION_DELETE_ALL";
 }

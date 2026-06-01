@@ -11,4 +11,6 @@ public interface NotificationApi {
     public void createNotification(int user_id, String title, String content)
             throws ValidationException, UnauthorizedException, ItemNotFoundException;
     public List<Notification> findUserNotification (int user_id);
+    boolean deleteNotification(int user_id, int notification_id);
+    int deleteUserNotifications(int user_id);
 }

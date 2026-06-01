@@ -286,5 +286,15 @@ final class ServiceTestSupport {
         public List<Notification> findNotificationToUser(int user_id) {
             return List.of();
         }
+
+        @Override
+        public boolean deleteNotification(int user_id, int notification_id) {
+            return false;
+        }
+
+        @Override
+        public int deleteNotificationsForUser(int user_id) {
+            return 0;
+        }
     }
 }

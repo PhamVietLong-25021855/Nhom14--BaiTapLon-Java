@@ -736,7 +736,7 @@ public class BidderDashboardViewController {
             NotificationUtil.info(ownerWindow(), "Notification", "Connect this controller to AuthFrame to open bid history using FXML.");
             return;
         }
-        frame.showInboxDialog(notificationController.findUserNotification(currentUser.getId()));
+        frame.showInboxDialog(currentUser, notificationController.findUserNotification(currentUser.getId()));
     }
 
     @FXML
