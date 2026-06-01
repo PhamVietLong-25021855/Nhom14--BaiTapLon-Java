@@ -1,0 +1,404 @@
+@startuml
+title Auction House Project UML
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+legend right
+  This file is documentation only.
+  It is placed under docs/ and does not affect build or runtime behavior.
+endlegend
+
+class "End User" as EndUser <<external>>
+
+package "client" {
+  class "JavaFX FXML Controllers" as ClientUI
+  class ClientLauncher
+  class ClientMain
+
+  class RemoteAuctionClient {
+    -host : String
+    -port : int
+    -timeoutMs : int
+    -tlsEnabled : boolean
+    -sessionToken : String
+    +call(action, keyValues) : Object
+    +setSessionToken(token) : void
+    +clearSession() : void
+  }
+
+  class RemoteAuthService
+  class RemoteAuctionService
+  class RemoteWalletService
+  class RemoteAutobidService
+  class RemoteNotificationService
+  class RemoteHomepageContentService
+}
+
+package "core-common api" {
+  interface AuthApi
+  interface AuctionApi
+  interface WalletApi
+  interface AutobidApi
+  interface NotificationApi
+  interface HomepageContentApi
+}
+
+package "core-common network" {
+  class AuctionRequest {
+    +action : String
+    +params : Map<String, Object>
+    +sessionToken : String
+  }
+
+  class AuctionResponse {
+    +success : boolean
+    +data : Object
+    +errorType : String
+    +errorMessage : String
+  }
+
+  class AuthenticatedUserResponse {
+    +user : User
+    +sessionToken : String
+    +expiresAt : long
+  }
+
+  class NetworkActions
+}
+
+package "server" {
+  class AuctionServerMain
+  class AuctionSocketServer
+  class AuctionRequestHandler {
+    -context : ServerContext
+    -sessions : AuctionSessionManager
+    +handle(request) : AuctionResponse
+  }
+
+  class AuctionSessionManager {
+    +create(user) : AuthenticatedUserResponse
+    +require(token) : Session
+    +invalidate(token) : void
+    +invalidateUser(userId) : void
+  }
+
+  class ServerContext
+
+  class AuthController
+  class AuctionController
+  class WalletController
+  class AutobidController
+  class NotificationController
+  class HomepageController
+
+  class AuthService {
+    -userDAO : UserDAO
+    -autoBidInitializer : AutoBidInitializer
+    -walletService : WalletService
+  }
+
+  class AuctionService {
+    -auctionDAO : AuctionDAO
+    -autoBidDAO : AutoBidDAO
+    -walletService : WalletService
+    -notificationService : NotificationService
+    -eventBus : AuctionEventBus
+  }
+
+  class WalletService {
+    -walletDAO : WalletDAO
+  }
+
+  class AutobidService
+  class NotificationService
+  class HomepageContentService
+  class AuctionScheduler
+  class AuctionCache
+  class AutoBidInitializer
+  interface AuctionSettlementHandler
+  class AuctionSettlementHandlerFactory
+
+  interface UserDAO
+  interface AuctionDAO
+  interface WalletDAO
+  interface AutoBidDAO
+  interface NotificationDAO
+  interface HomepageAnnouncementDAO
+
+  class UserDAOImpl
+  class AuctionDAOImpl
+  class WalletDAOImpl
+  class AutoBidDAOImpl
+  class NotificationDAOImpl
+  class HomepageAnnouncementDAOImpl
+
+  class DatabaseInitializer
+  class DatabaseConnection
+  class DatabaseConfig
+}
+
+package "core-common event" {
+  class AuctionEventBus
+  interface AuctionEventListener
+  class AuctionEvent
+}
+
+EndUser --> ClientUI
+ClientLauncher --> ClientMain
+ClientMain --> ClientUI
+ClientUI --> RemoteAuthService
+ClientUI --> RemoteAuctionService
+ClientUI --> RemoteWalletService
+ClientUI --> RemoteAutobidService
+ClientUI --> RemoteNotificationService
+ClientUI --> RemoteHomepageContentService
+
+RemoteAuthService ..|> AuthApi
+RemoteAuctionService ..|> AuctionApi
+RemoteWalletService ..|> WalletApi
+RemoteAutobidService ..|> AutobidApi
+RemoteNotificationService ..|> NotificationApi
+RemoteHomepageContentService ..|> HomepageContentApi
+
+RemoteAuthService --> RemoteAuctionClient
+RemoteAuctionService --> RemoteAuctionClient
+RemoteWalletService --> RemoteAuctionClient
+RemoteAutobidService --> RemoteAuctionClient
+RemoteNotificationService --> RemoteAuctionClient
+RemoteHomepageContentService --> RemoteAuctionClient
+
+RemoteAuctionClient --> AuctionRequest
+RemoteAuctionClient --> AuctionResponse
+RemoteAuctionClient ..> AuthenticatedUserResponse
+RemoteAuctionClient ..> NetworkActions
+RemoteAuctionClient --> AuctionSocketServer : TCP/TLS socket
+
+AuctionServerMain --> ServerContext
+ServerContext --> DatabaseInitializer
+AuctionSocketServer --> AuctionRequestHandler
+AuctionRequestHandler --> AuctionSessionManager
+AuctionRequestHandler --> AuthController
+AuctionRequestHandler --> AuctionController
+AuctionRequestHandler --> WalletController
+AuctionRequestHandler --> AutobidController
+AuctionRequestHandler --> NotificationController
+AuctionRequestHandler --> HomepageController
+
+AuthController --> AuthApi
+AuctionController --> AuctionApi
+WalletController --> WalletApi
+AutobidController --> AutobidApi
+NotificationController --> NotificationApi
+HomepageController --> HomepageContentApi
+
+AuthService ..|> AuthApi
+AuctionService ..|> AuctionApi
+WalletService ..|> WalletApi
+AutobidService ..|> AutobidApi
+NotificationService ..|> NotificationApi
+HomepageContentService ..|> HomepageContentApi
+
+ServerContext --> AuthService
+ServerContext --> AuctionService
+ServerContext --> WalletService
+ServerContext --> AutobidService
+ServerContext --> NotificationService
+ServerContext --> HomepageContentService
+ServerContext --> AuctionScheduler
+
+AuthService --> UserDAO
+AuthService --> AutoBidInitializer
+AuctionService --> AuctionDAO
+AuctionService --> AutoBidDAO
+AuctionService --> WalletService
+AuctionService --> NotificationService
+AuctionService --> AuctionSettlementHandlerFactory
+AuctionService --> AuctionEventBus
+WalletService --> WalletDAO
+AutobidService --> AutoBidDAO
+AutobidService --> AuctionService
+NotificationService --> NotificationDAO
+HomepageContentService --> HomepageAnnouncementDAO
+AuctionScheduler --> AuctionService
+AutoBidInitializer --> AutoBidDAO
+AutoBidInitializer --> AuctionDAO
+
+UserDAOImpl ..|> UserDAO
+AuctionDAOImpl ..|> AuctionDAO
+WalletDAOImpl ..|> WalletDAO
+AutoBidDAOImpl ..|> AutoBidDAO
+NotificationDAOImpl ..|> NotificationDAO
+HomepageAnnouncementDAOImpl ..|> HomepageAnnouncementDAO
+
+UserDAOImpl --> DatabaseConnection
+AuctionDAOImpl --> DatabaseConnection
+WalletDAOImpl --> DatabaseConnection
+AutoBidDAOImpl --> DatabaseConnection
+NotificationDAOImpl --> DatabaseConnection
+HomepageAnnouncementDAOImpl --> DatabaseConnection
+DatabaseConnection --> DatabaseConfig
+
+AuctionEventBus --> AuctionEventListener
+AuctionEventBus --> AuctionEvent
+
+newpage
+
+title Auction House Domain Model UML
+left to right direction
+
+package "domain model" {
+  abstract class Entity {
+    #id : int
+  }
+
+  abstract class User {
+    -username : String
+    -password : String
+    -fullName : String
+    -email : String
+    -role : Role
+    -status : String
+    -createdAt : long
+    -updatedAt : long
+  }
+
+  class Admin
+  class Seller
+  class Bidder
+
+  abstract class Item {
+    #name : String
+    #description : String
+    #startPrice : double
+    #currentHighestBid : double
+    #startTime : long
+    #endTime : long
+    #category : String
+    #imageSource : String
+    #imageData : byte[]
+    #createdAt : long
+    #updatedAt : long
+  }
+
+  class AuctionItem {
+    -sellerId : int
+    -winnerId : int
+    -status : AuctionStatus
+    -antiSnipingExtensionCount : int
+  }
+
+  class AutoBid {
+    -auctionId : int
+    -bidderId : int
+    -maxPrice : double
+    -increment : double
+  }
+
+  class BidTransaction {
+    -auctionId : int
+    -bidderId : int
+    -amount : double
+    -timestamp : long
+    -status : String
+  }
+
+  class Wallet {
+    -userId : int
+    -balance : long
+    -reservedBalance : long
+    -createdAt : long
+    -updatedAt : long
+  }
+
+  class WalletTransaction {
+    -userId : int
+    -type : WalletTransactionType
+    -amount : long
+    -auctionId : Integer
+    -reference : String
+    -createdAt : long
+  }
+
+  class TopUpTransaction {
+    -userId : int
+    -amount : long
+    -method : PaymentMethod
+    -status : TopUpStatus
+    -referenceCode : String
+    -transactionTime : long
+    -completeAt : Long
+  }
+
+  class Notification {
+    -user_id : int
+    -title : String
+    -content : String
+    -created_at : long
+  }
+
+  class HomepageAnnouncement {
+    -id : int
+    -title : String
+    -summary : String
+    -details : String
+    -scheduleText : String
+    -linkedAuctionId : int
+    -authorId : int
+  }
+
+  enum Role
+  enum AuctionStatus
+  enum PaymentMethod
+  enum TopUpStatus
+  enum WalletTransactionType
+}
+
+Entity <|-- User
+Entity <|-- Item
+Entity <|-- AutoBid
+Entity <|-- BidTransaction
+Entity <|-- Wallet
+Entity <|-- WalletTransaction
+Entity <|-- TopUpTransaction
+Entity <|-- Notification
+
+User <|-- Admin
+User <|-- Seller
+User <|-- Bidder
+
+Item <|-- AuctionItem
+
+User --> Role
+AuctionItem --> AuctionStatus
+TopUpTransaction --> PaymentMethod
+TopUpTransaction --> TopUpStatus
+WalletTransaction --> WalletTransactionType
+
+Seller "1" <-- "0..*" AuctionItem : sellerId
+Bidder "0..1" <-- "0..*" AuctionItem : winnerId
+Bidder "1" <-- "0..*" AutoBid : bidderId
+AuctionItem "1" <-- "0..*" AutoBid : auctionId
+Bidder "1" <-- "0..*" BidTransaction : bidderId
+AuctionItem "1" <-- "0..*" BidTransaction : auctionId
+User "1" <-- "1" Wallet : userId
+User "1" <-- "0..*" WalletTransaction : userId
+User "1" <-- "0..*" TopUpTransaction : userId
+User "1" <-- "0..*" Notification : user_id
+AuctionItem "0..1" <-- "0..*" WalletTransaction : auctionId
+Admin "1" <-- "0..*" HomepageAnnouncement : authorId
+AuctionItem "0..1" <-- "0..*" HomepageAnnouncement : linkedAuctionId
+
+note bottom of AuctionItem
+  Core auction aggregate.
+  Used by both client and server through core-common.
+end note
+
+note bottom of Wallet
+  Balance management is centralized on server.
+  Client never writes database directly.
+end note
+
+@enduml
