@@ -95,7 +95,7 @@
                                 </HBox>
                             </children>
                         </VBox>
-                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" pannable="true" styleClass="dashboard-scroll" VBox.vgrow="ALWAYS">
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" pannable="false" styleClass="dashboard-scroll" VBox.vgrow="ALWAYS">
                             <content>
                                 <VBox spacing="20.0">
                                     <children>

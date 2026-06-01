@@ -15,7 +15,7 @@
 
 <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="700.0" prefWidth="1000.0" styleClass="page-root" stylesheets="@../shared/auth-theme.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.auth.RegisterViewController">
     <children>
-        <ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="Infinity" maxWidth="Infinity" pannable="true" styleClass="auth-scroll">
+        <ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="Infinity" maxWidth="Infinity" pannable="false" styleClass="auth-scroll">
             <content>
                 <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="auth-single-shell">
                     <children>

@@ -214,6 +214,7 @@ public class BidderDashboardViewController {
     private boolean autobidRefreshInProgress;
     private boolean walletRefreshInProgress;
     private boolean detailImageRefreshInProgress;
+    private boolean auctionLoadErrorShown;
     private final Map<Integer, byte[]> detailImageDataCache = new HashMap<>();
     private final Map<Integer, String> detailImageSourceCache = new HashMap<>();
     private final Set<Integer> detailImageLoadAttempts = new HashSet<>();
@@ -360,6 +361,7 @@ public class BidderDashboardViewController {
         autobidRefreshInProgress = false;
         walletRefreshInProgress = false;
         detailImageRefreshInProgress = false;
+        auctionLoadErrorShown = false;
         detailImageDataCache.clear();
         detailImageSourceCache.clear();
         detailImageLoadAttempts.clear();
@@ -434,6 +436,7 @@ public class BidderDashboardViewController {
                 () -> loadBidderSnapshot(keyword, statusFilter, validateAccount),
                 snapshot -> {
                     auctionRefreshInProgress = false;
+                    auctionLoadErrorShown = false;
                     if (ticket != refreshTicket) {
                         refreshData();
                         return;
@@ -444,6 +447,14 @@ public class BidderDashboardViewController {
                     auctionRefreshInProgress = false;
                     if (handleAccountLockError(error)) {
                         return;
+                    }
+                    if (!auctionLoadErrorShown) {
+                        auctionLoadErrorShown = true;
+                        String message = error == null || error.getMessage() == null || error.getMessage().isBlank()
+                                ? "Unable to load auction products."
+                                : error.getMessage();
+                        setBidStatus("Unable to load auction products.", true);
+                        NotificationUtil.error(ownerWindow(), "Auction list", message);
                     }
                     if (ticket != refreshTicket) {
                         refreshData();
@@ -836,8 +847,8 @@ public class BidderDashboardViewController {
             return true;
         }
 
-        return item.getName().toLowerCase(Locale.ROOT).contains(keyword)
-                || item.getCategory().toLowerCase(Locale.ROOT).contains(keyword);
+        return safeText(item.getName(), "").toLowerCase(Locale.ROOT).contains(keyword)
+                || safeText(item.getCategory(), "").toLowerCase(Locale.ROOT).contains(keyword);
     }
 
     private boolean matchesStatusFilter(AuctionItem item, String filter) {
