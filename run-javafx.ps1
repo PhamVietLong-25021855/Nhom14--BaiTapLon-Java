@@ -31,14 +31,17 @@ if ($ClientMode -ieq "local") {
 }
 $mavenCommand = Join-Path $root "mvnw.cmd"
 if (-not (Test-Path -LiteralPath $mavenCommand -PathType Leaf)) {
+    $mavenCommand = (Get-Command mvn.cmd -ErrorAction SilentlyContinue).Source
+}
+if (-not $mavenCommand) {
     $mavenCommand = (Get-Command mvn -ErrorAction SilentlyContinue).Source
 }
 if (-not $mavenCommand) {
-    throw "Maven Wrapper and Maven were not found. Keep mvnw.cmd in the ZIP or install Maven 3.6.3 or newer."
+    throw "Maven Wrapper and Maven were not found. Keep mvnw.cmd and .mvn/wrapper in the ZIP, or install Maven 3.6.3 or newer."
 }
 
 $clientPom = Join-Path $root "client\pom.xml"
-$mvnArgs = @("-f", $clientPom, "clean", "javafx:run")
+$mvnArgs = @("-f", $clientPom, "compile", "javafx:run")
 $mvnArgs += "-Dapp.client.mode=$ClientMode"
 
 if (-not $ServerHost -and $ClientMode -ieq "remote") {
