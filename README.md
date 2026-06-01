@@ -325,12 +325,10 @@ Nếu server nằm trên VPS:
 
 ## Tài liệu, báo cáo và video minh họa
 
-- Báo cáo PDF: [Cập nhật link báo cáo PDF](docs/BAO_CAO_NHOM_14.pdf)
+- Báo cáo PDF: [Cập nhật link báo cáo PDF](https://drive.google.com/file/d/1yx6tykD8ohdk6d0D0v4TadqkatjbInHL/view?usp=sharing)
 - Video minh họa: [Cập nhật link video minh họa](https://example.com/video-demo)
 - Hướng dẫn triển khai: [docs/DEPLOY-GUIDE.md](docs/DEPLOY-GUIDE.md)
-- Tài liệu tách client/server: [docs/split-client-server.md](docs/split-client-server.md)
-- Tài liệu mẫu thiết kế: [docs/design-patterns.md](docs/design-patterns.md)
-- Tài liệu tối ưu: [docs/optimization-guide.md](docs/optimization-guide.md)
+- Sơ đồ của Project: [Cập nhật link qua driver](https://drive.google.com/drive/folders/1GkMrqn5LPuqMnr9nf3yvCzFDxG_FbFGg?usp=sharing)
 
 ## Ghi chú lỗi thường gặp
 
