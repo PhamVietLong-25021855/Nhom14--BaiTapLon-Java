@@ -1300,41 +1300,11 @@ public class BidderDashboardViewController {
     }
 
     private void handleAuctionTableScroll(ScrollEvent event) {
-        if (event.getDeltaY() == 0 || displayedAuctions.isEmpty()) {
+        if (event.getDeltaY() == 0) {
             return;
         }
         beginAuctionTableInteraction();
-
-        int firstVisibleRow = firstVisibleAuctionRow();
-        int visibleRowCount = visibleAuctionRowCount();
-        int step = Math.max(1, (int) Math.round(Math.abs(event.getDeltaY()) / 40.0));
-        int direction = event.getDeltaY() < 0 ? 1 : -1;
-        int maxTopRow = Math.max(0, displayedAuctions.size() - visibleRowCount);
-        int targetRow = Math.max(0, Math.min(maxTopRow, firstVisibleRow + direction * step));
-        tableAuctions.scrollTo(targetRow);
-
         scheduleAuctionTableInteractionRelease();
-        event.consume();
-    }
-
-    private int firstVisibleAuctionRow() {
-        int firstVisibleRow = Integer.MAX_VALUE;
-        for (javafx.scene.Node node : tableAuctions.lookupAll(".table-row-cell")) {
-            if (node instanceof TableRow<?> row && !row.isEmpty() && row.isVisible()) {
-                firstVisibleRow = Math.min(firstVisibleRow, row.getIndex());
-            }
-        }
-        return firstVisibleRow == Integer.MAX_VALUE ? 0 : firstVisibleRow;
-    }
-
-    private int visibleAuctionRowCount() {
-        int visibleRowCount = 0;
-        for (javafx.scene.Node node : tableAuctions.lookupAll(".table-row-cell")) {
-            if (node instanceof TableRow<?> row && !row.isEmpty() && row.isVisible()) {
-                visibleRowCount++;
-            }
-        }
-        return Math.max(1, visibleRowCount);
     }
 
     private void beginAuctionTableInteraction() {
