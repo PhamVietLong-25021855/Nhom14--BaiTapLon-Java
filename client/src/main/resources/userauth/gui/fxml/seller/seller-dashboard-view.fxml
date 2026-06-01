@@ -256,20 +256,24 @@
                                                                         </FlowPane>
                                                                     </children>
                                                                 </VBox>
-                                                                <TableView fx:id="tableAuctions" prefHeight="420.0" VBox.vgrow="ALWAYS">
-                                                                    <columns>
-                                                                        <TableColumn fx:id="colId" prefWidth="70.0" text="ID" />
-                                                                        <TableColumn fx:id="colName" prefWidth="220.0" text="Item" />
-                                                                        <TableColumn fx:id="colCategory" prefWidth="160.0" text="Category" />
-                                                                        <TableColumn fx:id="colStartPrice" prefWidth="150.0" text="Starting Price" />
-                                                                        <TableColumn fx:id="colBidStep" prefWidth="170.0" text="Bid Step" />
-                                                                        <TableColumn fx:id="colCurrentBid" prefWidth="150.0" text="Current Bid" />
-                                                                        <TableColumn fx:id="colStatus" prefWidth="130.0" text="Status" />
-                                                                        <TableColumn fx:id="colStartTime" prefWidth="160.0" text="Start Time" />
-                                                                        <TableColumn fx:id="colEndTime" prefWidth="160.0" text="End Time" />
-                                                                        <TableColumn fx:id="colRemaining" prefWidth="170.0" text="Remaining" />
-                                                                    </columns>
-                                                                </TableView>
+                                                                <ScrollPane fitToHeight="true" hbarPolicy="AS_NEEDED" minWidth="0.0" pannable="true" styleClass="seller-table-scroll" vbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+                                                                    <content>
+                                                                        <TableView fx:id="tableAuctions" maxWidth="1560.0" minWidth="1560.0" prefHeight="420.0" prefWidth="1560.0">
+                                                                            <columns>
+                                                                                <TableColumn fx:id="colId" prefWidth="70.0" text="ID" />
+                                                                                <TableColumn fx:id="colName" prefWidth="220.0" text="Item" />
+                                                                                <TableColumn fx:id="colCategory" prefWidth="160.0" text="Category" />
+                                                                                <TableColumn fx:id="colStartPrice" prefWidth="150.0" text="Starting Price" />
+                                                                                <TableColumn fx:id="colBidStep" prefWidth="170.0" text="Bid Step" />
+                                                                                <TableColumn fx:id="colCurrentBid" prefWidth="150.0" text="Current Bid" />
+                                                                                <TableColumn fx:id="colStatus" prefWidth="130.0" text="Status" />
+                                                                                <TableColumn fx:id="colStartTime" prefWidth="160.0" text="Start Time" />
+                                                                                <TableColumn fx:id="colEndTime" prefWidth="160.0" text="End Time" />
+                                                                                <TableColumn fx:id="colRemaining" prefWidth="170.0" text="Remaining" />
+                                                                            </columns>
+                                                                        </TableView>
+                                                                    </content>
+                                                                </ScrollPane>
                                                             </children>
                                                         </VBox>
                                                     </children>

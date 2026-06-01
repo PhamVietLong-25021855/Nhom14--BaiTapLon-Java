@@ -1404,6 +1404,7 @@
 
 .landing-scroll,
 .dashboard-scroll,
+.seller-table-scroll,
 .auth-scroll {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
@@ -1412,6 +1413,7 @@
 
 .landing-scroll > .viewport,
 .dashboard-scroll > .viewport,
+.seller-table-scroll > .viewport,
 .auth-scroll > .viewport,
 .inbox-list-scroll > .viewport {
     -fx-background-color: transparent;
@@ -1419,6 +1421,7 @@
 
 .landing-scroll .scroll-bar:vertical,
 .dashboard-scroll .scroll-bar:vertical,
+.seller-table-scroll .scroll-bar:horizontal,
 .auth-scroll .scroll-bar:vertical,
 .inbox-list-scroll .scroll-bar:vertical,
 .table-view .scroll-bar:vertical,
@@ -1431,6 +1434,7 @@
 
 .landing-scroll .thumb,
 .dashboard-scroll .thumb,
+.seller-table-scroll .thumb,
 .auth-scroll .thumb,
 .inbox-list-scroll .thumb,
 .table-view .thumb {
@@ -1441,6 +1445,7 @@
 
 .landing-scroll .thumb:hover,
 .dashboard-scroll .thumb:hover,
+.seller-table-scroll .thumb:hover,
 .auth-scroll .thumb:hover,
 .inbox-list-scroll .thumb:hover,
 .table-view .thumb:hover {
@@ -1449,6 +1454,7 @@
 
 .landing-scroll .thumb:pressed,
 .dashboard-scroll .thumb:pressed,
+.seller-table-scroll .thumb:pressed,
 .auth-scroll .thumb:pressed,
 .inbox-list-scroll .thumb:pressed,
 .table-view .thumb:pressed {
@@ -1457,6 +1463,7 @@
 
 .landing-scroll .track,
 .dashboard-scroll .track,
+.seller-table-scroll .track,
 .auth-scroll .track,
 .inbox-list-scroll .track,
 .table-view .track {
@@ -1469,6 +1476,8 @@
 .landing-scroll .decrement-button,
 .dashboard-scroll .increment-button,
 .dashboard-scroll .decrement-button,
+.seller-table-scroll .increment-button,
+.seller-table-scroll .decrement-button,
 .auth-scroll .increment-button,
 .auth-scroll .decrement-button,
 .inbox-list-scroll .increment-button,
@@ -1483,6 +1492,8 @@
 .landing-scroll .decrement-arrow,
 .dashboard-scroll .increment-arrow,
 .dashboard-scroll .decrement-arrow,
+.seller-table-scroll .increment-arrow,
+.seller-table-scroll .decrement-arrow,
 .auth-scroll .increment-arrow,
 .auth-scroll .decrement-arrow,
 .inbox-list-scroll .increment-arrow,
