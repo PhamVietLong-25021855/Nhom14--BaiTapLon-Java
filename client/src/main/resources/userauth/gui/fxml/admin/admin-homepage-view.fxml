@@ -49,7 +49,7 @@
                         </MenuButton>
                     </children>
                 </HBox>
-                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="dashboard-scroll" VBox.vgrow="ALWAYS">
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" pannable="true" styleClass="dashboard-scroll" VBox.vgrow="ALWAYS">
                     <content>
                         <VBox spacing="18.0">
                             <children>
