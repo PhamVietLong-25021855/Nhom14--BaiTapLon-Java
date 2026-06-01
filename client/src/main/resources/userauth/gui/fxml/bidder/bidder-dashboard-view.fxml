@@ -21,7 +21,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane maxHeight="Infinity" maxWidth="Infinity" prefHeight="960.0" prefWidth="1480.0" styleClass="page-root dashboard-root" stylesheets="@../shared/auth-theme.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.bidder.BidderDashboardViewController">
+<StackPane maxHeight="Infinity" maxWidth="Infinity" prefHeight="960.0" prefWidth="1480.0" styleClass="page-root dashboard-root" stylesheets="@../shared/auth-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userauth.gui.fxml.bidder.BidderDashboardViewController">
     <children>
         <HBox maxHeight="Infinity" maxWidth="Infinity" spacing="20.0" styleClass="shell-frame">
             <children>
@@ -244,14 +244,14 @@
                                                                                 <Label fx:id="lblDetailBidStep" styleClass="detail-meta-value" text="-" wrapText="true" />
                                                                             </children>
                                                                         </VBox>
-                                                                        <VBox spacing="4.0" styleClass="detail-meta-box" HBox.hgrow="ALWAYS">
-                                                                            <children>
-                                                                                <Label styleClass="detail-meta-label" text="LEADING BIDDER" />
-                                                                                <Label fx:id="lblDetailLeader" styleClass="detail-meta-value" text="-" wrapText="true" />
-                                                                            </children>
-                                                                        </VBox>
                                                                     </children>
                                                                 </HBox>
+                                                                  <VBox spacing="4.0" styleClass="detail-meta-box">
+                                                                      <children>
+                                                                          <Label styleClass="detail-meta-label" text="LEADING BIDDER" />
+                                                                          <Label fx:id="lblDetailLeader" styleClass="detail-meta-value" text="-" wrapText="true" />
+                                                                      </children>
+                                                                  </VBox>
                                                                 <VBox spacing="4.0" styleClass="detail-meta-box">
                                                                     <children>
                                                                         <Label styleClass="detail-meta-label" text="SCHEDULE" />
