@@ -333,6 +333,16 @@ public final class UiText {
         put(values, "Auction schedule update: ", "Cập nhật lịch phiên: ");
         put(values, "Auction #", "Phiên #");
         put(values, "Bidder #", "Người đấu giá #");
+        put(values, "Valid: ", "Hợp lệ: ");
+        put(values, "Min: ", "Tối thiểu: ");
+        put(values, "At least ", "Ít nhất ");
+        put(values, "Minimum next bid: ", "Giá đấu tối thiểu tiếp theo: ");
+        put(values, "Step: ", "Bước giá: ");
+        put(values, "Minimum allowed bid is ", "Giá đấu tối thiểu là ");
+        put(values, "because the bid step is ", "vì bước giá là ");
+        put(values, "Bid step must be between ", "Bước giá phải nằm trong khoảng ");
+        put(values, "Increment must be at least ", "Bước tăng phải ít nhất ");
+        put(values, "The amount must be at least ", "Mức giá phải ít nhất ");
         put(values, "The amount must be higher than the current price (", "Mức giá phải cao hơn giá hiện tại (");
         put(values, "The amount must be higher than the starting price (", "Mức giá phải cao hơn giá khởi điểm (");
         put(values, "An unexpected error occurred while saving the auto-bid rule: ", "Đã xảy ra lỗi khi lưu quy tắc tự động đấu giá: ");
@@ -390,6 +400,9 @@ public final class UiText {
         put(values, "LOG OUT", "ĐĂNG XUẤT");
         put(values, "SEARCH", "TÌM KIẾM");
         put(values, "Search", "Tìm kiếm");
+        put(values, "Bid Step", "Bước giá");
+        put(values, "BID STEP", "BƯỚC GIÁ");
+        put(values, "Bid step", "Bước giá");
         put(values, "Sort", "Sắp xếp");
         put(values, "Status", "Trạng thái");
         put(values, "Title", "Tiêu đề");
@@ -843,6 +856,9 @@ public final class UiText {
         put(values, "Current seller information is unavailable.", "Thông tin người bán hiện không khả dụng.");
         put(values, "Auction saved successfully.", "Đã lưu phiên đấu giá thành công.");
         put(values, "Invalid starting price.", "Giá khởi điểm không hợp lệ.");
+        put(values, "Invalid bid step", "Bước giá không hợp lệ");
+        put(values, "Enter starting price first", "Nhập giá khởi điểm trước");
+        put(values, "Enter valid starting price first", "Nhập giá khởi điểm hợp lệ trước");
         put(values, "Unable to read the selected image file.", "Không thể đọc tệp ảnh đã chọn.");
         put(values, "End must be after start", "Thời điểm kết thúc phải sau thời điểm bắt đầu");
         put(values, "Invalid schedule", "Lịch không hợp lệ");
@@ -915,6 +931,7 @@ public final class UiText {
         put(values, "Server returned an invalid response.", "Máy chủ trả về phản hồi không hợp lệ.");
         put(values, "Start time must be earlier than end time.", "Thời gian bắt đầu phải sớm hơn thời gian kết thúc.");
         put(values, "Starting price must be greater than 0.", "Giá khởi điểm phải lớn hơn 0.");
+        put(values, "to satisfy the auction bid step.", "để đáp ứng bước giá của phiên.");
         put(values, "The auction has already ended or was cancelled.", "Phiên đấu giá đã kết thúc hoặc đã bị hủy.");
         put(values, "The auction is not currently running.", "Phiên đấu giá hiện không chạy.");
         put(values, "The Database connection pool is exhausted. Please try again.", "Pool kết nối cơ sở dữ liệu đã hết. Vui lòng thử lại.");

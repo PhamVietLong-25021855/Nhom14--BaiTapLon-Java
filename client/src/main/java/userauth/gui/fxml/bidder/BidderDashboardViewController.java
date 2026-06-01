@@ -622,8 +622,8 @@ public class BidderDashboardViewController {
             double amount = UiInput.parsePositiveDecimal(bidInput, "Bid amount");
             double minimumAllowedBid = minimumAllowedBid(selected);
             if (amount < minimumAllowedBid) {
-                String message = "Minimum allowed bid is " + AuctionViewFormatter.formatMoney(minimumAllowedBid)
-                        + " because the bid step is " + AuctionViewFormatter.formatBidStep(selected) + ".";
+                String message = UiText.text("Minimum allowed bid is ") + AuctionViewFormatter.formatMoney(minimumAllowedBid)
+                        + " " + UiText.text("because the bid step is ") + AuctionViewFormatter.formatBidStep(selected) + ".";
                 setBidStatus(message, true);
                 NotificationUtil.warning(ownerWindow(), "Notification", message);
                 return;
@@ -1043,10 +1043,10 @@ public class BidderDashboardViewController {
         syncAutobidFormToAuction(auction.getId());
         updateBidControlsForAuction(auction);
         if (txtBidAmount != null) {
-            txtBidAmount.setPromptText("Min: " + AuctionViewFormatter.formatMinimumBid(auction));
+            txtBidAmount.setPromptText(UiText.text("Min: ") + AuctionViewFormatter.formatMinimumBid(auction));
         }
         if (incrementAutobid != null) {
-            incrementAutobid.setPromptText("At least " + AuctionViewFormatter.formatMoney(auction.getBidStep()));
+            incrementAutobid.setPromptText(UiText.text("At least ") + AuctionViewFormatter.formatMoney(auction.getBidStep()));
         }
         if (!bidActionInProgress) {
             setBidStatus(buildMinimumBidMessage(auction), false);
@@ -1696,8 +1696,8 @@ public class BidderDashboardViewController {
         if (auction == null) {
             return "Select an auction to view details.";
         }
-        return "Minimum next bid: " + AuctionViewFormatter.formatMoney(minimumAllowedBid(auction))
-                + " | Step: " + AuctionViewFormatter.formatBidStep(auction);
+        return UiText.text("Minimum next bid: ") + AuctionViewFormatter.formatMoney(minimumAllowedBid(auction))
+                + " | " + UiText.text("Step: ") + AuctionViewFormatter.formatBidStep(auction);
     }
 
     private record BidderSnapshot(

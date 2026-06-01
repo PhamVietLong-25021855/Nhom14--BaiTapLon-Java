@@ -12,6 +12,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
+import userauth.common.AuctionRules;
 import userauth.controller.AuctionController;
 import userauth.controller.AuthController;
 import userauth.controller.NotificationController;
@@ -340,7 +341,7 @@ public class SellerDashboardViewController {
             String imageSource = resolveImageSourceForSave(rawImageInput);
             byte[] imageData = workingImageData;
             double price = UiInput.parsePositiveDecimal(txtPrice.getText(), "Starting price");
-            double bidStep = UiInput.parsePositiveDecimal(txtBidStep.getText(), "Bid step");
+            double bidStep = UiInput.parsePositiveDecimal(txtBidStep.getText(), UiText.text("Bid step"));
             long start = readScheduleTimestamp(dateStart, txtStartTime, "Start date and time");
             long end = readScheduleTimestamp(dateEnd, txtEndTime, "End date and time");
             validateSchedule(start, end);
@@ -619,6 +620,8 @@ public class SellerDashboardViewController {
             syncImageFromInput(false);
         }
 
+        updateBidStepPrompt();
+
         String name = txtName.getText() == null || txtName.getText().isBlank() ? UiText.text("Product Name") : txtName.getText().trim();
         String description = txtDesc.getText() == null || txtDesc.getText().isBlank()
                 ? UiText.text("The description updates instantly as the seller types.")
@@ -667,6 +670,35 @@ public class SellerDashboardViewController {
             return AuctionViewFormatter.formatBidStep(preview);
         } catch (NumberFormatException ex) {
             return UiText.text("Invalid bid step");
+        }
+    }
+
+    private void updateBidStepPrompt() {
+        if (txtBidStep == null) {
+            return;
+        }
+
+        try {
+            String priceValue = txtPrice.getText() == null ? "" : txtPrice.getText().trim();
+            if (priceValue.isBlank()) {
+                txtBidStep.setPromptText(UiText.text("Enter starting price first"));
+                return;
+            }
+
+            double startPrice = UiInput.parseDecimal(priceValue);
+            if (startPrice <= 0) {
+                txtBidStep.setPromptText(UiText.text("Enter starting price first"));
+                return;
+            }
+
+            double minBidStep = startPrice * AuctionRules.MIN_BID_STEP_PERCENT;
+            double maxBidStep = startPrice * AuctionRules.MAX_BID_STEP_PERCENT;
+            txtBidStep.setPromptText(UiText.text("Valid: ")
+                    + AuctionViewFormatter.formatMoney(minBidStep)
+                    + " - "
+                    + AuctionViewFormatter.formatMoney(maxBidStep));
+        } catch (NumberFormatException ex) {
+            txtBidStep.setPromptText(UiText.text("Enter valid starting price first"));
         }
     }
 
