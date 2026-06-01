@@ -8,6 +8,7 @@ import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -201,6 +202,7 @@ public class BidderDashboardViewController {
     private User currentUser;
     private Timeline timeline;
     private final PauseTransition filterRefreshDebounce = new PauseTransition(Duration.millis(220));
+    private final ObservableList<AuctionItem> displayedAuctions = FXCollections.observableArrayList();
     private List<AuctionItem> allAuctionsSnapshot = List.of();
     private Map<Integer, List<BidTransaction>> bidsByAuction = Map.of();
     private int lastSelectedAuctionId = -1;
@@ -285,6 +287,7 @@ public class BidderDashboardViewController {
                         }
                     }
                 });
+        tableAuctions.setItems(displayedAuctions);
         tableAuctions.setRowFactory(this::createAuctionRow);
 
         chartBidTrend.setAnimated(false);
@@ -1384,7 +1387,7 @@ public class BidderDashboardViewController {
 
         suppressAuctionSelectionSync = true;
         try {
-            tableAuctions.setItems(FXCollections.observableArrayList(snapshot.filteredAuctions()));
+            updateDisplayedAuctions(snapshot.filteredAuctions());
             reselectAuction(selectionToRestore);
             if (tableAuctions.getSelectionModel().getSelectedItem() == null && !tableAuctions.getItems().isEmpty()) {
                 tableAuctions.getSelectionModel().selectFirst();
@@ -1399,6 +1402,47 @@ public class BidderDashboardViewController {
         if (selectedAuction != null) {
             refreshSelectedBidsSnapshot(selectedAuction.getId(), refreshTicket);
         }
+    }
+
+    private void updateDisplayedAuctions(List<AuctionItem> refreshedAuctions) {
+        if (!hasSameAuctionOrder(displayedAuctions, refreshedAuctions)) {
+            displayedAuctions.setAll(refreshedAuctions);
+            return;
+        }
+
+        for (int index = 0; index < displayedAuctions.size(); index++) {
+            copyAuctionState(refreshedAuctions.get(index), displayedAuctions.get(index));
+        }
+    }
+
+    private boolean hasSameAuctionOrder(List<AuctionItem> currentAuctions, List<AuctionItem> refreshedAuctions) {
+        if (currentAuctions.size() != refreshedAuctions.size()) {
+            return false;
+        }
+        for (int index = 0; index < currentAuctions.size(); index++) {
+            if (currentAuctions.get(index).getId() != refreshedAuctions.get(index).getId()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void copyAuctionState(AuctionItem source, AuctionItem target) {
+        target.setName(source.getName());
+        target.setDescription(source.getDescription());
+        target.setStartPrice(source.getStartPrice());
+        target.setCurrentHighestBid(source.getCurrentHighestBid());
+        target.setStartTime(source.getStartTime());
+        target.setEndTime(source.getEndTime());
+        target.setCategory(source.getCategory());
+        target.setImageSource(source.getImageSource());
+        target.setImageData(source.getImageData());
+        target.setCreatedAt(source.getCreatedAt());
+        target.setUpdatedAt(source.getUpdatedAt());
+        target.setSellerId(source.getSellerId());
+        target.setWinnerId(source.getWinnerId());
+        target.setStatus(source.getStatus());
+        target.setAntiSnipingExtensionCount(source.getAntiSnipingExtensionCount());
     }
 
     private void notifyWonAuctionCompletions(List<AuctionItem> auctions) {
