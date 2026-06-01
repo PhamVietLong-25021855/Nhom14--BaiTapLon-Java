@@ -1,8 +1,8 @@
-# Optimization Guide
+# Hướng dẫn tối ưu
 
 Các tối ưu chính hiện có trong project.
 
-## Server-side filtering và sorting
+## Lọc và sắp xếp ở phía server
 
 Danh sách phiên đấu giá nên được lọc/sắp xếp ở server khi dữ liệu lớn, tránh kéo toàn bộ dữ liệu về client rồi mới xử lý.
 
@@ -14,15 +14,15 @@ Danh sách phiên đấu giá nên được lọc/sắp xếp ở server khi d�
 - Phiên đã kết thúc: TTL dài hơn.
 - Khi bid hoặc status thay đổi, cache liên quan đến auction đó bị invalidate.
 
-## Image optimization
+## Tối ưu ảnh
 
 Ảnh sản phẩm được xử lý qua tiện ích nén/giảm kích thước để hạn chế dữ liệu truyền qua socket và lưu database.
 
-## Pagination without images
+## Phân trang không kèm ảnh
 
 Danh sách có thể tải metadata trước, chỉ tải ảnh khi cần hiển thị chi tiết/card.
 
-## Transactional bid updates
+## Cập nhật đặt giá theo giao dịch
 
 Khi đặt giá:
 
@@ -34,7 +34,7 @@ Khi đặt giá:
 
 Các bước này cần giữ nhất quán để tránh lệch `balance` và `reservedBalance`.
 
-## Database indexes
+## Chỉ mục database
 
 File `database_indexes.sql` chứa index hỗ trợ các truy vấn thường dùng như danh sách auction, bid history và wallet transaction.
 

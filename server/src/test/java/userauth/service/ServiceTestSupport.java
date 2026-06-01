@@ -44,6 +44,7 @@ final class ServiceTestSupport {
     static final class InMemoryAuctionDAO implements AuctionDAO {
         private final Map<Integer, AuctionItem> auctions = new HashMap<>();
         private final List<BidTransaction> bids = new ArrayList<>();
+        private final AtomicInteger nextAuctionId = new AtomicInteger(1);
         private final AtomicInteger nextBidId = new AtomicInteger(1);
 
         synchronized void putAuction(AuctionItem item) {
@@ -52,6 +53,9 @@ final class ServiceTestSupport {
 
         @Override
         public synchronized void saveAuction(AuctionItem item) {
+            if (item.getId() <= 0) {
+                item.setId(nextAuctionId.getAndIncrement());
+            }
             auctions.put(item.getId(), item);
         }
 
@@ -281,6 +285,16 @@ final class ServiceTestSupport {
         @Override
         public List<Notification> findNotificationToUser(int user_id) {
             return List.of();
+        }
+
+        @Override
+        public boolean deleteNotification(int user_id, int notification_id) {
+            return false;
+        }
+
+        @Override
+        public int deleteNotificationsForUser(int user_id) {
+            return 0;
         }
     }
 }

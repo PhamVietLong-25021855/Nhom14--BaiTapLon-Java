@@ -110,6 +110,9 @@ public class SellerDashboardViewController {
     private Label lblSellerName;
 
     @FXML
+    private Label lblSellerMeta;
+
+    @FXML
     private Label lblTotalAuctions;
 
     @FXML
@@ -209,10 +212,12 @@ public class SellerDashboardViewController {
     public void setUser(User user) {
         this.currentUser = user;
         String displayName = user == null ? UiText.text("Seller") : abbreviate(resolveDisplayName(user), 26);
+        String userMeta = formatUserMeta(user, "SELLER");
         String sidebarName = user == null
                 ? "@" + UiText.text("Seller")
-                : "@" + abbreviate(safeText(user.getUsername(), UiText.text("Seller")), 18);
+                : "@" + abbreviate(safeText(user.getUsername(), UiText.text("Seller")), 18) + "\n" + userMeta;
         lblSellerName.setText(displayName);
+        lblSellerMeta.setText(userMeta);
         lblSellerSidebar.setText(sidebarName);
         resetForm();
     }
@@ -561,8 +566,7 @@ public class SellerDashboardViewController {
             NotificationUtil.info(ownerWindow(), "Notification", "Connect this controller to AuthFrame to open bid history using FXML.");
             return;
         }
-        System.out.println("show");
-        frame.showInboxDialog(notificationController.findUserNotification(currentUser.getId()));
+        frame.showInboxDialog(currentUser, notificationController.findUserNotification(currentUser.getId()));
     }
 
     private void updateMetrics(List<AuctionItem> myAuctions) {
@@ -689,6 +693,13 @@ public class SellerDashboardViewController {
             return fullName;
         }
         return safeText(user.getUsername(), UiText.text("Seller"));
+    }
+
+    private String formatUserMeta(User user, String fallbackRole) {
+        if (user == null) {
+            return "ID: - | Role: " + fallbackRole;
+        }
+        return "ID: " + user.getId() + " | Role: " + safeText(user.getRoleName(), fallbackRole);
     }
 
     private String safeText(String value, String fallback) {

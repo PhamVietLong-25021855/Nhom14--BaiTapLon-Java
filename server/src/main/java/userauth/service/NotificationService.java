@@ -2,7 +2,6 @@ package userauth.service;
 
 import userauth.api.NotificationApi;
 import userauth.dao.NotificationDAO;
-import userauth.dao.NotificationDAOImpl;
 import userauth.exception.ValidationException;
 import userauth.model.Notification;
 
@@ -28,5 +27,26 @@ public class NotificationService implements NotificationApi {
     @Override
     public List<Notification> findUserNotification (int user_id){
         return notificationDAO.findNotificationToUser(user_id);
+    }
+
+    @Override
+    public boolean deleteNotification(int user_id, int notification_id) {
+        validateUserId(user_id);
+        if (notification_id <= 0) {
+            throw new IllegalArgumentException("Invalid notification id");
+        }
+        return notificationDAO.deleteNotification(user_id, notification_id);
+    }
+
+    @Override
+    public int deleteUserNotifications(int user_id) {
+        validateUserId(user_id);
+        return notificationDAO.deleteNotificationsForUser(user_id);
+    }
+
+    private void validateUserId(int user_id) {
+        if (user_id <= 0) {
+            throw new IllegalArgumentException("Invalid user_id for notification");
+        }
     }
 }

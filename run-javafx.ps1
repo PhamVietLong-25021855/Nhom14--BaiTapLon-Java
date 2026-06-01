@@ -12,7 +12,10 @@ param(
     [string]$DbPassword,
     [string]$DbSslMode,
     [string]$DbSchema,
-    [switch]$DisableScheduler
+    [switch]$DisableScheduler,
+    [switch]$Tls,
+    [string]$TrustStore,
+    [string]$TrustStorePassword
 )
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -20,17 +23,27 @@ Set-Location $root
 . (Join-Path $root "scripts\use-jdk21.ps1")
 
 if ($LocalMode) {
-    $ClientMode = "local"
+    throw "LocalMode is no longer supported by ClientLauncher. Start the server separately and run the remote client."
 }
 
-$mvnArgs = @("javafx:run")
-$mainClass = "userauth.ClientLauncher"
 if ($ClientMode -ieq "local") {
-    $mainClass = "userauth.Launcher"
+    throw "ClientMode 'local' is no longer supported by ClientLauncher. Use ClientMode 'remote'."
 }
-$mvnArgs += "-Dmain.class=$mainClass"
+$mavenCommand = Join-Path $root "mvnw.cmd"
+if (-not (Test-Path -LiteralPath $mavenCommand -PathType Leaf)) {
+    $mavenCommand = (Get-Command mvn -ErrorAction SilentlyContinue).Source
+}
+if (-not $mavenCommand) {
+    throw "Maven Wrapper and Maven were not found. Keep mvnw.cmd in the ZIP or install Maven 3.6.3 or newer."
+}
+
+$clientPom = Join-Path $root "client\pom.xml"
+$mvnArgs = @("-f", $clientPom, "clean", "javafx:run")
 $mvnArgs += "-Dapp.client.mode=$ClientMode"
 
+if (-not $ServerHost -and $ClientMode -ieq "remote") {
+    $ServerHost = $env:APP_SERVER_HOST
+}
 if (-not $ServerHost -and $ClientMode -ieq "remote") {
     $ServerHost = "172.104.50.54"
 }
@@ -38,6 +51,15 @@ if ($ServerHost) {
     $mvnArgs += "-Dapp.server.host=$ServerHost"
 }
 $mvnArgs += "-Dapp.server.port=$ServerPort"
+if ($Tls) {
+    $mvnArgs += "-Dapp.server.tls.enabled=true"
+}
+if ($TrustStore) {
+    $mvnArgs += "-Djavax.net.ssl.trustStore=$TrustStore"
+}
+if ($TrustStorePassword) {
+    $mvnArgs += "-Djavax.net.ssl.trustStorePassword=$TrustStorePassword"
+}
 
 if ($DbUrl) {
     $mvnArgs += "-Ddb.url=$DbUrl"
@@ -70,5 +92,5 @@ if ($DisableScheduler) {
     $mvnArgs += "-Dapp.scheduler.enabled=false"
 }
 
-& mvn @mvnArgs
+& $mavenCommand @mvnArgs
 exit $LASTEXITCODE

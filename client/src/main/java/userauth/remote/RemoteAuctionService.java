@@ -92,6 +92,12 @@ public class RemoteAuctionService implements AuctionApi {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
+    public Map<Integer, Integer> getBidCounts() {
+        return (Map<Integer, Integer>) client.call(NetworkActions.AUCTION_BID_COUNTS);
+    }
+
+    @Override
     public void placeBid(int auctionId, int bidderId, double amount)
             throws ItemNotFoundException, AuctionClosedException, InvalidBidException {
         try {

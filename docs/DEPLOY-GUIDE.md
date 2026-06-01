@@ -1,6 +1,6 @@
-# Deploy Guide
+# Hướng dẫn triển khai
 
-Tài liệu này là checklist ngắn để deploy server lên VPS và chạy client từ máy khác.
+Tài liệu này là checklist ngắn để triển khai server lên VPS và chạy client từ máy khác.
 
 ## 1. Chuẩn bị
 
@@ -9,7 +9,7 @@ Tài liệu này là checklist ngắn để deploy server lên VPS và chạy cl
 - MySQL/Akamai DB đã cho phép IP của VPS truy cập.
 - TCP `5050` mở trên firewall nếu client kết nối trực tiếp.
 
-## 2. Build server
+## 2. Đóng gói server
 
 ```bash
 mvn -ntp -pl server -am package -DskipTests
@@ -37,10 +37,10 @@ cd client
 | --- | --- |
 | Server có chạy không | Xem log terminal server |
 | Port có mở không | `Test-NetConnection IP_PUBLIC -Port 5050` |
-| Database kết nối được không | Kiểm tra `DB_PASSWORD`, trusted sources và log server |
+| Database kết nối được không | Kiểm tra `DB_PASSWORD`, nguồn được phép truy cập và log server |
 | Client trỏ đúng server không | Kiểm tra `-ServerHost`, `APP_SERVER_HOST` |
 
-## 6. SSH tunnel
+## 6. Đường hầm SSH
 
 Nếu không mở port app public, giữ server chạy trên VPS và tạo tunnel:
 
@@ -49,4 +49,4 @@ cd client
 .\run-client-via-ssh.ps1
 ```
 
-Client sẽ kết nối local port, còn traffic đi qua SSH.
+Client sẽ kết nối cổng cục bộ, còn lưu lượng mạng đi qua SSH.

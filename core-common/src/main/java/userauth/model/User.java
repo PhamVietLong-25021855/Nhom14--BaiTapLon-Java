@@ -4,7 +4,7 @@ import userauth.util.PasswordUtil;
 
 public abstract class User extends Entity {
     private String username;
-    private String password;
+    private transient String password;
     private String fullName;
     private String email;
     private Role role;
@@ -54,6 +54,6 @@ public abstract class User extends Entity {
 
     @Override
     public String toString() {
-        return id + "," + username + "," + password + "," + fullName + "," + email + "," + role + "," + status + "," + createdAt + "," + updatedAt;
+        return id + "," + username + ",[REDACTED]," + fullName + "," + email + "," + role + "," + status + "," + createdAt + "," + updatedAt;
     }
 }

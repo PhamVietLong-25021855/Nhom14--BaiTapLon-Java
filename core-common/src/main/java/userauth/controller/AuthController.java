@@ -35,6 +35,10 @@ public class AuthController {
         }
     }
 
+    public void logout() {
+        authService.logout();
+    }
+
     public User getUserById(int userId) {
         try {
             return authService.getUserById(userId);

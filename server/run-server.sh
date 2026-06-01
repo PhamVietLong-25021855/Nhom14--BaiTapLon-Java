@@ -32,6 +32,7 @@ done
 
 SERVER_PORT="${POSITIONAL_ARGS[0]:-${APP_SERVER_PORT:-5050}}"
 BIND_HOST="${POSITIONAL_ARGS[1]:-${APP_SERVER_BIND_HOST:-0.0.0.0}}"
+TLS_ENABLED="${APP_SERVER_TLS_ENABLED:-false}"
 
 if [ "${#POSITIONAL_ARGS[@]}" -gt 2 ]; then
   echo "[ERROR] Too many positional arguments." >&2
@@ -122,7 +123,7 @@ wait_for_startup() {
       ok "Port $SERVER_PORT is listening."
       return 0
     fi
-    if [ -f "$LOG_FILE" ] && grep -q "\[AuctionServer\] Listening on" "$LOG_FILE"; then
+    if [ -f "$LOG_FILE" ] && grep -q "\[AuctionServer\] Listening" "$LOG_FILE"; then
       ok "Server startup confirmed from log."
       return 0
     fi
@@ -166,6 +167,7 @@ nohup java \
   -Djava.awt.headless=true \
   -Dapp.server.port="$SERVER_PORT" \
   -Dapp.server.bind.host="$BIND_HOST" \
+  -Dapp.server.tls.enabled="$TLS_ENABLED" \
   -jar "$JAR_FILE" \
   >"$LOG_FILE" 2>"$ERR_FILE" &
 

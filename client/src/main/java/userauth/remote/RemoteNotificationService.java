@@ -4,7 +4,6 @@ import userauth.api.NotificationApi;
 import userauth.exception.ItemNotFoundException;
 import userauth.exception.UnauthorizedException;
 import userauth.exception.ValidationException;
-import userauth.model.AutoBid;
 import userauth.model.Notification;
 import userauth.network.NetworkActions;
 
@@ -33,6 +32,27 @@ public class RemoteNotificationService implements NotificationApi {
     public List<Notification> findUserNotification(int user_id) {
         try {
             return (List<Notification>) client.call(NetworkActions.NOTIFICATION_GET, "user_id", user_id);
+        } catch (RemoteServerException ex) {
+            throw new RuntimeException(ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public boolean deleteNotification(int user_id, int notification_id) {
+        try {
+            return (Boolean) client.call(NetworkActions.NOTIFICATION_DELETE,
+                    "user_id", user_id,
+                    "notification_id", notification_id);
+        } catch (RemoteServerException ex) {
+            throw new RuntimeException(ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public int deleteUserNotifications(int user_id) {
+        try {
+            Number deletedCount = (Number) client.call(NetworkActions.NOTIFICATION_DELETE_ALL, "user_id", user_id);
+            return deletedCount.intValue();
         } catch (RemoteServerException ex) {
             throw new RuntimeException(ex.getMessage(), ex);
         }

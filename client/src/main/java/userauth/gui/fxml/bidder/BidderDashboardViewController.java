@@ -8,6 +8,7 @@ import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -16,6 +17,8 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -48,6 +51,7 @@ public class BidderDashboardViewController {
     private static final String FILTER_FINISHED = "Finished";
     private static final long ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
     private static final double LIVE_REFRESH_INTERVAL_SECONDS = 2.0;
+    private static final int BACKGROUND_DETAIL_REFRESH_TICKS = 5;
 
     @FXML
     private TableView<AuctionItem> tableAuctions;
@@ -94,6 +98,9 @@ public class BidderDashboardViewController {
 
     @FXML
     private Label lblUserName;
+
+    @FXML
+    private Label lblUserMeta;
 
     @FXML
     private Label lblRunningCount;
@@ -197,6 +204,8 @@ public class BidderDashboardViewController {
     private User currentUser;
     private Timeline timeline;
     private final PauseTransition filterRefreshDebounce = new PauseTransition(Duration.millis(220));
+    private final PauseTransition auctionTableInteractionRelease = new PauseTransition(Duration.millis(500));
+    private final ObservableList<AuctionItem> displayedAuctions = FXCollections.observableArrayList();
     private List<AuctionItem> allAuctionsSnapshot = List.of();
     private Map<Integer, List<BidTransaction>> bidsByAuction = Map.of();
     private int lastSelectedAuctionId = -1;
@@ -204,11 +213,13 @@ public class BidderDashboardViewController {
     private double lastSelectedHighestBid = -1;
     private AuctionStatus lastSelectedStatus;
     private long refreshTicket;
+    private int backgroundRefreshTick;
     private boolean auctionRefreshInProgress;
     private boolean bidsRefreshInProgress;
     private boolean autobidRefreshInProgress;
     private boolean walletRefreshInProgress;
     private boolean detailImageRefreshInProgress;
+    private boolean auctionLoadErrorShown;
     private final Map<Integer, byte[]> detailImageDataCache = new HashMap<>();
     private final Map<Integer, String> detailImageSourceCache = new HashMap<>();
     private final Set<Integer> detailImageLoadAttempts = new HashSet<>();
@@ -216,6 +227,8 @@ public class BidderDashboardViewController {
     private int editingAutobidId = -1;
     private boolean bidActionInProgress;
     private boolean suppressAuctionSelectionSync;
+    private boolean auctionTableInteractionActive;
+    private boolean refreshAfterAuctionTableInteraction;
     private boolean autobidFormDirty;
     private boolean autobidFormProgrammaticUpdate;
     private boolean suppressAutobidSelectionSync;
@@ -232,22 +245,6 @@ public class BidderDashboardViewController {
         colName.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getName()));
         colCategory.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getCategory()));
         colHighestBid.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatMoney(data.getValue().getCurrentHighestBid())));
-        colHighestBid.setCellFactory(col -> new javafx.scene.control.TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    AuctionItem auction = getTableView().getItems().get(getIndex());
-                    if (auction != null) {
-                        setText(AuctionViewFormatter.formatMoney(auction.getCurrentHighestBid()));
-                    } else {
-                        setText(item);
-                    }
-                }
-            }
-        });
         colStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(UiText.auctionStatus(data.getValue().getStatus())));
         colTimeLeft.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatTimeLeft(data.getValue())));
 
@@ -279,7 +276,13 @@ public class BidderDashboardViewController {
                         }
                     }
                 });
+        tableAuctions.setItems(displayedAuctions);
         tableAuctions.setRowFactory(this::createAuctionRow);
+        auctionTableInteractionRelease.setOnFinished(event -> finishAuctionTableInteraction());
+        tableAuctions.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> beginAuctionTableInteraction());
+        tableAuctions.addEventFilter(MouseEvent.MOUSE_DRAGGED, event -> beginAuctionTableInteraction());
+        tableAuctions.addEventFilter(MouseEvent.MOUSE_RELEASED, event -> scheduleAuctionTableInteractionRelease());
+        tableAuctions.addEventFilter(ScrollEvent.SCROLL, this::handleAuctionTableScroll);
 
         chartBidTrend.setAnimated(false);
         xAxisBidTrend.setAutoRanging(true);
@@ -342,10 +345,12 @@ public class BidderDashboardViewController {
     public void setUser(User user) {
         this.currentUser = user;
         String displayName = user == null ? UiText.text("Bidder") : abbreviate(resolveDisplayName(user), 26);
+        String userMeta = formatUserMeta(user, "BIDDER");
         String sidebarName = user == null
                 ? "@" + UiText.text("Bidder")
-                : "@" + abbreviate(safeText(user.getUsername(), UiText.text("Bidder")), 18);
+                : "@" + abbreviate(safeText(user.getUsername(), UiText.text("Bidder")), 18) + "\n" + userMeta;
         lblUserName.setText(displayName);
+        lblUserMeta.setText(userMeta);
         lblSidebarUser.setText(sidebarName);
         refreshTicket++;
         auctionRefreshInProgress = false;
@@ -353,6 +358,10 @@ public class BidderDashboardViewController {
         autobidRefreshInProgress = false;
         walletRefreshInProgress = false;
         detailImageRefreshInProgress = false;
+        auctionLoadErrorShown = false;
+        auctionTableInteractionActive = false;
+        refreshAfterAuctionTableInteraction = false;
+        auctionTableInteractionRelease.stop();
         detailImageDataCache.clear();
         detailImageSourceCache.clear();
         detailImageLoadAttempts.clear();
@@ -369,6 +378,7 @@ public class BidderDashboardViewController {
 
     public void activate() {
         active = true;
+        backgroundRefreshTick = 0;
         registerAuctionObserver();
         refreshData();
         if (timeline != null && timeline.getStatus() != Animation.Status.RUNNING) {
@@ -379,6 +389,7 @@ public class BidderDashboardViewController {
     public void deactivate() {
         active = false;
         refreshTicket++;
+        backgroundRefreshTick = 0;
         auctionRefreshInProgress = false;
         bidsRefreshInProgress = false;
         autobidRefreshInProgress = false;
@@ -387,6 +398,9 @@ public class BidderDashboardViewController {
         detailImageDataCache.clear();
         detailImageSourceCache.clear();
         detailImageLoadAttempts.clear();
+        auctionTableInteractionActive = false;
+        refreshAfterAuctionTableInteraction = false;
+        auctionTableInteractionRelease.stop();
         unregisterAuctionObserver();
         if (timeline != null) {
             timeline.stop();
@@ -404,21 +418,28 @@ public class BidderDashboardViewController {
         String keyword = txtSearch.getText() == null ? "" : txtSearch.getText().trim().toLowerCase(Locale.ROOT);
         String statusFilter = cbStatusFilter.getValue();
 
-        refreshAuctionSnapshot(keyword, statusFilter, requestedSelectedId, ticket);
+        refreshAuctionSnapshot(keyword, statusFilter, requestedSelectedId, ticket, true);
         refreshSelectedBidsSnapshot(requestedSelectedId, ticket);
         refreshAutobidSnapshot(ticket);
         refreshWalletSnapshot(ticket);
     }
 
-    private void refreshAuctionSnapshot(String keyword, String statusFilter, int requestedSelectedId, long ticket) {
+    private void refreshAuctionSnapshot(
+            String keyword,
+            String statusFilter,
+            int requestedSelectedId,
+            long ticket,
+            boolean validateAccount
+    ) {
         if (auctionRefreshInProgress) {
             return;
         }
         auctionRefreshInProgress = true;
         UiAsync.run(
-                () -> loadBidderSnapshot(keyword, statusFilter),
+                () -> loadBidderSnapshot(keyword, statusFilter, validateAccount),
                 snapshot -> {
                     auctionRefreshInProgress = false;
+                    auctionLoadErrorShown = false;
                     if (ticket != refreshTicket) {
                         refreshData();
                         return;
@@ -429,6 +450,14 @@ public class BidderDashboardViewController {
                     auctionRefreshInProgress = false;
                     if (handleAccountLockError(error)) {
                         return;
+                    }
+                    if (!auctionLoadErrorShown) {
+                        auctionLoadErrorShown = true;
+                        String message = error == null || error.getMessage() == null || error.getMessage().isBlank()
+                                ? "Unable to load auction products."
+                                : error.getMessage();
+                        setBidStatus("Unable to load auction products.", true);
+                        NotificationUtil.error(ownerWindow(), "Auction list", message);
                     }
                     if (ticket != refreshTicket) {
                         refreshData();
@@ -721,7 +750,7 @@ public class BidderDashboardViewController {
             NotificationUtil.info(ownerWindow(), "Notification", "Connect this controller to AuthFrame to open bid history using FXML.");
             return;
         }
-        frame.showInboxDialog(notificationController.findUserNotification(currentUser.getId()));
+        frame.showInboxDialog(currentUser, notificationController.findUserNotification(currentUser.getId()));
     }
 
     @FXML
@@ -821,8 +850,8 @@ public class BidderDashboardViewController {
             return true;
         }
 
-        return item.getName().toLowerCase(Locale.ROOT).contains(keyword)
-                || item.getCategory().toLowerCase(Locale.ROOT).contains(keyword);
+        return safeText(item.getName(), "").toLowerCase(Locale.ROOT).contains(keyword)
+                || safeText(item.getCategory(), "").toLowerCase(Locale.ROOT).contains(keyword);
     }
 
     private boolean matchesStatusFilter(AuctionItem item, String filter) {
@@ -1224,14 +1253,30 @@ public class BidderDashboardViewController {
     }
 
     private void refreshDataFromTimer() {
-        if (isUserTypingInBidderForm()) {
-            refreshAuctionListOnly();
+        if (auctionTableInteractionActive) {
+            refreshAfterAuctionTableInteraction = true;
             return;
         }
-        refreshData();
+        boolean refreshBackgroundDetails = ++backgroundRefreshTick >= BACKGROUND_DETAIL_REFRESH_TICKS;
+        if (refreshBackgroundDetails) {
+            backgroundRefreshTick = 0;
+        }
+        if (isUserTypingInBidderForm()) {
+            refreshAuctionListOnly(refreshBackgroundDetails);
+            if (refreshBackgroundDetails) {
+                refreshWalletSnapshot(refreshTicket);
+            }
+            return;
+        }
+        refreshAuctionListOnly(refreshBackgroundDetails);
+        refreshSelectedBidsSnapshot(selectedAuctionId(), refreshTicket);
+        if (refreshBackgroundDetails) {
+            refreshAutobidSnapshot(refreshTicket);
+            refreshWalletSnapshot(refreshTicket);
+        }
     }
 
-    private void refreshAuctionListOnly() {
+    private void refreshAuctionListOnly(boolean validateAccount) {
         if (!active || auctionController == null || currentUser == null) {
             return;
         }
@@ -1240,8 +1285,7 @@ public class BidderDashboardViewController {
         String keyword = txtSearch.getText() == null ? "" : txtSearch.getText().trim().toLowerCase(Locale.ROOT);
         String statusFilter = cbStatusFilter.getValue();
 
-        refreshAuctionSnapshot(keyword, statusFilter, requestedSelectedId, ticket);
-        refreshWalletSnapshot(ticket);
+        refreshAuctionSnapshot(keyword, statusFilter, requestedSelectedId, ticket, validateAccount);
     }
 
     private boolean isUserTypingInBidderForm() {
@@ -1253,6 +1297,32 @@ public class BidderDashboardViewController {
 
     private boolean isFocused(javafx.scene.Node node) {
         return node != null && node.isFocused();
+    }
+
+    private void handleAuctionTableScroll(ScrollEvent event) {
+        if (event.getDeltaY() == 0) {
+            return;
+        }
+        beginAuctionTableInteraction();
+        scheduleAuctionTableInteractionRelease();
+    }
+
+    private void beginAuctionTableInteraction() {
+        auctionTableInteractionActive = true;
+        auctionTableInteractionRelease.playFromStart();
+    }
+
+    private void scheduleAuctionTableInteractionRelease() {
+        auctionTableInteractionRelease.playFromStart();
+    }
+
+    private void finishAuctionTableInteraction() {
+        auctionTableInteractionActive = false;
+        if (!refreshAfterAuctionTableInteraction) {
+            return;
+        }
+        refreshAfterAuctionTableInteraction = false;
+        refreshAuctionListOnly(false);
     }
 
     private void setBidControlsBusy(boolean busy) {
@@ -1288,8 +1358,10 @@ public class BidderDashboardViewController {
                 && auction.getWinnerId() == currentUser.getId();
     }
 
-    private BidderSnapshot loadBidderSnapshot(String keyword, String statusFilter) {
-        ensureCurrentAccountActive();
+    private BidderSnapshot loadBidderSnapshot(String keyword, String statusFilter, boolean validateAccount) {
+        if (validateAccount) {
+            ensureCurrentAccountActive();
+        }
         List<AuctionItem> allAuctions = auctionController.getAllAuctionSummaries();
         List<AuctionItem> visibleAuctions = allAuctions.stream()
                 .filter(item -> item.getStatus() != AuctionStatus.CANCELED)
@@ -1336,6 +1408,10 @@ public class BidderDashboardViewController {
     }
 
     private void applyBidderSnapshot(BidderSnapshot snapshot, int selectedId) {
+        if (auctionTableInteractionActive) {
+            refreshAfterAuctionTableInteraction = true;
+            return;
+        }
         notifyWonAuctionCompletions(snapshot.allAuctions());
         allAuctionsSnapshot = snapshot.allAuctions();
         updateMetrics(snapshot.allAuctions());
@@ -1345,7 +1421,7 @@ public class BidderDashboardViewController {
 
         suppressAuctionSelectionSync = true;
         try {
-            tableAuctions.setItems(FXCollections.observableArrayList(snapshot.filteredAuctions()));
+            updateDisplayedAuctions(snapshot.filteredAuctions());
             reselectAuction(selectionToRestore);
             if (tableAuctions.getSelectionModel().getSelectedItem() == null && !tableAuctions.getItems().isEmpty()) {
                 tableAuctions.getSelectionModel().selectFirst();
@@ -1360,6 +1436,47 @@ public class BidderDashboardViewController {
         if (selectedAuction != null) {
             refreshSelectedBidsSnapshot(selectedAuction.getId(), refreshTicket);
         }
+    }
+
+    private void updateDisplayedAuctions(List<AuctionItem> refreshedAuctions) {
+        if (!hasSameAuctionOrder(displayedAuctions, refreshedAuctions)) {
+            displayedAuctions.setAll(refreshedAuctions);
+            return;
+        }
+
+        for (int index = 0; index < displayedAuctions.size(); index++) {
+            copyAuctionState(refreshedAuctions.get(index), displayedAuctions.get(index));
+        }
+    }
+
+    private boolean hasSameAuctionOrder(List<AuctionItem> currentAuctions, List<AuctionItem> refreshedAuctions) {
+        if (currentAuctions.size() != refreshedAuctions.size()) {
+            return false;
+        }
+        for (int index = 0; index < currentAuctions.size(); index++) {
+            if (currentAuctions.get(index).getId() != refreshedAuctions.get(index).getId()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void copyAuctionState(AuctionItem source, AuctionItem target) {
+        target.setName(source.getName());
+        target.setDescription(source.getDescription());
+        target.setStartPrice(source.getStartPrice());
+        target.setCurrentHighestBid(source.getCurrentHighestBid());
+        target.setStartTime(source.getStartTime());
+        target.setEndTime(source.getEndTime());
+        target.setCategory(source.getCategory());
+        target.setImageSource(source.getImageSource());
+        target.setImageData(source.getImageData());
+        target.setCreatedAt(source.getCreatedAt());
+        target.setUpdatedAt(source.getUpdatedAt());
+        target.setSellerId(source.getSellerId());
+        target.setWinnerId(source.getWinnerId());
+        target.setStatus(source.getStatus());
+        target.setAntiSnipingExtensionCount(source.getAntiSnipingExtensionCount());
     }
 
     private void notifyWonAuctionCompletions(List<AuctionItem> auctions) {
@@ -1460,6 +1577,13 @@ public class BidderDashboardViewController {
             return fullName;
         }
         return safeText(user.getUsername(), UiText.text("Bidder"));
+    }
+
+    private String formatUserMeta(User user, String fallbackRole) {
+        if (user == null) {
+            return "ID: - | Role: " + fallbackRole;
+        }
+        return "ID: " + user.getId() + " | Role: " + safeText(user.getRoleName(), fallbackRole);
     }
 
     private String safeText(String value, String fallback) {

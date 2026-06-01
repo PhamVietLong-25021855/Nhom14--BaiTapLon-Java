@@ -20,7 +20,9 @@ public class ClientMain extends Application {
         WalletApi walletService = new RemoteWalletService(remoteClient);
         NotificationApi notificationApi = new RemoteNotificationService(remoteClient);
 
-        System.out.println("[Client] Remote mode: using server " + RemoteClientConfig.host() + ":" + RemoteClientConfig.port());
+        System.out.println("[Client] Remote mode: using "
+                + (RemoteClientConfig.tlsEnabled() ? "TLS " : "plain TCP ")
+                + RemoteClientConfig.host() + ":" + RemoteClientConfig.port());
 
         AuthController authController = new AuthController(authService);
         AuctionController auctionController = new AuctionController(auctionService);

@@ -22,4 +22,12 @@ public final class RemoteClientConfig {
         }
         return value == null || value.isBlank() ? DEFAULT_SERVER_PORT : Integer.parseInt(value.trim());
     }
+
+    public static boolean tlsEnabled() {
+        String value = System.getProperty("app.server.tls.enabled");
+        if (value == null || value.isBlank()) {
+            value = System.getenv("APP_SERVER_TLS_ENABLED");
+        }
+        return value != null && Boolean.parseBoolean(value.trim());
+    }
 }

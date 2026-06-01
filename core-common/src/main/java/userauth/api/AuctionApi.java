@@ -26,6 +26,7 @@ public interface AuctionApi {
     List<BidTransaction> getBidsForAuction(int auctionId);
     List<BidTransaction> getAllBids();
     int countAllBids();
+    Map<Integer, Integer> getBidCounts();
     void placeBid(int auctionId, int bidderId, double amount)
             throws ItemNotFoundException, AuctionClosedException, InvalidBidException;
     void closeAuctionManually(int auctionId, int sellerId)

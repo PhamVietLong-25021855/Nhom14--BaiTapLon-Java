@@ -11,6 +11,15 @@ param(
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $repoRoot "scripts\use-jdk21.ps1")
+Set-Location $PSScriptRoot
+
+$mavenCommand = Join-Path $repoRoot "mvnw.cmd"
+if (-not (Test-Path -LiteralPath $mavenCommand -PathType Leaf)) {
+    $mavenCommand = (Get-Command mvn -ErrorAction SilentlyContinue).Source
+}
+if (-not $mavenCommand) {
+    throw "Maven Wrapper and Maven were not found. Keep mvnw.cmd in the ZIP or install Maven 3.6.3 or newer."
+}
 
 $existingTunnel = Get-NetTCPConnection -LocalPort $LocalPort -State Listen -ErrorAction SilentlyContinue
 if ($existingTunnel) {
@@ -30,4 +39,5 @@ if (-not $ready) {
     throw "SSH tunnel is not ready. Keep the SSH tunnel window open and sign in if it asks for a password."
 }
 
-mvn javafx:run "-Dmain.class=userauth.ClientLauncher" "-Dapp.server.host=$LocalHost" "-Dapp.server.port=$LocalPort"
+& $mavenCommand clean javafx:run "-Dapp.server.host=$LocalHost" "-Dapp.server.port=$LocalPort"
+exit $LASTEXITCODE

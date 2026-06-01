@@ -23,15 +23,24 @@ param(
     [switch]$SkipBuild,
 
     [Parameter(Mandatory = $false)]
-    [switch]$SkipTests
+    [switch]$SkipTests,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$Tls,
+
+    [Parameter(Mandatory = $false)]
+    [string]$KeyStore,
+
+    [Parameter(Mandatory = $false)]
+    [string]$KeyStorePassword
 )
 
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 if ($root -eq "") { $root = "." }
-Set-Location $root
 $repoRoot = Split-Path -Parent $root
+Set-Location $repoRoot
 . (Join-Path $repoRoot "scripts\use-jdk21.ps1")
 
 # Load DB_PASSWORD from environment if not provided
@@ -44,17 +53,9 @@ $env:APP_SERVER_PORT = "$ServerPort"
 $env:APP_SERVER_BIND_HOST = "$BindHost"
 $env:SKIP_TESTS = if ($SkipTests) { "true" } else { "false" }
 
-# Inject DB password into database.properties if provided
+# Pass the DB password to the Java process without writing it to the source tree.
 if ($DbPassword) {
     $env:DB_PASSWORD = $DbPassword
-    $dbPropsPath = "server\src\main\resources\database.properties"
-    if (Test-Path $dbPropsPath) {
-        $content = Get-Content $dbPropsPath -Raw
-        $escapedPw = $DbPassword -replace '[\/&\\]', '`$0'
-        $content = $content -replace '(?m)^db\.password=.*', "db.password=$escapedPw"
-        Set-Content -Path $dbPropsPath -Value $content -NoNewline
-        Write-Host "[INFO] DB password injected into database.properties" -ForegroundColor Cyan
-    }
 } else {
     Write-Warning "DB_PASSWORD not set. Server may fail if database.properties has wrong password."
 }
@@ -68,7 +69,7 @@ if (-not $SkipBuild) {
 }
 
 # Validate JAR
-$jarPath = "server\target\auction-server.jar"
+$jarPath = "server\target\server-1.0.0-SNAPSHOT.jar"
 if (-not (Test-Path $jarPath)) {
     Write-Host "[ERROR] JAR not found: $jarPath" -ForegroundColor Red
     exit 1
@@ -128,10 +129,17 @@ $javaArgs = @(
     "-Xms128m",
     "-Djava.awt.headless=true",
     "-Dapp.server.port=$ServerPort",
-    "-Dapp.server.bind.host=$BindHost"
+    "-Dapp.server.bind.host=$BindHost",
+    "-Dapp.server.tls.enabled=$($Tls.IsPresent.ToString().ToLowerInvariant())"
 )
+if ($KeyStore) {
+    $javaArgs += "-Djavax.net.ssl.keyStore=$KeyStore"
+}
+if ($KeyStorePassword) {
+    $javaArgs += "-Djavax.net.ssl.keyStorePassword=$KeyStorePassword"
+}
 $process = Start-Process -FilePath "java" -ArgumentList ($javaArgs + @("-cp", $cp, "userauth.server.AuctionServerMain")) `
-    -NoNewWindow -PassThru -RedirectStandardOutput $logFile -RedirectStandardError $stderrLog
+    -WindowStyle Hidden -PassThru -RedirectStandardOutput $logFile -RedirectStandardError $stderrLog
 $process.Id | Set-Content $pidFile
 Write-Host "[OK] Server started (PID $($process.Id))" -ForegroundColor Green
 
@@ -153,7 +161,7 @@ for ($i = 1; $i -le 60; $i++) {
         break
     }
     if (Test-Path $logFile) {
-        $listenLine = Select-String -Path $logFile -Pattern "Listening on|Server started" -ErrorAction SilentlyContinue
+        $listenLine = Select-String -Path $logFile -Pattern "Listening|Server started" -ErrorAction SilentlyContinue
         if ($listenLine) {
             $startupOk = $true
             Write-Host "[OK] Server startup confirmed in log." -ForegroundColor Green

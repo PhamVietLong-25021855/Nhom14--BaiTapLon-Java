@@ -1,4 +1,4 @@
-# Design Patterns
+# Các mẫu thiết kế được sử dụng
 
 Project dùng một số pattern chính để tách giao diện, nghiệp vụ và hạ tầng.
 
@@ -20,7 +20,7 @@ Dùng qua `AuctionEventBus` và `AuctionEventListener`.
 
 Mục đích: service phát event khi bid/status thay đổi, UI hoặc thành phần khác có thể subscribe để cập nhật.
 
-## Layered Architecture
+## Kiến trúc phân lớp
 
 Server được chia theo lớp:
 

@@ -38,6 +38,14 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <forceCreation>true</forceCreation>
+                </configuration>
+            </plugin>
             <!-- Plugin to easily spin up the backend server via CLI -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

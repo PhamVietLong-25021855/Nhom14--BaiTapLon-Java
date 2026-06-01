@@ -1,7 +1,6 @@
 package userauth.dao;
 
 import userauth.database.DatabaseConnection;
-import userauth.model.AutoBid;
 import userauth.model.Notification;
 
 import java.sql.*;
@@ -19,8 +18,16 @@ public class NotificationDAOImpl implements  NotificationDAO{
             SELECT id, user_id, title, content, created_at
             FROM notifications
             WHERE user_id = ? OR user_id = 0
+            ORDER BY created_at DESC, id DESC
             """;
-    private static final String DELETE_AUTOBID_SQL = "DELETE FROM notifications WHERE id = ?";
+    private static final String DELETE_NOTIFICATION_SQL = """
+            DELETE FROM notifications
+            WHERE id = ? AND user_id = ?
+            """;
+    private static final String DELETE_USER_NOTIFICATIONS_SQL = """
+            DELETE FROM notifications
+            WHERE user_id = ?
+            """;
 
 
     @Override
@@ -55,6 +62,29 @@ public class NotificationDAOImpl implements  NotificationDAO{
             throw new IllegalStateException("Unable to read all notification from database: " + ex.getMessage(), ex);
         }
         return notifications;
+    }
+
+    @Override
+    public boolean deleteNotification(int user_id, int notification_id) {
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(DELETE_NOTIFICATION_SQL)) {
+            statement.setInt(1, notification_id);
+            statement.setInt(2, user_id);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to delete notification from database: " + ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public int deleteNotificationsForUser(int user_id) {
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(DELETE_USER_NOTIFICATIONS_SQL)) {
+            statement.setInt(1, user_id);
+            return statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to delete notifications from database: " + ex.getMessage(), ex);
+        }
     }
 
     private void bindNotificationForInsert(PreparedStatement statement, Notification item) throws SQLException {

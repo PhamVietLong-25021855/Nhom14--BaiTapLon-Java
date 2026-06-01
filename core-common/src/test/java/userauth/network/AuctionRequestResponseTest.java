@@ -32,6 +32,13 @@ class AuctionRequestResponseTest {
     }
 
     @Test
+    void requestCarriesOptionalSessionToken() {
+        AuctionRequest request = new AuctionRequest(NetworkActions.WALLET_GET, Map.of("userId", 7), "token-123");
+
+        assertEquals("token-123", request.getSessionToken());
+    }
+
+    @Test
     void okResponseCarriesDataWithoutErrorFields() {
         AuctionResponse response = AuctionResponse.ok("PONG");
 

@@ -42,7 +42,7 @@
                         <VBox spacing="6.0">
                             <children>
                                 <Label styleClass="sidebar-nav-title" text="USER SESSION" />
-                                <Label fx:id="lblSidebarUser" maxWidth="Infinity" styleClass="sidebar-foot-title" text="Bidder" textOverrun="ELLIPSIS" />
+                                <Label fx:id="lblSidebarUser" maxWidth="Infinity" styleClass="sidebar-foot-title" text="Bidder" textOverrun="ELLIPSIS" wrapText="true" />
                             </children>
                         </VBox>
                     </children>
@@ -62,6 +62,7 @@
                                         <VBox minWidth="240.0" prefWidth="260.0" spacing="2.0" styleClass="user-pill bidder-user-pill">
                                             <children>
                                                 <Label fx:id="lblUserName" maxWidth="Infinity" styleClass="user-name" text="Bidder" textOverrun="ELLIPSIS" />
+                                                <Label fx:id="lblUserMeta" maxWidth="Infinity" styleClass="user-role" text="ID: - | Role: BIDDER" textOverrun="ELLIPSIS" />
                                             </children>
                                         </VBox>
                                         <MenuButton mnemonicParsing="false" styleClass="button settings-menu-button" text="SETTINGS">

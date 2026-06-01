@@ -90,6 +90,10 @@ public class AuctionController {
         return auctionService.countAllBids();
     }
 
+    public Map<Integer, Integer> getBidCounts() {
+        return auctionService.getBidCounts();
+    }
+
     public String placeBid(int auctionId, int bidderId, double amount) {
         try {
             auctionService.placeBid(auctionId, bidderId, amount);

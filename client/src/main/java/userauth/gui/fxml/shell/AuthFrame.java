@@ -118,6 +118,7 @@ public class AuthFrame {
 
     public void showLogin() {
         deactivateLiveViews();
+        authController.logout();
         switchView(loginView.root());
     }
 
@@ -196,10 +197,11 @@ public class AuthFrame {
         dialog.showAndWait();
     }
 
-    public void showInboxDialog(List<Notification> notificationList) {
+    public void showInboxDialog(User user, List<Notification> notificationList) {
         LoadedView<InboxDialogController> view = FxmlRuntime.loadView(AuthFrame.class, "dialog/inbox.fxml", "dialog");
         Stage dialog = FxmlRuntime.createModalDialog(stage, "INBOX", view.root(), 1040, 720);
         view.controller().setDialogStage(dialog);
+        view.controller().setNotificationContext(notificationController, user == null ? -1 : user.getId());
         view.controller().loadNotifications(notificationList);
         dialog.showAndWait();
     }

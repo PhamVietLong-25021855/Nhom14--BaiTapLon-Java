@@ -12,6 +12,7 @@ class RemoteClientConfigTest {
     void clearProperties() {
         System.clearProperty("app.server.host");
         System.clearProperty("app.server.port");
+        System.clearProperty("app.server.tls.enabled");
     }
 
     @Test
@@ -33,5 +34,12 @@ class RemoteClientConfigTest {
         System.setProperty("app.server.port", "not-a-port");
 
         assertThrows(NumberFormatException.class, RemoteClientConfig::port);
+    }
+
+    @Test
+    void tlsCanBeEnabledWithSystemProperty() {
+        System.setProperty("app.server.tls.enabled", " true ");
+
+        assertEquals(true, RemoteClientConfig.tlsEnabled());
     }
 }
