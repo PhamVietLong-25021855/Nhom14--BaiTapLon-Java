@@ -255,6 +255,7 @@ public class BidderDashboardViewController {
         colItemAB.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getAuctionId()));
         colIncrementAB.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getIncrement()));
         colMaxPriceAB.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getMaxPrice()));
+        configureBidderTables();
 
         AuctionImageUtil.installRoundedClip(imgDetailAuction, 14, 14);
 
@@ -281,7 +282,6 @@ public class BidderDashboardViewController {
                 });
         tableAuctions.setItems(displayedAuctions);
         tableAuctions.setRowFactory(this::createAuctionRow);
-        tableAuctions.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         auctionTableInteractionRelease.setOnFinished(event -> finishAuctionTableInteraction());
         tableAuctions.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> beginAuctionTableInteraction());
         tableAuctions.addEventFilter(MouseEvent.MOUSE_DRAGGED, event -> beginAuctionTableInteraction());
@@ -321,6 +321,63 @@ public class BidderDashboardViewController {
         setBidStatus("Select an auction to view details.", false);
         updateWalletSummary(null);
         showEmptySelectionState();
+    }
+
+    private void configureBidderTables() {
+        tableAuctions.getStyleClass().add("bidder-aligned-table");
+        tableAutoBid.getStyleClass().add("bidder-aligned-table");
+
+        tableAuctions.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+        tableAutoBid.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+
+        tableAuctions.setFixedCellSize(44);
+        tableAutoBid.setFixedCellSize(44);
+
+        alignColumn(colId, Pos.CENTER);
+        alignColumn(colName, Pos.CENTER);
+        alignColumn(colCategory, Pos.CENTER);
+        alignColumn(colHighestBid, Pos.CENTER);
+        alignColumn(colStatus, Pos.CENTER);
+        alignColumn(colTimeLeft, Pos.CENTER);
+
+        alignColumn(colIdAB, Pos.CENTER);
+        alignColumn(colItemAB, Pos.CENTER);
+        formatMoneyColumn(colMaxPriceAB);
+        formatMoneyColumn(colIncrementAB);
+    }
+
+    private <S, T> void alignColumn(TableColumn<S, T> column, Pos alignment) {
+        if (column == null) {
+            return;
+        }
+        column.setCellFactory(ignored -> {
+            TableCell<S, T> cell = new TableCell<>() {
+                @Override
+                protected void updateItem(T item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item.toString());
+                }
+            };
+            cell.setAlignment(alignment);
+            return cell;
+        });
+    }
+
+    private void formatMoneyColumn(TableColumn<AutoBid, Double> column) {
+        if (column == null) {
+            return;
+        }
+        column.setCellFactory(ignored -> {
+            TableCell<AutoBid, Double> cell = new TableCell<>() {
+                @Override
+                protected void updateItem(Double item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : AuctionViewFormatter.formatMoney(item));
+                }
+            };
+            cell.setAlignment(Pos.CENTER);
+            return cell;
+        });
     }
 
     public void setFrame(AuthFrame frame) {

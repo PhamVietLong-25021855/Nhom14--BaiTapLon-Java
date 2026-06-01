@@ -87,6 +87,10 @@ public class BidHistoryDialogController {
         colWonStatus.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().status()));
         colWonEndedAt.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().endedAt()));
 
+        tableTransactions.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        tableTransactions.setFixedCellSize(44);
+        tableWonProducts.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        tableWonProducts.setFixedCellSize(44);
         tableTransactions.setPlaceholder(new Label(UiText.text("No bid transactions yet.")));
         tableWonProducts.setPlaceholder(new Label(UiText.text("No won products yet.")));
     }

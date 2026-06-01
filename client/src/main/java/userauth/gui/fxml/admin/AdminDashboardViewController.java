@@ -431,6 +431,8 @@ public class AdminDashboardViewController {
     }
 
     private void initializeUserTable() {
+        tableUsers.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        tableUsers.setFixedCellSize(44);
         colId.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
         colUsername.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getUsername()));
         colFullName.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getFullName()));
@@ -440,6 +442,8 @@ public class AdminDashboardViewController {
     }
 
     private void initializeAuctionTable() {
+        tableAuctions.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        tableAuctions.setFixedCellSize(44);
         colAuctionId.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
         colAuctionName.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getName()));
         colAuctionSeller.setCellValueFactory(data -> new ReadOnlyStringWrapper(resolveSellerName(data.getValue().getSellerId())));

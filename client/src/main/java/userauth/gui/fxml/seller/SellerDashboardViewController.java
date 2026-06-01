@@ -196,6 +196,8 @@ public class SellerDashboardViewController {
         colEndTime.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatDateTime(data.getValue().getEndTime())));
         colRemaining.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatRemaining(data.getValue().getEndTime())));
 
+        tableAuctions.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        tableAuctions.setFixedCellSize(44);
         tableAuctions.setRowFactory(this::createAuctionRow);
         registerPreviewListeners();
         updatePreview();

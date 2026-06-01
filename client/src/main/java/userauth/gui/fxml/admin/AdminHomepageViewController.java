@@ -348,6 +348,8 @@ public class AdminHomepageViewController {
     }
 
     private void initializeAnnouncementTable() {
+        tableAnnouncements.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        tableAnnouncements.setFixedCellSize(44);
         colAnnouncementId.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
         colAnnouncementTitle.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getTitle()));
         colAnnouncementAuction.setCellValueFactory(data -> new ReadOnlyStringWrapper(resolveAuctionName(data.getValue().getLinkedAuctionId())));
@@ -356,6 +358,8 @@ public class AdminHomepageViewController {
     }
 
     private void initializeUpcomingAuctionTable() {
+        tableUpcomingAuctions.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        tableUpcomingAuctions.setFixedCellSize(44);
         colUpcomingId.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getId()));
         colUpcomingName.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getName()));
         colUpcomingSchedule.setCellValueFactory(data -> new ReadOnlyStringWrapper(AuctionViewFormatter.formatScheduleRange(data.getValue())));
