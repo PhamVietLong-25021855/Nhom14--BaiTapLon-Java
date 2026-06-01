@@ -16,20 +16,14 @@ import java.util.List;
 
 public class AuthService implements AuthApi {
     private final UserDAO userDAO;
-    private final AutoBidInitializer autoBidInitializer;
     private final WalletService walletService;
 
     public AuthService(UserDAO userDAO) {
-        this(userDAO, null, null);
+        this(userDAO, null);
     }
 
-    public AuthService(UserDAO userDAO, AutoBidInitializer autoBidInitializer) {
-        this(userDAO, autoBidInitializer, null);
-    }
-
-    public AuthService(UserDAO userDAO, AutoBidInitializer autoBidInitializer, WalletService walletService) {
+    public AuthService(UserDAO userDAO, WalletService walletService) {
         this.userDAO = userDAO;
-        this.autoBidInitializer = autoBidInitializer;
         this.walletService = walletService;
     }
 
@@ -49,13 +43,6 @@ public class AuthService implements AuthApi {
                 walletService.getWallet(user.getId());
             } catch (Exception ex) {
                 System.err.println("Failed to initialize wallet for user " + user.getUsername() + ": " + ex.getMessage());
-            }
-        }
-        if (autoBidInitializer != null && role == Role.BIDDER) {
-            try {
-                autoBidInitializer.createDefaultsForUser(user.getId());
-            } catch (Exception ex) {
-                System.err.println("Failed to initialize default auto-bids for user " + user.getUsername() + ": " + ex.getMessage());
             }
         }
     }

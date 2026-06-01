@@ -30,9 +30,8 @@ public final class ServerContext {
         WalletDAO walletDAO = new WalletDAOImpl();
         NotificationDAO notificationDAO = new NotificationDAOImpl();
 
-        AutoBidInitializer autoBidInitializer = new AutoBidInitializer(autoBidDAO, auctionDAO);
         this.walletService = new WalletService(walletDAO);
-        AuthService authService = new AuthService(userDAO, autoBidInitializer, walletService);
+        AuthService authService = new AuthService(userDAO, walletService);
         this.authController = new AuthController(authService);
         this.walletController = new WalletController(walletService);
 
