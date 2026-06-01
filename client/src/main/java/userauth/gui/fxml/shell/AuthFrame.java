@@ -58,8 +58,7 @@ public class AuthFrame {
         this.notificationController = notificationController;
 
         stage.setTitle(UiText.text("PRODUCT AUCTION PLATFORM"));
-        try {
-            java.io.InputStream iconStream = AuthFrame.class.getResourceAsStream("/userauth/gui/fxml/shared/app-icon.png");
+        try (java.io.InputStream iconStream = AuthFrame.class.getResourceAsStream("/userauth/gui/fxml/shared/app-icon.png")) {
             if (iconStream != null) {
                 stage.getIcons().add(new javafx.scene.image.Image(iconStream));
             } else {
