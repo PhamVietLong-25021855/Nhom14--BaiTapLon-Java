@@ -38,7 +38,6 @@ public final class AuctionRequestHandler {
         if (NetworkActions.PING.equals(action)) {
             return "PONG";
         }
-        System.out.println(action);
         return switch (action) {
             case NetworkActions.AUTH_REGISTER -> context.getAuthController().registerGUI(
                     str(request, "username"), str(request, "password"), str(request, "fullName"),

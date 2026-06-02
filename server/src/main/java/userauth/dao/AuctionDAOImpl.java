@@ -12,7 +12,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AuctionDAOImpl implements AuctionDAO {
     private static final String INSERT_AUCTION_SQL = """
@@ -64,7 +66,8 @@ public class AuctionDAOImpl implements AuctionDAO {
             SELECT id, name, description, start_price, current_highest_bid, start_time, end_time,
                    category, image_source, NULL AS image_data, created_at, updated_at, bid_step, seller_id, winner_id, status, anti_sniping_extensions
             FROM auctions
-            WHERE status = 'RUNNING' OR (status = 'OPEN' AND ? >= start_time)
+            WHERE (status = 'OPEN' AND ? >= start_time)
+               OR (status = 'RUNNING' AND ? >= end_time)
             ORDER BY id
             """;
     private static final String FIND_ALL_AUCTION_IDS_SQL = "SELECT id FROM auctions ORDER BY id";
@@ -98,6 +101,11 @@ public class AuctionDAOImpl implements AuctionDAO {
             ORDER BY auction_id, bid_time, id
             """;
     private static final String COUNT_ALL_BIDS_SQL = "SELECT COUNT(*) FROM bids";
+    private static final String FIND_BID_COUNTS_SQL = """
+            SELECT auction_id, COUNT(*) AS bid_count
+            FROM bids
+            GROUP BY auction_id
+            """;
 
     @Override
     public void saveAuction(AuctionItem item) {
@@ -231,6 +239,7 @@ public class AuctionDAOImpl implements AuctionDAO {
         try (Connection connection = DatabaseConnection.openDatabaseConnection();
              PreparedStatement statement = connection.prepareStatement(FIND_STATUS_REFRESH_CANDIDATES_SQL)) {
             statement.setLong(1, now);
+            statement.setLong(2, now);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     auctions.add(mapAuction(resultSet));
@@ -325,6 +334,21 @@ public class AuctionDAOImpl implements AuctionDAO {
         }
 
         return bids;
+    }
+
+    @Override
+    public Map<Integer, Integer> findBidCounts() {
+        Map<Integer, Integer> counts = new HashMap<>();
+        try (Connection connection = DatabaseConnection.openDatabaseConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_BID_COUNTS_SQL);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                counts.put(resultSet.getInt("auction_id"), resultSet.getInt("bid_count"));
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Unable to count bid transactions by auction in PostgreSQL.", ex);
+        }
+        return counts;
     }
 
     @Override

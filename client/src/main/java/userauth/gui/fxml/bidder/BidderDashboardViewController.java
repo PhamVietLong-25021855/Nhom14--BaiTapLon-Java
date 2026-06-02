@@ -50,8 +50,8 @@ public class BidderDashboardViewController {
     private static final String FILTER_OPEN = "Opening Soon";
     private static final String FILTER_FINISHED = "Finished";
     private static final long ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
-    private static final double LIVE_REFRESH_INTERVAL_SECONDS = 5.0;
-    private static final int BACKGROUND_DETAIL_REFRESH_TICKS = 2;
+    private static final double LIVE_REFRESH_INTERVAL_SECONDS = 1.0;
+    private static final int BACKGROUND_DETAIL_REFRESH_TICKS = 5;
 
     @FXML
     private TableView<AuctionItem> tableAuctions;

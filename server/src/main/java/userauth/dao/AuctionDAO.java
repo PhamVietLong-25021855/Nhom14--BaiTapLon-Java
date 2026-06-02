@@ -3,6 +3,7 @@ package userauth.dao;
 import userauth.model.AuctionItem;
 import userauth.model.BidTransaction;
 import java.util.List;
+import java.util.Map;
 
 public interface AuctionDAO {
     void saveAuction(AuctionItem item);
@@ -21,5 +22,6 @@ public interface AuctionDAO {
     void saveBid(BidTransaction bid);
     List<BidTransaction> findAllBids();
     List<BidTransaction> findBidsByAuction(int auctionId);
+    Map<Integer, Integer> findBidCounts();
     int countAllBids();
 }

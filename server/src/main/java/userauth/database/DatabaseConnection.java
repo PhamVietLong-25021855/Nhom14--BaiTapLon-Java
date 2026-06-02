@@ -6,6 +6,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLNonTransientConnectionException;
+import java.sql.SQLRecoverableException;
 import java.sql.SQLException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -16,7 +18,8 @@ public final class DatabaseConnection {
     private static final DatabaseConfig CONFIG = DatabaseConfig.load();
     private static final int MAX_POOLED_CONNECTIONS = Math.max(2, Math.min(6, Runtime.getRuntime().availableProcessors()));
     private static final long POOL_WAIT_TIMEOUT_MS = 5_000;
-    private static final BlockingQueue<Connection> IDLE_CONNECTIONS = new ArrayBlockingQueue<>(MAX_POOLED_CONNECTIONS);
+    private static final long IDLE_VALIDATION_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(30);
+    private static final BlockingQueue<IdleConnection> IDLE_CONNECTIONS = new ArrayBlockingQueue<>(MAX_POOLED_CONNECTIONS);
     private static final AtomicInteger CREATED_CONNECTIONS = new AtomicInteger();
 
     static {
@@ -46,12 +49,12 @@ public final class DatabaseConnection {
 
     public static Connection openDatabaseConnection() throws SQLException {
         while (true) {
-            Connection idleConnection = IDLE_CONNECTIONS.poll();
+            IdleConnection idleConnection = IDLE_CONNECTIONS.poll();
             if (idleConnection != null) {
                 if (isReusable(idleConnection)) {
-                    return wrapPooledConnection(idleConnection);
+                    return wrapPooledConnection(idleConnection.connection());
                 }
-                retire(idleConnection);
+                retire(idleConnection.connection());
                 continue;
             }
 
@@ -66,14 +69,14 @@ public final class DatabaseConnection {
             }
 
             try {
-                Connection waitedConnection = IDLE_CONNECTIONS.poll(POOL_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                IdleConnection waitedConnection = IDLE_CONNECTIONS.poll(POOL_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
                 if (waitedConnection == null) {
                     throw new SQLException("The Database connection pool is exhausted. Please try again.");
                 }
                 if (isReusable(waitedConnection)) {
-                    return wrapPooledConnection(waitedConnection);
+                    return wrapPooledConnection(waitedConnection.connection());
                 }
-                retire(waitedConnection);
+                retire(waitedConnection.connection());
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
                 throw new SQLException("Interrupted while waiting for a database connection.", ex);
@@ -89,9 +92,14 @@ public final class DatabaseConnection {
         );
     }
 
-    private static boolean isReusable(Connection connection) {
+    private static boolean isReusable(IdleConnection idleConnection) {
+        Connection connection = idleConnection.connection();
         try {
-            return connection != null && !connection.isClosed() && connection.isValid(2);
+            if (connection == null || connection.isClosed()) {
+                return false;
+            }
+            long idleNanos = System.nanoTime() - idleConnection.releasedAtNanos();
+            return idleNanos < IDLE_VALIDATION_INTERVAL_NANOS || connection.isValid(2);
         } catch (SQLException ex) {
             return false;
         }
@@ -123,7 +131,7 @@ public final class DatabaseConnection {
                 connection.setReadOnly(false);
             }
             connection.clearWarnings();
-            if (!IDLE_CONNECTIONS.offer(connection)) {
+            if (!IDLE_CONNECTIONS.offer(new IdleConnection(connection, System.nanoTime()))) {
                 retire(connection);
             }
         } catch (SQLException ex) {
@@ -143,18 +151,22 @@ public final class DatabaseConnection {
     }
 
     private static void closeIdleConnections() {
-        Connection connection;
-        while ((connection = IDLE_CONNECTIONS.poll()) != null) {
+        IdleConnection idleConnection;
+        while ((idleConnection = IDLE_CONNECTIONS.poll()) != null) {
             try {
-                connection.close();
+                idleConnection.connection().close();
             } catch (SQLException ignored) {
             }
         }
     }
 
+    private record IdleConnection(Connection connection, long releasedAtNanos) {
+    }
+
     private static final class PooledConnectionHandler implements InvocationHandler {
         private Connection delegate;
         private boolean released;
+        private boolean discardOnClose;
 
         private PooledConnectionHandler(Connection delegate) {
             this.delegate = delegate;
@@ -169,7 +181,11 @@ public final class DatabaseConnection {
                     released = true;
                     Connection connection = delegate;
                     delegate = null;
-                    recycle(connection);
+                    if (discardOnClose) {
+                        retire(connection);
+                    } else {
+                        recycle(connection);
+                    }
                 }
                 return null;
             }
@@ -198,7 +214,11 @@ public final class DatabaseConnection {
             try {
                 return method.invoke(delegate, args);
             } catch (InvocationTargetException ex) {
-                throw ex.getCause();
+                Throwable cause = ex.getCause();
+                if (cause instanceof SQLException sqlException && isConnectionFailure(sqlException)) {
+                    discardOnClose = true;
+                }
+                throw cause;
             }
         }
 
@@ -206,6 +226,13 @@ public final class DatabaseConnection {
             if (released || delegate == null) {
                 throw new SQLException("Database connection is closed.");
             }
+        }
+
+        private boolean isConnectionFailure(SQLException ex) {
+            String sqlState = ex.getSQLState();
+            return ex instanceof SQLNonTransientConnectionException
+                    || ex instanceof SQLRecoverableException
+                    || (sqlState != null && sqlState.startsWith("08"));
         }
     }
 }

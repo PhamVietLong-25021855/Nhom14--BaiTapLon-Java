@@ -155,8 +155,8 @@ class AuctionReservedBalanceReconciliationTest {
         @Override
         public List<AuctionItem> findStatusRefreshCandidates(long now) {
             return auctions.values().stream()
-                    .filter(item -> item.getStatus() == AuctionStatus.RUNNING ||
-                            (item.getStatus() == AuctionStatus.OPEN && now >= item.getStartTime()))
+                    .filter(item -> (item.getStatus() == AuctionStatus.OPEN && now >= item.getStartTime()) ||
+                            (item.getStatus() == AuctionStatus.RUNNING && now >= item.getEndTime()))
                     .toList();
         }
 
@@ -196,6 +196,15 @@ class AuctionReservedBalanceReconciliationTest {
             return bids.stream()
                     .filter(bid -> bid.getAuctionId() == auctionId)
                     .toList();
+        }
+
+        @Override
+        public Map<Integer, Integer> findBidCounts() {
+            Map<Integer, Integer> counts = new HashMap<>();
+            for (BidTransaction bid : bids) {
+                counts.merge(bid.getAuctionId(), 1, Integer::sum);
+            }
+            return counts;
         }
 
         @Override

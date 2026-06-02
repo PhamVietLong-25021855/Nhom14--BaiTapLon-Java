@@ -1,7 +1,7 @@
 package userauth.service;
 
 public class AuctionScheduler {
-    private static final long REFRESH_INTERVAL_MS = 2000L;
+    private static final long REFRESH_INTERVAL_MS = 1000L;
 
     private final AuctionService auctionService;
     private Thread schedulerThread;

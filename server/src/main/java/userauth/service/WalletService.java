@@ -61,12 +61,6 @@ public class WalletService implements WalletApi {
          return withWalletLocks(() -> {
              Wallet wallet = getOrCreateWallet(userId);
 
-             System.out.println("[Wallet] Top-up request for user " + userId +
-                     " - Amount: " + formatMoney(amount) +
-                     ", Method: " + (method != null ? method.name() : "NULL") +
-                     ", Before: Balance=" + formatMoney(wallet.getBalance()) +
-                     ", Reserved=" + formatMoney(wallet.getReservedBalance()));
-
              TopUpTransaction transaction = new TopUpTransaction(userId, amount, method);
              int transactionId = walletDAO.saveTopUpTransaction(transaction);
              transaction.setStatus(TopUpStatus.SUCCESS);
@@ -79,12 +73,6 @@ public class WalletService implements WalletApi {
              wallet.setUpdatedAt(System.currentTimeMillis());
              walletDAO.updateWallet(wallet);
              logWalletTransaction(userId, WalletTransactionType.TOP_UP, amount, null, "topup_tx:" + transactionId);
-
-             System.out.println("[Wallet] Top-up completed for user " + userId +
-                     " - After: Balance=" + formatMoney(wallet.getBalance()) +
-                     ", Reserved=" + formatMoney(wallet.getReservedBalance()) +
-                     ", Available=" + formatMoney(wallet.getAvailableBalance()) +
-                     ", Transaction ID=" + transactionId);
 
              return transactionId;
          }, userId);
@@ -110,13 +98,6 @@ public class WalletService implements WalletApi {
              long existingCredit = Math.max(existingReservationCredit, 0L);
              long usableBalance = wallet.getAvailableBalance() + existingCredit;
 
-             System.out.println("[Wallet] User " + userId + " - Balance: " + formatMoney(wallet.getBalance()) +
-                     ", Reserved: " + formatMoney(wallet.getReservedBalance()) +
-                     ", Available: " + formatMoney(wallet.getAvailableBalance()) +
-                     ", ExistingCredit: " + formatMoney(existingCredit) +
-                     ", Usable: " + formatMoney(usableBalance) +
-                     ", Bid Amount: " + formatMoney(targetBidAmount));
-
              if (usableBalance < targetBidAmount) {
                  throw new ValidationException(
                          "Insufficient available wallet balance. Available funds for this bid: " +
@@ -131,16 +112,10 @@ public class WalletService implements WalletApi {
              throws ItemNotFoundException, ValidationException {
          int[] userIds = distinctPositiveIds(previousUserId, nextUserId);
 
-         System.out.println("[Wallet] Applying reservation transition - Previous: User=" + previousUserId +
-                 ", Amount=" + formatMoney(previousAmount) + " | Next: User=" + nextUserId +
-                 ", Amount=" + formatMoney(nextAmount));
-
          withWalletLocks(() -> {
              if (previousUserId > 0 && previousAmount > 0) {
                  if (previousUserId == nextUserId) {
                      long delta = nextAmount - previousAmount;
-                     System.out.println("[Wallet] Same bidder case - User " + previousUserId +
-                             " replacing bid (delta: " + formatMoney(delta) + ")");
                      if (delta > 0) {
                          reserveAdditionalFunds(nextUserId, delta);
                      } else if (delta < 0) {
@@ -148,14 +123,10 @@ public class WalletService implements WalletApi {
                      }
                      return null;
                  }
-                 System.out.println("[Wallet] Releasing previous bidder - User " + previousUserId +
-                         " loses lead, releasing " + formatMoney(previousAmount));
                  releaseReservedFundsInternal(previousUserId, previousAmount);
              }
 
              if (nextUserId > 0 && nextAmount > 0 && previousUserId != nextUserId) {
-                 System.out.println("[Wallet] Reserving new bidder - User " + nextUserId +
-                         " becomes leader, reserving " + formatMoney(nextAmount));
                  reserveAdditionalFunds(nextUserId, nextAmount);
              }
              return null;
@@ -221,11 +192,6 @@ public class WalletService implements WalletApi {
                         : WalletTransactionType.RELEASE;
                 logWalletTransaction(userId, type, delta, null, "reservation_reconcile");
 
-                System.out.println("[Wallet] Reconciled reserved balance for user " + userId +
-                        " - Expected: " + formatMoney(expectedReservedBalance) +
-                        ", Before: " + formatMoney(currentReservedBalance) +
-                        ", After: " + formatMoney(targetReservedBalance) +
-                        ", Available: " + formatMoney(wallet.getAvailableBalance()));
                 return null;
             }, userId);
         } catch (ItemNotFoundException ex) {
@@ -238,9 +204,6 @@ public class WalletService implements WalletApi {
          Wallet wallet = getOrCreateWallet(userId);
          long availableBalance = wallet.getAvailableBalance();
 
-         System.out.println("[Wallet] Attempting to reserve " + formatMoney(amount) +
-                 " for user " + userId + " - Available: " + formatMoney(availableBalance));
-
          if (availableBalance < amount) {
              throw new ValidationException("Insufficient wallet balance to reserve " + formatMoney(amount) +
                      ". Available: " + formatMoney(availableBalance) + ". Current balance: " +
@@ -251,15 +214,10 @@ public class WalletService implements WalletApi {
          walletDAO.updateWallet(wallet);
          logWalletTransaction(userId, WalletTransactionType.RESERVE, amount, null, "auction_reserve");
 
-         System.out.println("[Wallet] Successfully reserved " + formatMoney(amount) +
-                 " for user " + userId + " - New reserved: " + formatMoney(wallet.getReservedBalance()));
      }
 
      private void releaseReservedFundsInternal(int userId, long amount) throws ItemNotFoundException, ValidationException {
          Wallet wallet = getOrCreateWallet(userId);
-
-         System.out.println("[Wallet] Attempting to release " + formatMoney(amount) +
-                 " for user " + userId + " - Current reserved: " + formatMoney(wallet.getReservedBalance()));
 
          if (wallet.getReservedBalance() < amount) {
              throw new ValidationException("Reserved wallet balance is lower than the amount to release for user ID: " + userId);
@@ -269,9 +227,6 @@ public class WalletService implements WalletApi {
         walletDAO.updateWallet(wallet);
         logWalletTransaction(userId, WalletTransactionType.RELEASE, amount, null, "auction_release");
 
-        System.out.println("[Wallet] Successfully released " + formatMoney(amount) +
-                 " for user " + userId + " - New reserved: " + formatMoney(wallet.getReservedBalance()) +
-                 ", Available: " + formatMoney(wallet.getAvailableBalance()));
      }
 
     private Wallet getOrCreateWallet(int userId) {

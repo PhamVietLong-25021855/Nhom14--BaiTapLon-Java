@@ -99,8 +99,8 @@ final class ServiceTestSupport {
         @Override
         public synchronized List<AuctionItem> findStatusRefreshCandidates(long now) {
             return auctions.values().stream()
-                    .filter(item -> item.getStatus() == AuctionStatus.RUNNING ||
-                            (item.getStatus() == AuctionStatus.OPEN && now >= item.getStartTime()))
+                    .filter(item -> (item.getStatus() == AuctionStatus.OPEN && now >= item.getStartTime()) ||
+                            (item.getStatus() == AuctionStatus.RUNNING && now >= item.getEndTime()))
                     .toList();
         }
 
@@ -143,6 +143,15 @@ final class ServiceTestSupport {
             return orderedBids(bids.stream()
                     .filter(bid -> bid.getAuctionId() == auctionId)
                     .toList());
+        }
+
+        @Override
+        public synchronized Map<Integer, Integer> findBidCounts() {
+            Map<Integer, Integer> counts = new HashMap<>();
+            for (BidTransaction bid : bids) {
+                counts.merge(bid.getAuctionId(), 1, Integer::sum);
+            }
+            return counts;
         }
 
         @Override
@@ -198,6 +207,68 @@ final class ServiceTestSupport {
         @Override
         public List<AutoBid> findAllUserAutoBid(int bidderId) {
             return List.of();
+        }
+    }
+
+    static final class InMemoryAutoBidDAO implements AutoBidDAO {
+        private final Map<Integer, AutoBid> autoBids = new HashMap<>();
+        private final AtomicInteger nextAutoBidId = new AtomicInteger(1);
+
+        @Override
+        public synchronized void saveAutoBid(AutoBid item) {
+            if (item.getId() <= 0) {
+                item.setId(nextAutoBidId.getAndIncrement());
+            }
+            autoBids.put(item.getId(), item);
+        }
+
+        @Override
+        public synchronized void updateAutoBid(AutoBid item) {
+            autoBids.put(item.getId(), item);
+        }
+
+        @Override
+        public synchronized void deleteAutoBid(int id) {
+            autoBids.remove(id);
+        }
+
+        @Override
+        public synchronized void deleteAutoBidByAuctionBidder(int auctionId, int bidderId) {
+            autoBids.values().removeIf(item -> item.getAuctionId() == auctionId && item.getBidderId() == bidderId);
+        }
+
+        @Override
+        public synchronized AutoBid findAutoBidById(int id) {
+            return autoBids.get(id);
+        }
+
+        @Override
+        public synchronized AutoBid findAutoBidByAuctionBidder(int auctionId, int bidderId) {
+            return autoBids.values().stream()
+                    .filter(item -> item.getAuctionId() == auctionId)
+                    .filter(item -> item.getBidderId() == bidderId)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        @Override
+        public synchronized List<AutoBid> findAutoBidsByAuction(int auctionId) {
+            return autoBids.values().stream()
+                    .filter(item -> item.getAuctionId() == auctionId)
+                    .sorted(Comparator
+                            .comparingLong(AutoBid::getCreatedAt)
+                            .thenComparingInt(AutoBid::getId))
+                    .toList();
+        }
+
+        @Override
+        public synchronized List<AutoBid> findAllUserAutoBid(int bidderId) {
+            return autoBids.values().stream()
+                    .filter(item -> item.getBidderId() == bidderId)
+                    .sorted(Comparator
+                            .comparingLong(AutoBid::getCreatedAt)
+                            .thenComparingInt(AutoBid::getId))
+                    .toList();
         }
     }
 
