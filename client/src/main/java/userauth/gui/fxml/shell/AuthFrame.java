@@ -1,9 +1,13 @@
 package userauth.gui.fxml.shell;
 
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.Duration;
 import userauth.controller.*;
 import userauth.gui.fxml.admin.AdminDashboardViewController;
 import userauth.gui.fxml.admin.AdminHomepageViewController;
@@ -27,6 +31,7 @@ public class AuthFrame {
     private static final boolean OPEN_FULLSCREEN = false;
     private static final double DEFAULT_WIDTH = 1000;
     private static final double DEFAULT_HEIGHT = 700;
+    private static final double SESSION_CHECK_INTERVAL_SECONDS = 10.0;
 
     private final Stage stage;
     private final AuthController authController;
@@ -45,6 +50,10 @@ public class AuthFrame {
     private final LoadedView<AdminHomepageViewController> adminHomepageView;
     private final LoadedView<SellerDashboardViewController> sellerView;
     private final LoadedView<BidderDashboardViewController> bidderView;
+    private Timeline sessionCheckTimeline;
+    private User currentUser;
+    private boolean sessionCheckInProgress;
+    private boolean forcedLogoutInProgress;
 
     public AuthFrame(Stage stage, AuthController authController, AuctionController auctionController,
                      HomepageController homepageController, AutobidController autobidController,
@@ -83,6 +92,7 @@ public class AuthFrame {
         bidderView = FxmlRuntime.loadView(AuthFrame.class, "bidder/bidder-dashboard-view.fxml", "view");
 
         wireControllers();
+        configureSessionMonitor();
 
         shellController.setContent(homeView.root());
         scene = new Scene(shellView.root(), DEFAULT_WIDTH, DEFAULT_HEIGHT);
@@ -110,18 +120,24 @@ public class AuthFrame {
     }
 
     public void showHome() {
+        stopSessionMonitor();
+        currentUser = null;
         deactivateLiveViews();
         switchView(homeView.root());
         homeView.controller().activate();
     }
 
     public void showLogin() {
+        stopSessionMonitor();
+        currentUser = null;
         deactivateLiveViews();
         authController.logout();
         switchView(loginView.root());
     }
 
     public void showRegister() {
+        stopSessionMonitor();
+        currentUser = null;
         deactivateLiveViews();
         switchView(registerView.root());
     }
@@ -136,12 +152,14 @@ public class AuthFrame {
             case ADMIN -> showAdminDashboard(user);
             case SELLER -> {
                 deactivateLiveViews();
+                startSessionMonitor(user);
                 sellerView.controller().setUser(user);
                 switchView(sellerView.root());
                 sellerView.controller().activate();
             }
             case BIDDER -> {
                 deactivateLiveViews();
+                startSessionMonitor(user);
                 bidderView.controller().setUser(user);
                 switchView(bidderView.root());
                 bidderView.controller().activate();
@@ -151,6 +169,7 @@ public class AuthFrame {
 
     public void showAdminDashboard(User user) {
         deactivateLiveViews();
+        startSessionMonitor(user);
         adminView.controller().setUser(user);
         switchView(adminView.root());
         adminView.controller().activate();
@@ -158,6 +177,7 @@ public class AuthFrame {
 
     public void showAdminHomepageManager(User user) {
         deactivateLiveViews();
+        startSessionMonitor(user);
         adminHomepageView.controller().setUser(user);
         switchView(adminHomepageView.root());
         adminHomepageView.controller().activate();
@@ -272,6 +292,95 @@ public class AuthFrame {
 
     private void switchView(Parent root) {
         shellController.setContent(root, true);
+    }
+
+    private void configureSessionMonitor() {
+        sessionCheckTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(SESSION_CHECK_INTERVAL_SECONDS), event -> verifyCurrentSession())
+        );
+        sessionCheckTimeline.setCycleCount(Animation.INDEFINITE);
+    }
+
+    private void startSessionMonitor(User user) {
+        currentUser = user;
+        forcedLogoutInProgress = false;
+        sessionCheckInProgress = false;
+        if (user == null) {
+            return;
+        }
+        if (sessionCheckTimeline.getStatus() != Animation.Status.RUNNING) {
+            sessionCheckTimeline.play();
+        }
+        verifyCurrentSession();
+    }
+
+    private void stopSessionMonitor() {
+        if (sessionCheckTimeline != null) {
+            sessionCheckTimeline.stop();
+        }
+        sessionCheckInProgress = false;
+        forcedLogoutInProgress = false;
+    }
+
+    private void verifyCurrentSession() {
+        User user = currentUser;
+        if (user == null || sessionCheckInProgress || forcedLogoutInProgress) {
+            return;
+        }
+
+        int checkedUserId = user.getId();
+        sessionCheckInProgress = true;
+        UiAsync.run(
+                () -> authController.getUserById(checkedUserId),
+                refreshedUser -> {
+                    sessionCheckInProgress = false;
+                    if (!isStillCurrentUser(checkedUserId)) {
+                        return;
+                    }
+                    if (refreshedUser == null || "BLOCKED".equals(refreshedUser.getStatus())) {
+                        forceLogoutToLogin("Your account has been locked or deleted. Please log in again.");
+                    }
+                },
+                error -> {
+                    sessionCheckInProgress = false;
+                    if (!isStillCurrentUser(checkedUserId)) {
+                        return;
+                    }
+                    if (isInvalidSessionError(error)) {
+                        forceLogoutToLogin("Your account has been locked or deleted. Please log in again.");
+                    }
+                }
+        );
+    }
+
+    private boolean isStillCurrentUser(int checkedUserId) {
+        return currentUser != null && currentUser.getId() == checkedUserId && !forcedLogoutInProgress;
+    }
+
+    private boolean isInvalidSessionError(Throwable error) {
+        Throwable current = error;
+        while (current != null) {
+            if (current.getClass().getSimpleName().contains("UnauthorizedException")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+
+        String message = error == null || error.getMessage() == null ? "" : error.getMessage().toLowerCase(java.util.Locale.ROOT);
+        return message.contains("session")
+                || message.contains("authentication is required")
+                || message.contains("please log in again")
+                || message.contains("user not found")
+                || message.contains("account has been locked");
+    }
+
+    private void forceLogoutToLogin(String message) {
+        if (forcedLogoutInProgress) {
+            return;
+        }
+        forcedLogoutInProgress = true;
+        showLogin();
+        NotificationUtil.warning(stage, "SESSION EXPIRED", message);
     }
 
     private void applyLanguage(Parent root) {

@@ -203,7 +203,7 @@ public class SellerDashboardViewController {
         registerPreviewListeners();
         updatePreview();
 
-        refreshTimeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> refreshData()));
+        refreshTimeline = new Timeline(new KeyFrame(Duration.seconds(10), event -> refreshData()));
         refreshTimeline.setCycleCount(Animation.INDEFINITE);
     }
 

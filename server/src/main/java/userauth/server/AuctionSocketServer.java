@@ -28,7 +28,7 @@ import javax.net.ssl.SSLServerSocketFactory;
  * Tầng này không chứa logic nghiệp vụ; logic được chuyển vào Controller/Service thông qua AuctionRequestHandler.
  */
 public final class AuctionSocketServer implements AutoCloseable {
-    private static final int MAX_CLIENT_THREADS = Math.max(16, Math.min(64, Runtime.getRuntime().availableProcessors() * 4));
+    private static final int MAX_CLIENT_THREADS = Math.max(8, Math.min(32, Runtime.getRuntime().availableProcessors() * 4));
     private static final int CLIENT_QUEUE_CAPACITY = MAX_CLIENT_THREADS * 4;
     private static final int CLIENT_ACCEPT_BACKLOG = MAX_CLIENT_THREADS + CLIENT_QUEUE_CAPACITY;
     private static final int CLIENT_READ_TIMEOUT_MS = 10_000;

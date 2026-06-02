@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class AuctionService implements userauth.api.AuctionApi {
-    private static final long REQUEST_STATUS_REFRESH_INTERVAL_MS = 1000L;
+    private static final long REQUEST_STATUS_REFRESH_INTERVAL_MS = 2000L;
 
     private final AuctionDAO auctionDAO;
     private final AutoBidDAO autoBidDAO;

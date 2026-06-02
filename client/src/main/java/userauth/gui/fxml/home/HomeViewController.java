@@ -79,7 +79,7 @@ public class HomeViewController {
     private final List<ScrollRevealTarget> scrollRevealTargets = new ArrayList<>();
     private final Map<Node, Double> scrollRevealProgress = new HashMap<>();
     private final Timeline refreshTimeline = new Timeline(
-            new KeyFrame(Duration.seconds(5), event -> refreshContent())
+            new KeyFrame(Duration.seconds(15), event -> refreshContent())
     );
 
     private Animation introAnimation;

@@ -107,7 +107,7 @@ public class AdminDashboardViewController {
     private PieChart auctionStatusChart;
 
     private final Timeline auctionRefreshTimeline = new Timeline(
-            new KeyFrame(Duration.seconds(5), event -> refreshData())
+            new KeyFrame(Duration.seconds(15), event -> refreshData())
     );
 
     private final Map<Integer, User> userLookup = new HashMap<>();

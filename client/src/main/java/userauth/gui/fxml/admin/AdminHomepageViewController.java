@@ -105,7 +105,7 @@ public class AdminHomepageViewController {
     private Label lblPreviewDetails;
 
     private final Timeline refreshTimeline = new Timeline(
-            new KeyFrame(Duration.seconds(5), event -> refreshData())
+            new KeyFrame(Duration.seconds(20), event -> refreshData())
     );
 
     private final Map<Integer, AuctionItem> auctionLookup = new HashMap<>();
