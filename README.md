@@ -326,7 +326,7 @@ Nếu server nằm trên VPS:
 ## Tài liệu, báo cáo và video minh họa
 
 - Báo cáo PDF: [Cập nhật link báo cáo PDF](https://drive.google.com/file/d/1C420oQgyEOYzfKRR8goD96f6edCBjPfj/view?usp=sharing)
-- Video minh họa: [Cập nhật link video minh họa](https://example.com/video-demo)
+- Video minh họa: [Cập nhật link video minh họa](https://drive.google.com/file/d/1Zz-7tz24TgetVcUgmFvQnDLasROE_3OZ/view?usp=sharing)
 - Hướng dẫn triển khai: [docs/DEPLOY-GUIDE.md](docs/DEPLOY-GUIDE.md)
 - Sơ đồ của Project: [Cập nhật link qua driver](https://drive.google.com/drive/folders/1GkMrqn5LPuqMnr9nf3yvCzFDxG_FbFGg?usp=sharing)
 
