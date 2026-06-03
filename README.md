@@ -155,7 +155,7 @@ chmod +x server/run-server.sh
 ./server/run-server.sh 5050 0.0.0.0
 ```
 
-Server mặc định lắng nghe tại port `5050`. Nếu chạy client trên máy khác, thay `127.0.0.1` bằng IP public hoặc domain của máy server.
+Server mặc định lắng nghe tại port `5050`. Client của project đang dùng server public `172.104.50.54:5050`.
 
 ### Chạy server trên VPS riêng
 
@@ -287,7 +287,7 @@ Dùng được trên Windows/Linux/macOS.
 Windows PowerShell:
 
 ```powershell
-$env:APP_SERVER_HOST="127.0.0.1"
+$env:APP_SERVER_HOST="172.104.50.54"
 $env:APP_SERVER_PORT="5050"
 .\mvnw.cmd -ntp -f client/pom.xml clean javafx:run
 ```
@@ -295,7 +295,7 @@ $env:APP_SERVER_PORT="5050"
 Linux/macOS:
 
 ```bash
-export APP_SERVER_HOST="127.0.0.1"
+export APP_SERVER_HOST="172.104.50.54"
 export APP_SERVER_PORT="5050"
 ./mvnw -ntp -f client/pom.xml clean javafx:run
 ```
@@ -303,7 +303,7 @@ export APP_SERVER_PORT="5050"
 Cách 2: chạy nhanh trên Windows bằng script có sẵn:
 
 ```powershell
-.\run-javafx.cmd -ServerHost "127.0.0.1" -ServerPort 5050
+.\run-javafx.cmd -ServerHost "172.104.50.54" -ServerPort 5050
 ```
 
 Nếu server nằm trên VPS:
