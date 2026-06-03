@@ -121,6 +121,10 @@ mvn -ntp -pl client -am package -DskipTests
 
 ## Thứ tự chạy server/client
 
+Nếu server đã được chạy sẵn trên VPS của nhóm, người dùng trên Windows không cần chạy server cục bộ. Khi đó chỉ cần làm theo mục **2. Chạy client sau khi server đã sẵn sàng**.
+
+Các bước chạy server bên dưới chỉ dành cho trường hợp cần chạy server local hoặc triển khai lại server trên VPS.
+
 ### 1. Chạy server trước
 
 Đóng gói server:
@@ -310,24 +314,142 @@ Nếu server nằm trên VPS:
 
 ## Chức năng đã hoàn thành
 
-- Đăng ký, đăng nhập, đổi mật khẩu và cập nhật hồ sơ người dùng.
-- Phân quyền người dùng theo vai trò `ADMIN`, `SELLER`, `BIDDER`.
-- Seller tạo, sửa, xóa/hủy và đóng phiên đấu giá.
-- Bidder xem danh sách phiên đấu giá, xem chi tiết, đặt giá và xem lịch sử đặt giá.
-- Tự động đặt giá theo mức tối đa do bidder cấu hình.
-- Ví điện tử: nạp tiền, xem tổng số dư, số dư khả dụng và số tiền đang bị giữ.
-- Giữ tiền khi bidder đang dẫn đầu, hoàn tiền khi bị vượt giá, trừ tiền khi phiên được xác nhận thanh toán.
-- Admin quản lý tài khoản, thông báo trang chủ và lệnh đóng sớm phiên đấu giá.
-- Hệ thống thông báo/inbox cho các sự kiện quan trọng.
-- Server xử lý request qua socket, tách client khỏi truy cập database trực tiếp.
-- Database initializer và script index hỗ trợ khởi tạo/tối ưu các bảng chính.
-- Test JUnit cho các luồng quan trọng như validation, network request/response, cache, concurrent bidding, anti-sniping và settlement.
+### Tài khoản và xác thực
+
+- Người dùng có thể đăng ký tài khoản với vai trò `SELLER` hoặc `BIDDER`.
+- Hệ thống kiểm tra username, email, mật khẩu và không cho đăng ký trùng username/email.
+- Mật khẩu được hash bằng `PasswordUtil`, không lưu plaintext.
+- Người dùng có thể đăng nhập, đăng xuất, đổi mật khẩu và cập nhật hồ sơ cá nhân.
+- Tài khoản bị khóa sẽ không thể đăng nhập.
+- Sau khi đăng nhập, server tạo session token để client dùng cho các request tiếp theo.
+
+### Phân quyền người dùng
+
+- Hệ thống có 3 vai trò chính: `ADMIN`, `SELLER`, `BIDDER`.
+- `ADMIN` có quyền quản lý tài khoản, thông báo trang chủ và thao tác quản trị.
+- `SELLER` có quyền tạo, sửa, xóa/hủy, đóng và xác nhận thanh toán phiên đấu giá của mình.
+- `BIDDER` có quyền xem phiên đấu giá, đặt giá, cấu hình tự động đặt giá và quản lý ví.
+- Server kiểm tra quyền bằng session token, không tin trực tiếp `userId` do client gửi lên.
+
+### Chức năng dành cho Seller
+
+- Tạo phiên đấu giá với tên sản phẩm, mô tả, giá khởi điểm, thời gian bắt đầu/kết thúc, danh mục, ảnh và bước giá.
+- Cập nhật thông tin phiên đấu giá khi phiên chưa có bid và chưa ở trạng thái không cho sửa.
+- Xóa phiên chưa có bid hoặc hủy phiên đã có bid theo đúng logic hoàn tiền/giải phóng tiền giữ.
+- Xem danh sách các phiên đấu giá do seller tạo.
+- Đóng phiên đấu giá thủ công khi có quyền.
+- Đánh dấu phiên đã thanh toán (`PAID`) sau khi kết thúc.
+- Hủy kết quả phiên đã kết thúc nếu cần xử lý hoàn tiền.
+
+### Chức năng dành cho Bidder
+
+- Xem danh sách phiên đấu giá và danh sách tóm tắt phiên đấu giá.
+- Xem chi tiết từng phiên đấu giá.
+- Xem lịch sử bid của một phiên.
+- Đặt giá khi phiên đang chạy (`RUNNING`) và thời gian hiện tại nằm trong khoảng hợp lệ.
+- Hệ thống kiểm tra giá đặt phải lớn hơn hoặc bằng `currentHighestBid + bidStep`.
+- Bidder không được tự đặt giá tiếp nếu đang là người dẫn đầu.
+- Khi đặt giá thành công, hệ thống cập nhật winner, giá cao nhất và lưu lịch sử bid.
+
+### Tự động đặt giá
+
+- Bidder có thể tạo rule tự động đặt giá theo `maxPrice` và `increment`.
+- Nếu đã có rule cho cùng một auction và bidder, hệ thống cập nhật rule cũ thay vì tạo trùng.
+- Bidder có thể sửa hoặc xóa rule autobid của chính mình.
+- `increment` phải hợp lệ và không nhỏ hơn `bidStep` của phiên đấu giá.
+- Khi có bid mới hoặc rule mới, hệ thống tự kích hoạt logic autobid nếu có bidder phù hợp.
+- Hệ thống ưu tiên autobid theo mức `maxPrice` cao hơn, sau đó theo thời điểm tạo rule và id.
+- Autobid vẫn kiểm tra số dư ví trước khi đặt giá tự động.
+
+### Ví điện tử và thanh toán
+
+- Mỗi user không phải admin có thể có ví điện tử.
+- Bidder có thể xem tổng số dư, số tiền đang bị giữ và số dư khả dụng.
+- Người dùng có thể tạo yêu cầu nạp tiền.
+- Hiện luồng nạp tiền được tự động xác nhận thành công để phục vụ demo/chạy bài.
+- Hệ thống lưu lịch sử nạp tiền trong `topup_transactions`.
+- Hệ thống lưu log giao dịch ví trong `wallet_transactions`.
+- Khi bidder đang dẫn đầu, số tiền tương ứng được giữ trong `reserved_balance`.
+- Khi bidder bị vượt giá, tiền giữ được giải phóng.
+- Khi phiên được xác nhận thanh toán, tiền giữ được capture/trừ khỏi ví.
+- Khi phiên bị hủy, hệ thống release hoặc refund tiền theo trạng thái hiện tại.
+- Có logic đối soát lại `reserved_balance` để giảm lỗi lệch số dư khi server khởi động lại.
+
+### Luồng đấu giá và trạng thái phiên
+
+- Phiên đấu giá có các trạng thái `OPEN`, `RUNNING`, `FINISHED`, `PAID`, `CANCELED`.
+- Scheduler chạy nền để tự chuyển trạng thái theo thời gian.
+- Khi đến `startTime`, phiên có thể chuyển từ `OPEN` sang `RUNNING`.
+- Khi hết `endTime`, phiên chuyển sang `FINISHED` hoặc `PAID` tùy khả năng capture tiền.
+- Có cơ chế anti-sniping: nếu có bid sát giờ kết thúc, hệ thống có thể kéo dài thời gian đóng phiên.
+- Giới hạn số lần kéo dài anti-sniping để tránh phiên bị kéo dài vô hạn.
+- Admin có thể kích hoạt early-close countdown cho phiên đang chạy.
+- Nếu trong countdown có bid mới hoặc giá thay đổi, countdown được reset theo snapshot mới.
+
+### Chức năng Admin
+
+- Xem danh sách người dùng.
+- Khóa hoặc mở khóa tài khoản người dùng.
+- Xóa tài khoản người dùng khi cần quản trị.
+- Xóa auction với quyền admin.
+- Tạo, sửa, xóa thông báo/nội dung trang chủ.
+- Tạo thông báo gửi đến người dùng.
+- Kích hoạt hoặc hủy early-close countdown cho phiên đấu giá.
+- Refresh trạng thái phiên đấu giá thủ công khi cần.
+
+### Thông báo và nội dung trang chủ
+
+- Hệ thống có notification/inbox cho người dùng.
+- Admin có thể tạo thông báo.
+- Người dùng có thể xem thông báo của chính mình.
+- Người dùng có thể xóa một thông báo hoặc xóa toàn bộ thông báo của mình.
+- Trang chủ có thể hiển thị các announcement do admin tạo.
+- Announcement có thể chứa tiêu đề, tóm tắt, chi tiết, lịch trình và liên kết đến auction.
+
+### Client JavaFX
+
+- Client hiển thị giao diện bằng JavaFX, FXML và CSS.
+- Client không truy cập database trực tiếp.
+- Client gọi các remote service để gửi request qua socket.
+- Client có thể chạy bằng `run-javafx.cmd` trên Windows.
+- Script chạy client có thể tự dùng Maven Wrapper, tải Maven/JavaFX và build client trên máy mới.
+- Client mặc định kết nối server `172.104.50.54:5050`, có thể đổi bằng `-ServerHost` và `-ServerPort`.
+
+### Server socket
+
+- Server chạy bằng `AuctionServerMain`.
+- Server lắng nghe TCP port mặc định `5050`.
+- Client gửi `AuctionRequest`, server trả `AuctionResponse`.
+- Mỗi request được điều phối theo `NetworkActions`.
+- Server kiểm tra session token và role trước khi xử lý action nhạy cảm.
+- Server có thread pool để xử lý nhiều client.
+- Server có timeout và `ObjectInputFilter` để giảm rủi ro deserialize object không mong muốn.
+- Có tùy chọn bật TLS cho socket nếu cần triển khai trong môi trường không tin cậy.
+
+### Database và lưu trữ
+
+- Server là thành phần duy nhất truy cập MySQL/Akamai DB.
+- Database config nằm trong `server/src/main/resources/database.properties`.
+- Password database lấy từ `DB_PASSWORD` hoặc JVM property, không nên hardcode vào source.
+- `DatabaseInitializer` tự tạo bảng nếu chưa có và đồng bộ một số column/index/constraint.
+- Các bảng chính gồm `users`, `auctions`, `bids`, `auto_bids`, `wallets`, `topup_transactions`, `wallet_transactions`, `notifications`, `homepage_announcements`.
+- Có script `database_indexes.sql` và các index trong initializer để tối ưu truy vấn quan trọng.
+
+### Kiểm thử và ổn định
+
+- Có test cho validation user, password util và serialize object qua network.
+- Có test cho `AuctionRequest`, `AuctionResponse` và session manager.
+- Có test cho concurrent bidding để kiểm tra nhiều bidder đặt giá cùng lúc.
+- Có test cho anti-sniping, autobid, settlement và capture payment.
+- Có test cho logic hoàn tiền khi xóa/hủy auction.
+- Có test cho cache, status transition và reserved balance reconciliation.
 
 ## Tài liệu, báo cáo và video minh họa
 
 - Báo cáo PDF: [Cập nhật link báo cáo PDF](https://drive.google.com/file/d/1C420oQgyEOYzfKRR8goD96f6edCBjPfj/view?usp=sharing)
 - Video minh họa: [Cập nhật link video minh họa](https://drive.google.com/file/d/1Zz-7tz24TgetVcUgmFvQnDLasROE_3OZ/view?usp=sharing)
-- Hướng dẫn triển khai: [docs/DEPLOY-GUIDE.md](docs/DEPLOY-GUIDE.md)
+- Hướng dẫn chạy client cho người sử dụng: [docs/user-client-run-guide.md](docs/user-client-run-guide.md)
+- Hướng dẫn triển khai/chạy server trên VPS: [docs/DEPLOY-GUIDE.md](docs/DEPLOY-GUIDE.md) và [server/README-SERVER.md](server/README-SERVER.md)
 - Sơ đồ của Project: [Cập nhật link qua driver](https://drive.google.com/drive/folders/1GkMrqn5LPuqMnr9nf3yvCzFDxG_FbFGg?usp=sharing)
 
 ## Ghi chú lỗi thường gặp
